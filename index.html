@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Broker France — Real Estate in Southern Luzon</title>
+<!-- Security headers -->
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+<meta name="referrer" content="no-referrer">
+<!-- Prevent caching of listing data in browser history -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<!-- Disable right-click inspection hint via robots -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <g>
+    <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="%231DB954" opacity=".9"/>
+    <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="%2315963F" opacity=".9"/>
+    <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="%2315963F" opacity=".9"/>
+    <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="%231DB954" opacity=".9"/>
+    <path d="M40 20 C40 20 40 60 40 60" stroke="%230F1117" stroke-width="1.5" opacity=".3"/>
+    <path d="M20 40 C20 40 60 40 60 40" stroke="%230F1117" stroke-width="1.5" opacity=".3"/>
+    <circle cx="40" cy="40" r="3" fill="%230F1117" opacity=".2"/>
+  </g>
+</svg>'>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ───────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:'Manrope',sans-serif;background:#fff;color:#0F1117;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+/* ── TOKENS ─────────────────────────────────────── */
+:root{
+  --green:#234130;
+  --green-d:#15963F;
+  --green-l:#E8F8EE;
+  --green-m:#C2EFCF;
+  --ink:#0F1117;
+  --ink2:#3D424F;
+  --ink3:#8A909E;
+  --border:#EAECF0;
+  --bg:#F7F8FA;
+  --white:#FFFFFF;
+  --r:14px;--rs:9px;--rl:20px;
+  --sh:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 6px 24px rgba(0,0,0,.08);
+  --shl:0 16px 56px rgba(0,0,0,.11);
+}
+
+/* ── PAGE SYSTEM ─────────────────────────────────── */
+.page{display:none}.page.active{display:block}
+
+/* ══════════════════════════════════════════════════
+   NAV
+══════════════════════════════════════════════════ */
+.nav{
+  position:sticky;top:0;z-index:500;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  height:68px;padding:0 40px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-brand{display:flex;align-items:center;gap:10px;border:none;background:none;cursor:pointer}
+.nav-clover{width:32px;height:32px;flex-shrink:0}
+.nav-wordmark{display:flex;flex-direction:column;line-height:1;text-align:left}
+.nav-name{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.nav-tagline{font-size:9.5px;font-weight:600;color:var(--ink3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nl{padding:8px 16px;border-radius:10px;font-size:14px;font-weight:600;color:var(--ink2);border:none;background:none;transition:all .15s}
+.nl:hover{background:var(--bg);color:var(--ink)}.nl.on{background:var(--green-l);color:var(--green-d)}
+.nav-actions{display:flex;gap:10px;align-items:center}
+.btn-ghost{padding:9px 18px;border-radius:var(--rs);font-size:13px;font-weight:700;color:var(--ink2);border:1.5px solid var(--border);background:#fff;transition:all .15s}
+.btn-ghost:hover{border-color:var(--green);color:var(--green-d)}
+.btn-cta{padding:9px 22px;border-radius:var(--rs);font-size:13px;font-weight:700;color:#fff;border:none;background:var(--green);transition:all .15s}
+.btn-cta:hover{background:var(--green-d)}
+
+/* ══════════════════════════════════════════════════
+   HERO
+══════════════════════════════════════════════════ */
+.hero{
+  position:relative;overflow:hidden;
+  padding:80px 40px 0;
+  background:#fff;
+}
+/* mesh gradient background */
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 70% 60% at 80% 0%, rgba(29,185,84,.07) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 10% 100%, rgba(29,185,84,.05) 0%, transparent 60%);
+  pointer-events:none;
+}
+/* subtle dot grid */
+.hero::after{
+  content:'';position:absolute;inset:0;
+  background-image:radial-gradient(circle,#D1D5DB 1px,transparent 1px);
+  background-size:28px 28px;
+  opacity:.35;pointer-events:none;
+}
+.hero-inner{position:relative;z-index:1;max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+.hero-left{}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--green-l);color:var(--green-d);font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:22px;letter-spacing:.02em}
+.hero-eyebrow span{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.hero-h1{font-size:clamp(36px,4.5vw,58px);font-weight:800;color:var(--ink);line-height:1.11;letter-spacing:-.03em;margin-bottom:22px}
+.hero-h1 em{font-family:'Lora',serif;font-style:italic;color:var(--green-d)}
+.hero-p{font-size:16px;line-height:1.7;color:var(--ink2);max-width:440px;margin-bottom:36px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:56px}
+.btn-primary{padding:14px 30px;border-radius:var(--rs);font-size:15px;font-weight:700;color:#fff;border:none;background:var(--green);display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-primary:hover{background:var(--green-d);transform:translateY(-1px);box-shadow:0 6px 20px rgba(29,185,84,.3)}
+.btn-secondary{padding:14px 28px;border-radius:var(--rs);font-size:15px;font-weight:700;color:var(--ink);border:1.5px solid var(--border);background:#fff;display:inline-flex;align-items:center;gap:8px;transition:all .2s}
+.btn-secondary:hover{border-color:var(--green);color:var(--green-d)}
+.hero-trust{display:flex;align-items:center;gap:20px; margin-top: -50px;padding: 24px 0 24px 0;}
+.trust-avatars{display:flex}
+.trust-avatar{width:36px;height:36px;border-radius:50%;border:2.5px solid #fff;background:var(--green-m);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--green-d);margin-left:-10px}
+.trust-avatar:first-child{margin-left:0}
+.trust-text{font-size:13px;color:var(--ink2);font-weight:500}
+.trust-text strong{color:var(--ink);font-weight:700}
+/* hero right — property card float */
+.hero-right{position:relative;padding-bottom:40px}
+.hero-card-stack{position:relative;height:420px}
+.hero-main-card{
+  position:absolute;top:0;right:0;left:40px;
+  background:#fff;border-radius:var(--rl);
+  box-shadow:var(--shl);overflow:hidden;
+  border:1px solid var(--border);
+}
+.hero-card-img{height:230px;background:linear-gradient(135deg,#1a4a2e,#2d7a4a);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.hero-card-img-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.3),transparent)}
+.hero-card-badges{position:absolute;top:14px;left:14px;display:flex;gap:6px}
+.hero-card-body{padding:18px 20px}
+.hero-card-price{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.hero-card-name{font-size:14px;font-weight:600;color:var(--ink);margin:4px 0}
+.hero-card-loc{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:4px;margin-bottom:14px}
+.hero-card-specs{display:flex;gap:14px;padding-top:14px;border-top:1px solid var(--border)}
+.hero-card-spec{font-size:12px;color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:4px}
+/* floating mini card */
+.hero-float-card{
+  position:absolute;bottom:10px;left:0;
+  background:#fff;border-radius:14px;
+  box-shadow:0 8px 32px rgba(0,0,0,.12);
+  padding:14px 18px;
+  border:1px solid var(--border);
+  min-width:200px;
+  animation:float 4s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.float-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.float-stat{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.float-sub{font-size:12px;color:var(--green-d);font-weight:600;margin-top:2px}
+
+/* ── HERO WAVE ── */
+.hero-wave{position:relative;z-index:1;margin-top:0;line-height:0}
+.hero-wave svg{width:100%;display:block}
+
+/* ══════════════════════════════════════════════════
+   TRUST BAR
+══════════════════════════════════════════════════ */
+.trust-bar{background:var(--ink);padding:24px 40px}
+.trust-bar-inner{max-width:1180px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:24px}
+.trust-item{display:flex;align-items:center;gap:12px}
+.trust-icon{width:40px;height:40px;border-radius:10px;background:rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.trust-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8}
+.trust-item-text strong{display:block;font-size:14px;font-weight:700;color:#fff}
+.trust-item-text span{font-size:12px;color:rgba(255,255,255,.5)}
+.trust-divider{width:1px;height:36px;background:rgba(255,255,255,.1)}
+
+
+
+
+/* ══════════════════════════════════════════════════
+   WTB SECTION
+══════════════════════════════════════════════════ */
+.wtb-container{background:white;padding:60px 40px; text-align: center;}
+.wtb-section{max-width:1180px;margin:0 auto;background-color: var(--green);padding: 50px 200px 50px 200px; border-radius: 40px; color: white;}
+
+
+/* ══════════════════════════════════════════════════
+   SEARCH SECTION
+══════════════════════════════════════════════════ */
+.search-section{background:var(--bg);padding:60px 40px; text-align: center;}
+.search-section-inner{max-width:1180px;margin:0 auto}
+.search-label{font-size:13px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+.search-title{font-size:clamp(24px,3vw,34px);font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:32px}
+.search-title em{font-family:'Lora',serif;font-style:italic;color:var(--green-d)}
+.search-box{
+  background:#fff;border-radius:var(--rl);
+  box-shadow:var(--shm);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+.search-tabs{display:flex;border-bottom:1px solid var(--border)}
+.stab{
+  flex:1;padding:16px;font-size:14px;font-weight:700;
+  color:var(--ink3);border:none;background:none;
+  border-bottom:2.5px solid transparent;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.stab:hover{color:var(--ink);background:var(--bg)}
+.stab.on{color:var(--green-d);border-bottom-color:var(--green);background:#fff}
+.stab svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.search-fields{display:flex;align-items:stretch}
+.sf{flex:1;display:flex;flex-direction:column;padding:16px 20px;border-right:1px solid var(--border)}
+.sf:last-of-type{border-right:none}
+.sf label{font-size:10px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:7px}
+.sf select,.sf input{font-family:'Manrope',sans-serif;font-size:15px;font-weight:600;color:var(--ink);background:none;border:none;outline:none;cursor:pointer;-webkit-appearance:none;width:100%}
+.sf select option{font-weight:500}
+.search-go-wrap{padding:12px;display:flex;align-items:center}
+.search-go{
+  padding:14px 28px;border-radius:var(--rs);
+  font-size:14px;font-weight:800;color:#fff;border:none;
+  background:var(--green);display:flex;align-items:center;gap:8px;
+  transition:all .2s;white-space:nowrap;
+}
+.search-go:hover{background:var(--green-d)}
+.search-go svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5}
+
+/* ── QUICK FILTERS ── */
+.quick-filters{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.qf{
+  padding:8px 18px;border-radius:99px;font-size:13px;font-weight:600;
+  color:var(--ink2);border:1.5px solid var(--border);background:#fff;
+  transition:all .15s;display:flex;align-items:center;gap:6px;
+}
+.qf:hover,.qf.on{background:var(--green-l);border-color:var(--green-m);color:var(--green-d)}
+.qf svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+
+/* ══════════════════════════════════════════════════
+   LISTINGS SECTION (HOME)
+══════════════════════════════════════════════════ */
+.listings-home{padding:60px 40px;background:#fff}
+.lh-inner{max-width:1180px;margin:0 auto}
+.section-hdr{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;gap:16px}
+.section-hdr-left .section-eyebrow{font-size:12px;font-weight:700;color:var(--green-d);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.section-hdr-left .section-title{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em}
+.section-view-all{font-size:14px;font-weight:700;color:var(--green-d);border:none;background:none;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.section-view-all:hover{text-decoration:underline}
+.section-view-all svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* ── LISTING CARD ── */
+.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.lcard{
+  background:#fff;border-radius:var(--r);
+  border:1px solid var(--border);overflow:hidden;
+  cursor:pointer;transition:all .22s;
+  box-shadow:var(--sh);
+}
+.lcard:hover{transform:translateY(-4px);box-shadow:var(--shm);border-color:#d1d5db}
+.lcard-img{height:196px;position:relative;overflow:hidden;background:var(--bg);flex-shrink:0}
+.lcard-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.lcard:hover .lcard-img img{transform:scale(1.05)}
+.lcard-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px}
+.lcard-img-ph svg{width:52px;height:52px;opacity:.15}
+.lcard-img-ph span{font-size:11px;color:var(--ink3);font-weight:600}
+.lcard-badges{position:absolute;top:12px;left:12px;display:flex;gap:5px;flex-wrap:wrap}
+.bdg{font-size:10px;font-weight:800;padding:4px 10px;border-radius:99px;letter-spacing:.02em}
+.bdg-ex{background:#0F1117;color:#fff}
+.bdg-sale{background:var(--green);color:#fff}
+.bdg-lease{background:#2563EB;color:#fff}
+.bdg-new{background:#D97706;color:#fff}
+.bdg-hot{background:#DC2626;color:#fff}
+.lcard-save{
+  position:absolute;top:12px;right:12px;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.92);border:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,.1);transition:transform .15s;
+}
+.lcard-save:hover{transform:scale(1.12)}
+.lcard-save svg{width:16px;height:16px}
+.lcard-photo-count{
+  position:absolute;bottom:12px;right:12px;
+  background:rgba(0,0,0,.55);color:#fff;
+  font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:99px;
+  display:flex;align-items:center;gap:4px;
+}
+.lcard-photo-count svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2}
+.lcard-body{padding:16px 18px}
+.lcard-price{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.03em;margin-bottom:4px}
+.lcard-name{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:5px;line-height:1.4}
+.lcard-loc{font-size:13px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:5px;margin-bottom:8px;overflow:hidden;white-space:nowrap;flex-shrink:0}
+.lcard-loc svg{width:13px;height:13px;flex-shrink:0;stroke:var(--green-d);fill:none;stroke-width:2}
+.lcard-ptype{display:inline-flex;align-items:center;font-size:11px;font-weight:700;color:var(--ink3);background:var(--bg);padding:3px 10px;border-radius:6px;margin-bottom:10px}
+.lcard-specs{display:flex;align-items:center;gap:16px;padding-top:12px;border-top:1px solid var(--border);overflow:hidden}
+.lcard-spec{font-size:11px;color:var(--ink2);font-weight:600;display:flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.lcard-spec-icon{flex-shrink:0}
+.lcard-spec-icon svg{width:12px;height:12px;stroke:var(--green-d);fill:none;stroke-width:2;display:block}
+.lcard-spec-txt{white-space:nowrap}
+.lcard-foot{padding:12px 18px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.lcard-type{font-size:11px;font-weight:700;color:var(--ink3);background:var(--bg);padding:4px 10px;border-radius:99px;white-space:nowrap}
+.lcard-btns{display:flex;gap:7px}
+.btn-view{font-size:12px;font-weight:700;color:var(--ink2);background:#fff;border:1.5px solid var(--border);padding:6px 14px;border-radius:var(--rs);transition:all .15s}
+.btn-view:hover{border-color:var(--green);color:var(--green-d)}
+.btn-inq{font-size:12px;font-weight:700;color:#fff;background:var(--green);border:none;padding:6px 14px;border-radius:var(--rs);transition:all .15s;display:flex;align-items:center;gap:5px}
+.btn-inq:hover{background:var(--green-d)}
+.btn-inq svg{width:14px;height:14px;fill:white}
+
+/* ══════════════════════════════════════════════════
+   SERVICES SECTION
+══════════════════════════════════════════════════ */
+.services-section{padding:60px 40px;background:var(--bg)}
+.services-inner{max-width:1180px;margin:0 auto}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px;margin-top:32px}
+.svc-card{
+  background:#fff;border-radius:var(--r);
+  border:1.5px solid var(--border);padding:26px;
+  transition:all .2s;cursor:pointer;
+}
+.svc-card:hover{border-color:var(--green);box-shadow:var(--shm);transform:translateY(-2px)}
+.svc-icon{width:46px;height:46px;border-radius:12px;background:var(--green-l);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.svc-icon svg{width:22px;height:22px;stroke:var(--green-d);fill:none;stroke-width:1.8}
+.svc-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:7px}
+.svc-desc{font-size:13px;color:var(--ink2);line-height:1.6}
+.svc-link{font-size:13px;font-weight:700;color:var(--green-d);margin-top:14px;display:flex;align-items:center;gap:4px}
+.svc-link svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.5;transition:transform .15s}
+.svc-card:hover .svc-link svg{transform:translateX(3px)}
+
+/* ══════════════════════════════════════════════════
+   AREAS SECTION
+══════════════════════════════════════════════════ */
+.areas-section{padding:60px 40px;background:#fff; text-align: center; }
+.areas-inner{max-width:1180px;margin:0 auto;text-align: center;}
+.areas-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+.area-card{
+  border-radius:var(--r);overflow:hidden;
+  position:relative;cursor:pointer;
+  height:160px;transition:transform .2s;
+}
+.area-card:hover{transform:scale(1.02)}
+.area-card:first-child{grid-row:span 2;height:auto}
+.area-bg{
+  width:100%;height:100%;
+  display:flex;align-items:flex-end;
+  padding:20px;position:relative;
+}
+.area-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,rgba(0,0,0,.1) 60%,transparent 100%)}
+.area-content{position:relative;z-index:1}
+.area-name{font-size:18px;font-weight:800;color:#fff;margin-bottom:3px}
+.area-count{font-size:12px;color:rgba(255,255,255,.75);font-weight:600}
+.area-pill{position:absolute;top:14px;right:14px;background:var(--green);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:99px;z-index:1}
+.ac1{background:linear-gradient(135deg,#1a4a2e,#2d9a52)}
+.ac2{background:linear-gradient(135deg,#1e3a5f,#2563eb)}
+.ac3{background:linear-gradient(135deg,#4a2518,#c2511e)}
+.ac4{background:linear-gradient(135deg,#1a3a4a,#1e7fa0)}
+.ac5{background:linear-gradient(135deg,#2a1a4a,#6b3ab5)}
+.ac6{background:linear-gradient(135deg,#3a1a1a,#b52020)}
+
+/* ══════════════════════════════════════════════════
+   FOOTER (home)
+══════════════════════════════════════════════════ */
+.footer{background:var(--ink);padding:56px 40px 0}
+.footer-inner{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:48px;padding-bottom:48px;border-bottom:1px solid rgba(255,255,255,.08)}
+.footer-brand .fn{font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.footer-brand p{font-size:13px;color:rgba(255,255,255,.45);line-height:1.7;margin:14px 0 20px}
+.footer-prc{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:8px 14px}
+.footer-prc svg{width:15px;height:15px;stroke:var(--green);fill:none;stroke-width:2}
+.footer-prc span{font-size:11px;font-weight:700;color:var(--green);letter-spacing:.05em}
+.footer-col h5{font-size:11px;font-weight:800;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.12em;margin-bottom:18px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+.footer-col ul li a{font-size:14px;color:rgba(255,255,255,.55);transition:color .15s}
+.footer-col ul li a:hover{color:#fff}
+.footer-bottom{max-width:1180px;margin:0 auto;padding:20px 0;display:flex;justify-content:space-between;align-items:center}
+.footer-bottom p{font-size:12px;color:rgba(255,255,255,.28)}
+.footer-bottom span{font-size:11px;color:rgba(255,255,255,.2);letter-spacing:.05em}
+
+/* ══════════════════════════════════════════════════
+   LISTINGS PAGE
+══════════════════════════════════════════════════ */
+.listings-page-hdr{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:32px 40px 0;
+}
+.listings-page-hdr h1{font-size:28px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:4px}
+.listings-page-hdr p{font-size:14px;color:var(--ink3);margin-bottom:20px}
+.list-tabs{display:flex;overflow-x:auto;scrollbar-width:none;gap:0}
+.list-tabs::-webkit-scrollbar{display:none}
+.ltab{padding:13px 20px;font-size:13px;font-weight:700;color:var(--ink3);border:none;background:none;font-family:inherit;white-space:nowrap;border-bottom:2.5px solid transparent;transition:all .15s}
+.ltab.on{color:var(--green-d);border-bottom-color:var(--green)}
+.ltab:hover{color:var(--ink)}
+.listings-toolbar{padding:16px 40px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#fff}
+.filter-sel{font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:#fff;border:1.5px solid var(--border);border-radius:var(--rs);padding:9px 14px;outline:none;cursor:pointer;-webkit-appearance:none}
+.filter-sel:focus{border-color:var(--green)}
+.res-count{margin-left:auto;font-size:13px;color:var(--ink3);font-weight:600}
+.listings-content{padding:32px 40px;max-width:calc(1180px + 80px);margin:0 auto}
+
+/* ══════════════════════════════════════════════════
+   DETAIL PAGE
+══════════════════════════════════════════════════ */
+.detail-wrap{max-width:1180px;margin:0 auto;padding:0 40px 100px}
+.detail-back{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--ink2);border:none;background:none;padding:24px 0 0;transition:color .15s}
+.detail-back:hover{color:var(--green-d)}.detail-back svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2.5}
+
+/* gallery */
+.detail-gallery{margin:20px 0;border-radius:var(--rl);overflow:hidden;height:420px;background:var(--bg);position:relative}
+.detail-gallery img.gallery-main{width:100%;height:100%;object-fit:cover;display:block}
+.detail-gallery-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.detail-gallery-ph svg{width:72px;height:72px;opacity:.12}
+.detail-gallery-ph p{font-size:14px;color:var(--ink3);font-weight:600}
+/* thumbnail strip */
+.gallery-thumbs{position:absolute;bottom:16px;left:16px;display:flex;gap:8px}
+.gallery-thumb{width:56px;height:56px;border-radius:8px;overflow:hidden;cursor:pointer;border:2.5px solid transparent;transition:all .15s;flex-shrink:0}
+.gallery-thumb:hover,.gallery-thumb.on{border-color:#fff}
+.gallery-thumb img{width:100%;height:100%;object-fit:cover}
+.gallery-count-pill{position:absolute;bottom:16px;right:16px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;padding:5px 12px;border-radius:99px;display:flex;align-items:center;gap:5px}
+.gallery-count-pill svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2}
+
+.detail-badges{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.detail-body{display:grid;grid-template-columns:1fr 340px;gap:32px;margin-top:4px}
+.detail-price{font-size:34px;font-weight:800;color:var(--ink);letter-spacing:-.03em;margin-bottom:4px}
+.detail-name{font-size:22px;font-weight:800;color:var(--ink);line-height:1.3;margin-bottom:10px}
+.detail-loc{font-size:14px;color:var(--ink2);display:flex;align-items:center;gap:5px;margin-bottom:28px}
+.detail-loc svg{width:15px;height:15px;stroke:var(--green-d);fill:none;stroke-width:2}
+.detail-specs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:30px}
+.dsbox{background:var(--bg);border-radius:var(--rs);padding:14px 16px;border:1px solid var(--border)}
+.dsbox .dsl{font-size:10px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+.dsbox .dsv{font-size:16px;font-weight:700;color:var(--ink);margin-top:4px}
+.detail-sec{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:10px}
+.detail-desc{font-size:14px;color:var(--ink2);line-height:1.8;margin-bottom:28px}
+
+/* sidebar */
+.detail-sidebar{}
+.dsc{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:24px;box-shadow:var(--shm);position:sticky;top:84px}
+.dsc h3{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.dsc>p{font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:20px}
+.dsc-btns{display:flex;flex-direction:column;gap:10px}
+.btn-wa{display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border-radius:var(--rs);background:#25D366;color:#fff;font-size:14px;font-weight:800;border:none;transition:all .15s}
+.btn-wa:hover{background:#1aad52}.btn-wa svg{width:19px;height:19px;fill:white}
+.btn-call-d{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:14px;font-weight:700;border:1.5px solid var(--border);transition:all .15s}
+.btn-call-d:hover{border-color:var(--green);color:var(--green-d)}
+.btn-call-d svg,.btn-email-d svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.btn-email-d{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:var(--rs);background:var(--bg);color:var(--ink);font-size:14px;font-weight:700;border:1.5px solid var(--border);transition:all .15s}
+.btn-email-d:hover{border-color:var(--green);color:var(--green-d)}
+.dsc-divider{height:1px;background:var(--border);margin:20px 0}
+.broker-mini{display:flex;align-items:center;gap:12px}
+.broker-mini-av{width:46px;height:46px;border-radius:50%;background:var(--green-m);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:800;color:var(--green-d);flex-shrink:0}
+.broker-mini-name{font-size:14px;font-weight:800;color:var(--ink)}
+.broker-mini-title{font-size:12px;color:var(--ink3);margin-top:2px}
+.broker-mini-badge{font-size:10px;font-weight:800;color:var(--green-d);background:var(--green-l);padding:3px 9px;border-radius:99px;display:inline-block;margin-top:5px}
+/* inline form */
+.dsc-form{margin-top:20px}
+.dsc-form input,.dsc-form textarea{width:100%;font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 14px;outline:none;transition:border-color .15s;margin-bottom:10px}
+.dsc-form input:focus,.dsc-form textarea:focus{border-color:var(--green);background:#fff}
+.dsc-form textarea{resize:none;height:78px}
+.dsc-form .btn-submit{width:100%;padding:13px;border-radius:var(--rs);background:var(--green);color:#fff;font-family:'Manrope',sans-serif;font-size:14px;font-weight:800;border:none;transition:all .15s}
+.dsc-form .btn-submit:hover{background:var(--green-d)}
+
+/* ══════════════════════════════════════════════════
+   CONTACT PAGE
+══════════════════════════════════════════════════ */
+.contact-page{max-width:680px;margin:0 auto;padding:48px 40px 100px}
+.page-h1{font-size:30px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
+.page-sub{font-size:15px;color:var(--ink2);line-height:1.65;margin-bottom:36px}
+.contact-channels{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:32px}
+.ch-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:18px;display:flex;align-items:center;gap:14px;transition:all .15s}
+.ch-card:hover{border-color:var(--green);box-shadow:var(--shm)}
+.ch-icon{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ch-icon svg{width:20px;height:20px}
+.chi-wa{background:#DCFCE7}.chi-wa svg{fill:#16A34A}
+.chi-vb{background:#EDE9FE}.chi-vb svg{fill:#7C3AED}
+.chi-em{background:#DBEAFE}.chi-em svg{fill:#1D4ED8}
+.chi-ph{background:#3982F7}.chi-ph svg{fill:#B45309}
+.ch-name{font-size:13px;font-weight:800;color:var(--ink)}
+.ch-val{font-size:12px;color:var(--ink2);margin-top:2px}
+.form-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:30px;box-shadow:var(--sh)}
+.form-card h2{font-size:19px;font-weight:800;color:var(--ink);margin-bottom:5px}
+.form-card>p{font-size:13px;color:var(--ink3);margin-bottom:24px}
+.fgrp{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.fgrp label{font-size:11px;font-weight:800;color:var(--ink);text-transform:uppercase;letter-spacing:.06em}
+.fgrp input,.fgrp select,.fgrp textarea{font-family:'Manrope',sans-serif;font-size:14px;font-weight:500;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:11px 14px;outline:none;transition:border-color .15s;width:100%}
+.fgrp input:focus,.fgrp select:focus,.fgrp textarea:focus{border-color:var(--green);background:#fff}
+.fgrp textarea{resize:vertical;min-height:100px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.btn-submit{width:100%;padding:14px;border-radius:var(--rs);background:var(--green);color:#fff;font-family:'Manrope',sans-serif;font-size:15px;font-weight:800;border:none;transition:all .15s;margin-top:6px}
+.btn-submit:hover{background:var(--green-d)}
+.form-note{font-size:11px;color:var(--ink3);text-align:center;margin-top:12px}
+
+/* ══════════════════════════════════════════════════
+   BUYER / ABOUT PAGES
+══════════════════════════════════════════════════ */
+.inner-page{max-width:720px;margin:0 auto;padding:48px 40px 100px}
+.broker-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:28px;display:flex;gap:20px;align-items:flex-start;margin-bottom:32px;box-shadow:var(--sh)}
+.broker-av{width:72px;height:72px;border-radius:50%;background:var(--green-m);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;color:var(--green-d);flex-shrink:0}
+.broker-n{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.broker-t{font-size:13px;color:var(--ink3);margin-bottom:10px}
+.broker-creds{display:flex;flex-wrap:wrap;gap:6px}
+.ctag{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--green-l);color:var(--green-d)}
+.about-sec{margin-bottom:28px}
+.about-sec h2{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:14px}
+.why-list{display:flex;flex-direction:column;gap:11px}
+.why-item{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1.5px solid var(--border);border-radius:var(--rs);padding:16px}
+.why-n{width:28px;height:28px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--green-d);flex-shrink:0}
+.why-it{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.why-id{font-size:13px;color:var(--ink2);line-height:1.55}
+
+/* ══════════════════════════════════════════════════
+   LOADING / EMPTY
+══════════════════════════════════════════════════ */
+.loading-state{text-align:center;padding:64px 24px;grid-column:1/-1}
+.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-state p{font-size:14px;color:var(--ink3);font-weight:600}
+.empty-state{text-align:center;padding:56px 24px;grid-column:1/-1}
+.empty-state svg{width:48px;height:48px;stroke:var(--ink3);fill:none;stroke-width:1.5;margin-bottom:14px}
+.empty-state h3{font-size:16px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.empty-state p{font-size:14px;color:var(--ink3)}
+
+/* ══════════════════════════════════════════════════
+   WA FAB
+══════════════════════════════════════════════════ */
+.wa-fab{position:fixed;bottom:88px;right:20px;width:52px;height:52px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(37,211,102,.45);border:none;z-index:400;transition:transform .2s}
+.wa-fab:hover{transform:scale(1.08)}.wa-fab svg{width:27px;height:27px;fill:white}
+
+/* ══════════════════════════════════════════════════
+   MOBILE NAV
+══════════════════════════════════════════════════ */
+.mnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);padding:8px 0 env(safe-area-inset-bottom,16px);z-index:400}
+.mnav-inner{display:flex}
+.mni{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px;border:none;background:none;font-family:'Manrope',sans-serif;color:var(--ink3);font-size:10px;font-weight:700;transition:color .15s}
+.mni.on{color:var(--green-d)}.mni svg{width:22px;height:22px}
+
+/* ══════════════════════════════════════════════════
+   SYNC BANNER / TOAST
+══════════════════════════════════════════════════ */
+.sync-bar{background:var(--green-l);border-bottom:1px solid var(--green-m);padding:9px 24px;text-align:center;font-size:12px;font-weight:700;color:var(--green-d);display:none}
+.sync-bar.show{display:block}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:11px 24px;border-radius:99px;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* ══════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════ */
+@media(max-width:1024px){
+  .hero-inner{grid-template-columns:1fr;gap:40px}
+  .hero-right{display:none}
+  .detail-body{grid-template-columns:1fr}
+  .detail-sidebar{order:-1}
+  .dsc{position:static}
+  .areas-grid{grid-template-columns:1fr 1fr}
+  .areas-grid .area-card:first-child{grid-row:auto;height:160px}
+  .footer-inner{grid-template-columns:1fr 1fr;gap:36px}
+}
+@media(max-width:768px){
+  .nav{padding:0 20px;height:60px}
+  .nav-links{display:none}
+  .nav-actions .btn-ghost{display:none}
+  .hero{padding:48px 20px 0}
+  .trust-bar{padding:20px}
+  .search-section{padding:40px 20px}
+  .search-fields{flex-direction:column}
+  .sf{border-right:none;border-bottom:1px solid var(--border)}
+  .search-go-wrap{padding:12px}
+  .search-go{width:100%;justify-content:center}
+  .listings-home,.services-section,.areas-section{padding:40px 20px}
+  .footer{padding:40px 20px 0}
+  .footer-inner{grid-template-columns:1fr}
+  .listings-page-hdr{padding:24px 20px 0}
+  .listings-toolbar{padding:14px 20px}
+  .listings-content{padding:24px 20px}
+  .detail-wrap{padding:0 20px 100px}
+  .detail-gallery{height:240px;margin:16px 0}
+  .contact-page,.inner-page{padding:32px 20px 100px}
+  .contact-channels{grid-template-columns:1fr 1fr}
+  .frow{grid-template-columns:1fr}
+  .mnav{display:block}
+  .wa-fab{bottom:84px;right:16px}
+  .broker-card{flex-direction:column}
+  .detail-specs-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .lgrid{grid-template-columns:1fr}
+  .contact-channels{grid-template-columns:1fr}
+  .areas-grid{grid-template-columns:1fr}
+  .search-tabs{flex-direction:row}
+  .stab{font-size:13px;padding:13px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── SYNC BANNER ── -->
+<div class="sync-bar" id="syncBar"></div>
+
+<!-- ══════════════════════════════════════════════════
+     NAV
+══════════════════════════════════════════════════ -->
+<nav class="nav">
+  <button class="nav-brand" onclick="showPage('home')">
+    <!-- Four-leaf clover SVG matching the logo -->
+    <svg class="nav-clover" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g>
+        <!-- Top leaf -->
+        <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".9"/>
+        <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".9"/>
+        <!-- Bottom leaf -->
+        <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".9"/>
+        <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".9"/>
+        <!-- Center lines -->
+        <path d="M40 20 C40 20 40 60 40 60" stroke="#0F1117" stroke-width="1.5" opacity=".3"/>
+        <path d="M20 40 C20 40 60 40 60 40" stroke="#0F1117" stroke-width="1.5" opacity=".3"/>
+        <circle cx="40" cy="40" r="3" fill="#0F1117" opacity=".2"/>
+      </g>
+    </svg>
+    <div class="nav-wordmark">
+      <span class="nav-name">May Francia Rivares-Gonzales</span>
+      <span class="nav-tagline">Real Estate Broker · PRC license 020049</span>
+    </div>
+  </button>
+
+  <div class="nav-links">
+    <button class="nl on" id="nl-home" onclick="showPage('home')">Home</button>
+    <button class="nl" id="nl-listings" onclick="showPage('listings')">View all Listings</button>
+    <button class="nl" id="nl-buyer" onclick="showPage('buyer')">I'm a Buyer</button>
+  </div>
+
+  <div class="nav-actions">
+    <button class="btn-ghost" onclick="showPage('about')">About</button>
+    <button class="btn-cta" onclick="showPage('contact')">Talk to the Broker</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     HOME PAGE
+══════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-left"> 
+        <div class="hero-eyebrow"><span></span>Nuvali & Southern Luzon Specialist</div>
+        <h1 class="hero-h1">
+          Where buyers<br><em>are matched</em><br>with the right property.</h1>
+        <p class="hero-p">Broker France helps serious buyers, investors, and property owners navigate high-value real estate transactions with clarity, discretion, and due diligence — from first inquiry to completed transfer.</p>
+        <div class="hero-actions">
+          <button class="btn-primary" onclick="showPage('listings')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Browse All Listings
+          </button>
+          <button class="btn-secondary" onclick="showPage('contact')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Schedule a site visit
+          </button>
+        </div>
+        <div class="hero-trust">
+          <div class="trust-avatars">
+            <div class="trust-avatar">G</div>
+            <div class="trust-avatar">D</div>
+            <div class="trust-avatar">J</div>
+            <div class="trust-avatar">P</div>
+          </div>
+          <p class="trust-text"><strong>Trusted by 200+ clients</strong> across Southern Luzon</p>
+        </div>
+      </div>
+      <div class="hero-right">
+       
+        
+        <div class="hero-card-stack">
+          <img 
+  src="image/MFRG-img.png" 
+  alt="Broker France"
+  style="width:100%; height:auto; object-fit:cover;margin-left:auto;margin-top: -200px;"
+>
+          <!--<div class="hero-main-card">
+            <div class="hero-card-img" style="background:linear-gradient(135deg,#1a4a2e,#2d9a52)">
+              <div class="hero-card-img-overlay"></div>
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".8" opacity=".2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <div class="hero-card-badges">
+                <span class="bdg bdg-ex">Exclusive</span>
+                <span class="bdg bdg-sale">For Sale</span>
+              </div>
+            </div>
+            <div class="hero-card-body">
+              <div class="hero-card-price">₱28.5M</div>
+              <div class="hero-card-name">Grand Ridge Estate — 5BR Mansion</div>
+              <div class="hero-card-loc">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1DB954" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                Nuvali, Santa Rosa, Laguna
+              </div>
+              <div class="hero-card-specs">
+                <span class="hero-card-spec">🛏 5 Bedrooms</span>
+                <span class="hero-card-spec">📐 680 sqm</span>
+                <span class="hero-card-spec">🌿 1,200 sqm lot</span>
+              </div>
+            </div>
+          </div>
+          <div class="hero-float-card">
+            <div class="float-label">Active Listings</div>
+            <div class="float-stat" id="heroStatTotal">50+</div>
+            <div class="float-sub">↑ Updated live from sheet</div>
+          </div>-->
+        </div>
+      </div>
+    </div>
+    <!-- Wave transition 
+    <div class="hero-wave" style="margin-top:60px">
+      <svg viewBox="0 0 1440 40" preserveAspectRatio="none" style="height:40px"><path d="M0,20 C360,40 1080,0 1440,20 L1440,40 L0,40 Z" fill="#0F1117"/></svg>
+    </div>-->
+  </section>
+
+  <!-- TRUST BAR 
+  <section class="trust-bar">
+    <div class="trust-bar-inner">
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="trust-item-text"><strong>PRC Licensed Broker</strong><span>Lic. No. XXXXXXX · Valid 2024–2027</span></div>
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="trust-item-text"><strong>Full Documentation Handled</strong><span>Title transfer · BIR · Registry of Deeds</span></div>
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+        <div class="trust-item-text"><strong>Bank Loan Assistance</strong><span>BDO · BPI · Metrobank · RCBC</span></div>
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="trust-item-text"><strong>2-Hour Response Time</strong><span>Mon – Sat · 8AM – 6PM PHT</span></div>
+      </div>
+      <div class="trust-divider"></div>
+      <div class="trust-item">
+        <div class="trust-icon"><svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+        <div class="trust-item-text"><strong>RESA Law Compliant</strong><span>RA 9646 · Transparent pricing</span></div>
+      </div>
+    </div>
+  </section>-->
+
+  <!-- SEARCH SECTION -->
+  <section class="search-section">
+    <div class="search-section-inner">
+      <div class="search-label">Property Search</div>
+      <h2 class="search-title">Find the Right Property</h2>
+      <div class="search-box">
+        <div class="search-tabs">
+          <button class="stab on" onclick="setDealTab('all',this)">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"/></svg>All Listings
+          </button>
+          <button class="stab" onclick="setDealTab('sale',this)">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>For Sale
+          </button>
+          <button class="stab" onclick="setDealTab('lease',this)">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>For Lease
+          </button>
+        </div>
+        <div class="search-fields">
+          <div class="sf">
+            <label>Property Type</label>
+            <select id="sType">
+              <option value="">All Types</option>
+              <option value="residential">Residential</option>
+              <option value="commercial">Commercial</option>
+              <option value="farm">Farm / Agricultural</option>
+              <option value="beach">Beach / Resort</option>
+              <option value="poultry">Poultry / Livestock</option>
+              <option value="warehouse">Warehouse / Industrial</option>
+            </select>
+          </div>
+          <div class="sf">
+            <label>Location</label>
+            <select id="sLoc">
+              <option value="">All Areas</option>
+              <option>Nuvali, Santa Rosa</option>
+              <option>Calamba, Laguna</option>
+              <option>Tagaytay, Cavite</option>
+              <option>Batangas</option>
+              <option>Biñan, Laguna</option>
+              <option>Quezon Province</option>
+            </select>
+          </div>
+          <div class="sf">
+            <label>Price Range</label>
+            <select id="sPriceRange">
+              <option value="">Any Budget</option>
+              <option value="0-15000000">Under ₱15M</option>
+              <option value="15000000-50000000">₱15M – ₱50M</option>
+              <option value="50000000-150000000">₱50M – ₱150M</option>
+              <option value="150000000-999999999">₱150M+</option>
+            </select>
+          </div>
+          <div class="search-go-wrap">
+            <button class="search-go" onclick="doSearch()">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              Search
+            </button>
+          </div>
+        </div>
+      </div>
+<!--    <div class="quick-filters">
+        <button class="qf" onclick="quickFilter('exclusive')">
+          <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          Exclusive Only
+        </button>
+        <button class="qf" onclick="quickFilter('residential')">🏠 Residential</button>
+        <button class="qf" onclick="quickFilter('commercial')">🏢 Commercial</button>
+        <button class="qf" onclick="quickFilter('farm')">🌿 Farm</button>
+        <button class="qf" onclick="quickFilter('beach')">🏖️ Beach</button>
+        <button class="qf" onclick="quickFilter('nuvali')">📍 Nuvali</button>
+      </div>
+    </div>-->  
+  </section>
+
+  <!-- EXCLUSIVE LISTINGS -->
+  <section class="listings-home">
+    <div class="lh-inner">
+      <div class="section-hdr">
+        <div class="section-hdr-left">
+          <div class="section-eyebrow">Featured</div>
+          <div class="section-title">Exclusive Listings</div>
+        </div>
+        <button class="section-view-all" onclick="filterAndGo('exclusive')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <div id="home-exclusive"><div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading…</p></div></div></div>
+
+      <div class="section-hdr" style="margin-top:56px">
+        <div class="section-hdr-left">
+          <div class="section-eyebrow">For Sale</div>
+          <div class="section-title">Properties For Sale</div>
+        </div>
+        <button class="section-view-all" onclick="filterAndGo('sale')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <div id="home-sale"><div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading…</p></div></div></div>
+
+      <div class="section-hdr" style="margin-top:56px">
+        <div class="section-hdr-left">
+          <div class="section-eyebrow">For Lease</div>
+          <div class="section-title">Properties For Lease</div>
+        </div>
+        <button class="section-view-all" onclick="filterAndGo('lease')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+      </div>
+      <div id="home-lease"><div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading…</p></div></div></div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="services-section">
+    <div class="services-inner">
+      <div class="section-hdr">
+        <div class="section-hdr-left">
+          <div class="section-eyebrow">What We Offer</div>
+          <div class="section-title">Professional Services</div>
+        </div>
+      </div>
+      <div class="services-grid">
+        <div class="svc-card" onclick="showPage('contact')">
+          <div class="svc-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div>
+          <div class="svc-title">Due Diligence</div>
+          <div class="svc-desc">TCT authenticity, encumbrance check, tax declarations, zoning classification — all verified before you commit to anything.</div>
+          <div class="svc-link">Inquire <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+         <div class="svc-card" onclick="showPage('contact')">
+          <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="svc-title">Title Transfer</div>
+          <div class="svc-desc">Complete documentation from Deed of Sale, BIR-CAR, to Registry of Deeds. We handle it until the title is in your name.</div>
+          <div class="svc-link">Inquire <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+        <div class="svc-card" onclick="showPage('buyer')">
+          <div class="svc-icon"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div class="svc-title">Buyer Representation</div>
+          <div class="svc-desc">Submit your specific requirements and we'll tap our off-market network to find what you need — discreetly and efficiently.</div>
+          <div class="svc-link">Submit requirements <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+         <div class="svc-card" onclick="showPage('contact')">
+          <div class="svc-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></div>
+          <div class="svc-title">Bank Loan Assistance</div>
+          <div class="svc-desc">We prepare and submit your complete loan package to BDO, BPI, Metrobank, RCBC — from appraisal to approval letter.</div>
+          <div class="svc-link">Inquire <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- WTB SECTION 
+  <section class="wtb-container">
+    <div class="wtb-section">
+      <h2 class="wtb-title" style=" font-size:clamp(24px,3vw,34px);font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:32px; color: white;">Let's Find Your
+Ideal Property
+</h2>
+<div class="wtb-label" style="font-size:13px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px; color: white;">Whether you're buying your first investment property, expanding a portfolio, or acquiring land for development — Begin your tailored property consultation.</div>
+      
+     
+     
+      
+  </section>-->
+  <!-- AREAS
+  <section class="areas-section">
+    <div class="areas-inner">
+      <div class="section-hdr">
+        <div class="section-hdr-left">
+          <div class="section-eyebrow">Coverage</div>
+          <div class="section-title">Let's Find Your
+Ideal Property</div>
+        </div>
+      </div>
+    <div class="areas-grid">
+        <div class="area-card" onclick="filterAndGo('nuvali')">
+          <div class="area-bg ac1"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Nuvali, Santa Rosa</div><div class="area-count" id="aNuvali">Loading…</div></div></div>
+          <div class="area-pill">Prime</div>
+        </div>
+        <div class="area-card" onclick="filterAndGo('calamba')">
+          <div class="area-bg ac2"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Calamba, Laguna</div><div class="area-count" id="aCalamba">Loading…</div></div></div>
+        </div>
+        <div class="area-card" onclick="filterAndGo('tagaytay')">
+          <div class="area-bg ac3"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Tagaytay, Cavite</div><div class="area-count" id="aTagaytay">Loading…</div></div></div>
+          <div class="area-pill" style="background:#D97706">Hot</div>
+        </div>
+        <div class="area-card" onclick="filterAndGo('batangas')">
+          <div class="area-bg ac4"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Batangas Coast</div><div class="area-count" id="aBatangas">Loading…</div></div></div>
+        </div>
+        <div class="area-card" onclick="filterAndGo('binan')">
+          <div class="area-bg ac5"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Biñan, Laguna</div><div class="area-count" id="aBinan">Loading…</div></div></div>
+        </div>
+        <div class="area-card" onclick="filterAndGo('quezon')">
+          <div class="area-bg ac6"><div class="area-overlay"></div><div class="area-content"><div class="area-name">Quezon Province</div><div class="area-count" id="aQuezon">Loading…</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section> -->
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <div class="fn">
+          <svg width="22" height="22" viewBox="0 0 80 80" fill="none"><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954"/></svg>
+          Broker France
+        </div>
+        <p>A PRC-licensed real estate broker serving high-net-worth individuals and corporations across Nuvali and Southern Luzon since 2013. Every transaction handled with legal compliance and professional discretion.</p>
+        <div class="footer-prc">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>PRC License 020049</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h5>Property Types</h5>
+        <ul>
+          <li><a onclick="quickFilter('residential')">Residential</a></li>
+          <li><a onclick="quickFilter('commercial')">Commercial</a></li>
+          <li><a onclick="quickFilter('farm')">Farm / Agricultural</a></li>
+          <li><a onclick="quickFilter('beach')">Beach / Resort</a></li>
+          <li><a onclick="quickFilter('poultry')">Poultry / Livestock</a></li>
+          <li><a onclick="quickFilter('warehouse')">Warehouse</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Locations</h5>
+        <ul>
+          <li><a onclick="filterAndGo('nuvali')">Nuvali, Santa Rosa</a></li>
+          <li><a onclick="filterAndGo('calamba')">Calamba, Laguna</a></li>
+          <li><a onclick="filterAndGo('tagaytay')">Tagaytay, Cavite</a></li>
+          <li><a onclick="filterAndGo('batangas')">Batangas Coast</a></li>
+          <li><a onclick="filterAndGo('binan')">Biñan, Laguna</a></li>
+          <li><a onclick="filterAndGo('quezon')">Quezon Province</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h5>Navigate</h5>
+        <ul>
+          <li><a onclick="showPage('listings')">All Listings</a></li>
+          <li><a onclick="filterAndGo('exclusive')">Exclusive</a></li>
+          <li><a onclick="showPage('buyer')">I'm a Buyer</a></li>
+          <li><a onclick="showPage('about')">About Broker France</a></li>
+          <li><a onclick="showPage('contact')">Contact & Inquire</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 Broker France. All rights reserved. Real estate services.</p>
+      <span>PRC License 020049</span>
+    </div>
+  </footer>
+</div><!-- end home -->
+
+<!-- ══════════════════════════════════════════════════
+     LISTINGS PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-listings">
+  <div class="listings-page-hdr">
+    <h1>All Listings</h1>
+    <p id="listSubtitle">Loading properties…</p>
+    <div class="list-tabs">
+      <button class="ltab on" onclick="filterTab('all',this)">All</button>
+      <button class="ltab" onclick="filterTab('exclusive',this)">Exclusive</button>
+      <button class="ltab" onclick="filterTab('sale',this)">For Sale</button>
+      <button class="ltab" onclick="filterTab('lease',this)">For Lease</button>
+      <button class="ltab" onclick="filterTab('residential',this)">Residential</button>
+      <button class="ltab" onclick="filterTab('commercial',this)">Commercial</button>
+      <button class="ltab" onclick="filterTab('farm',this)">Farm</button>
+      <button class="ltab" onclick="filterTab('beach',this)">Beach</button>
+    </div>
+  </div>
+  <div class="listings-toolbar">
+    <select class="filter-sel" onchange="currentSort=this.value;applyFilters()">
+      <option value="">Sort: Default</option>
+      <option value="asc">Price: Low → High</option>
+      <option value="desc">Price: High → Low</option>
+    </select>
+    <select class="filter-sel" onchange="currentLocFilter=this.value;applyFilters()">
+      <option value="">All Locations</option>
+      <option>Nuvali, Santa Rosa</option>
+      <option>Calamba, Laguna</option>
+      <option>Tagaytay, Cavite</option>
+      <option>Batangas</option>
+      <option>Biñan, Laguna</option>
+      <option>Quezon Province</option>
+    </select>
+    <div class="res-count" id="resCount">Loading…</div>
+  </div>
+  <div class="listings-content">
+    <div class="lgrid" id="allGrid">
+      <div class="loading-state"><div class="spinner"></div><p>Fetching listings…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     DETAIL PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-detail">
+  <div class="detail-wrap">
+    <button class="detail-back" onclick="goBack()">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Back to Listings
+    </button>
+    <div class="detail-gallery" id="detailGallery"></div>
+    <div class="detail-badges" id="detailBadges"></div>
+    <div class="detail-body">
+      <div class="detail-main">
+        <div class="detail-price" id="detailPrice"></div>
+        <div class="detail-name" id="detailName"></div>
+        <div class="detail-loc">
+          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span id="detailLoc"></span>
+        </div>
+        <div class="detail-specs-grid" id="detailSpecs"></div>
+        <div class="detail-sec">About This Property</div>
+        <div class="detail-desc" id="detailDesc"></div>
+        <div class="detail-sec">Location</div>
+        <div style="background:var(--bg);border-radius:var(--rs);padding:14px;font-size:13px;color:var(--ink2);border:1px solid var(--border);margin-bottom:28px">📍 <span id="detailLocFull"></span></div>
+      </div>
+      <div class="detail-sidebar">
+        <div class="dsc">
+          <h3>Interested in this property?</h3>
+          <p>Contact the broker directly for site visit scheduling, pricing details, or documentation questions.</p>
+          <div class="dsc-btns">
+            <a class="btn-wa" id="detailWa" href="#" target="_blank">
+              <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              WhatsApp Broker
+            </a>
+            <a class="btn-call-d" href="tel:+639778290053>
+              <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.72A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
+              Call Now
+            </a>
+            <a class="btn-email-d" id="detailEmail" href="mailto:rebfrancergonzales@gmail.com">
+              <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Send Email
+            </a>
+          </div>
+          <div class="dsc-divider"></div>
+          <div class="broker-mini">
+            <div class="broker-mini-av">F</div>
+            <div>
+              <div class="broker-mini-name">Broker France</div>
+              <div class="broker-mini-title">PRC Licensed Real Estate Broker</div>
+              <span class="broker-mini-badge">✓ PRC Licensed</span>
+            </div>
+          </div>
+          <div class="dsc-divider"></div>
+          <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:12px">Quick Inquiry</div>
+          <div class="dsc-form">
+            <input type="text" placeholder="Your name" id="inqName">
+            <input type="tel" placeholder="Mobile number" id="inqPhone">
+            <textarea placeholder="Your message…" id="inqMsg"></textarea>
+            <button class="btn-submit" onclick="submitInquiry(this)">Send Inquiry</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     BUYER PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-buyer">
+  <div class="inner-page">
+    <h1 class="page-h1">I'm Looking to Buy</h1>
+    <p class="page-sub">Can't find the right property in our listings? Submit your exact requirements and we'll search our off-market network to find what you need — discreetly and professionally.</p>
+    <div class="form-card">
+      <h2>Submit Your Requirements</h2>
+      <p>We'll respond within 24 hours with matching options.</p>
+      <div class="frow"><div class="fgrp"><label>Full Name</label><input type="text" placeholder="Juan dela Cruz"></div><div class="fgrp"><label>Mobile</label><input type="tel" placeholder="+63 9XX XXX XXXX"></div></div>
+      <div class="fgrp"><label>Email</label><input type="email" placeholder="juan@email.com"></div>
+      <div class="frow">
+        <div class="fgrp"><label>Property Type Needed</label><select><option>Residential House & Lot</option><option>Commercial Lot / Building</option><option>Farm / Agricultural</option><option>Beach / Resort</option><option>Poultry / Livestock</option><option>Warehouse</option></select></div>
+        <div class="fgrp"><label>Preferred Location</label><select><option>Nuvali, Santa Rosa</option><option>Calamba, Laguna</option><option>Tagaytay, Cavite</option><option>Batangas</option><option>Biñan / Cabuyao</option><option>Quezon Province</option><option>Flexible</option></select></div>
+      </div>
+      <div class="frow">
+        <div class="fgrp"><label>Budget</label><select><option>₱5M – ₱15M</option><option>₱15M – ₱50M</option><option>₱50M – ₱150M</option><option>₱150M – ₱500M</option><option>₱500M+</option></select></div>
+        <div class="fgrp"><label>Timeline</label><select><option>Within 1 month</option><option>1 – 3 months</option><option>3 – 6 months</option><option>Flexible</option></select></div>
+      </div>
+      <div class="fgrp"><label>Specific Requirements</label><textarea placeholder="E.g. at least 500sqm lot, 4 bedrooms, near SLEX, farm with irrigation, beachfront preferred…"></textarea></div>
+      <button class="btn-submit" onclick="submitForm(this)">Submit My Requirements</button>
+      <p class="form-note">🔒 Confidential. Your information will never be shared.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     ABOUT PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-about">
+  <div class="inner-page">
+    <h1 class="page-h1">About Broker France</h1>
+    <p class="page-sub">A PRC-licensed real estate broker specializing in residential, commercial, farm, and coastal properties across Nuvali and Southern Luzon since 2013.</p>
+    <div class="broker-card">
+      <div class="broker-av"> <img 
+    src="image/MFRG-img.png" 
+    alt="Broker France"
+    style="display:block; width:auto; height:auto; object-fit:cover; margin:0; padding:0;"
+  ></div>
+      <div>
+        <div class="broker-n">Broker France</div>
+        <div class="broker-t">PRC Licensed Real Estate Broker · Southern Luzon Specialist</div>
+        <div class="broker-creds">
+          <span class="ctag">PRC Licensed</span><span class="ctag">RESA Compliant</span><span class="ctag">12+ Years</span><span class="ctag">Nuvali Specialist</span>
+        </div>
+      </div>
+    </div>
+    <div class="about-sec">
+      <h2>Why Work With Me</h2>
+      <div class="why-list">
+        <div class="why-item"><div class="why-n">1</div><div><div class="why-it">Title Due Diligence — Included</div><div class="why-id">TCT authenticity, encumbrance check, tax declaration, and zoning classification done before any listing is shown to you.</div></div></div>
+        <div class="why-item"><div class="why-n">2</div><div><div class="why-it">Full Documentation Assistance</div><div class="why-id">Deed of Sale, BIR-CAR, Registry of Deeds — coordinated from signing all the way to title transfer in your name.</div></div></div>
+        <div class="why-item"><div class="why-n">3</div><div><div class="why-it">Off-Market Access</div><div class="why-id">Beyond published listings, a private portfolio of off-market properties is available for qualified, serious buyers.</div></div></div>
+        <div class="why-item"><div class="why-n">4</div><div><div class="why-it">Transparent, Standard Rates</div><div class="why-id">PRC-standard commission rates disclosed upfront. No hidden fees. No dual agency without full written disclosure.</div></div></div>
+       <div class="why-item"><div class="why-n">5</div><div><div class="why-it">Bank Loan Coordination</div><div class="why-id">Loan documents prepared and submitted to BDO, BPI, Metrobank, RCBC for fast, high-approval-rate processing.</div></div></div>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:100%;justify-content:center" onclick="showPage('contact')">Contact Broker France →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     CONTACT PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-contact">
+  <div class="contact-page">
+    <h1 class="page-h1">Contact & Inquire</h1>
+    <p class="page-sub">Reach out through any channel below, or fill in the form and I'll respond within 1 hour on business days (Mon–Sat, 8AM–6PM).</p>
+    <div class="contact-channels">
+      <a class="ch-card" href="https://wa.me/639778290053" target="_blank">
+        <div class="ch-icon chi-wa"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+        <div><div class="ch-name">WhatsApp</div><div class="ch-val">+63 977 829 0053</div></div>
+      </a>
+      <a class="ch-card" href="viber://chat?number=639778290053">
+        <div class="ch-icon chi-vb"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 13.5c-.21.6-.74 1.06-1.35 1.21-.34.09-.63.13-.9.13-.45 0-.87-.09-1.24-.26-.76-.35-1.47-.84-2.1-1.47-.63-.63-1.12-1.34-1.47-2.1-.17-.37-.26-.79-.26-1.24 0-.27.04-.56.13-.9.15-.61.61-1.14 1.21-1.35.28-.1.55-.1.79 0 .19.08.35.22.45.4l.77 1.28c.12.19.15.42.09.63-.06.21-.19.39-.37.5l-.31.19c-.11.07-.17.2-.13.32.18.56.54 1.08 1.02 1.56.48.48 1 .84 1.56 1.02.12.04.25-.02.32-.13l.19-.31c.11-.18.29-.31.5-.37.21-.06.44-.03.63.09l1.28.77c.18.1.32.26.4.45.1.24.1.51 0 .79z"/></svg></div>
+        <div><div class="ch-name">Viber</div><div class="ch-val">+63 977 829 0053</div></div>
+      </a>
+      <a class="ch-card" href="mailto:rebfrancergonzales@gmail.com">
+        <div class="ch-icon chi-em"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+        <div><div class="ch-name">Email</div><div class="ch-val">rebfrancergonzales@gmail.com</div></div>
+      </a>
+      <a class="ch-card" href="https://m.me/mayfrance.rivares.7">
+        <div class="ch-icon chi-ph"><svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.14 2 11.25c0 2.92 1.54 5.52 3.94 7.23V22l3.47-1.91c.85.23 1.75.36 2.59.36 5.52 0 10-4.14 10-9.25S17.52 2 12 2z" fill="white"/>
+ </svg></div>
+        <div><div class="ch-name">Messenger</div><div class="ch-val">France Y Gonzales</div></div>
+      </a>
+    </div>
+    <div class="form-card">
+      <h2>Send an Inquiry</h2>
+      <p>For a specific listing or general questions — I'll reply within 2 hours.</p>
+      <div class="frow"><div class="fgrp"><label>Name</label><input type="text" placeholder="Juan dela Cruz"></div><div class="fgrp"><label>Mobile</label><input type="tel" placeholder="+63 9XX XXX XXXX"></div></div>
+      <div class="fgrp"><label>Email</label><input type="email" placeholder="juan@email.com"></div>
+      <div class="fgrp"><label>I'm interested in</label>
+        <select><option>A specific listing</option><option>Residential property</option><option>Commercial property</option><option>Farm / Agricultural</option><option>Beach / Resort</option><option>Title transfer help</option><option>Bank loan assistance</option><option>General inquiry</option></select>
+      </div>
+      <div class="fgrp"><label>Message</label><textarea id="contactMsg" placeholder="Tell me what you're looking for, or which listing caught your attention…"></textarea></div>
+      <button class="btn-submit" onclick="submitForm(this)">Send Inquiry</button>
+      <p class="form-note">🔒 Your details are private. No spam, ever.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── WA FAB ── -->
+<button class="wa-fab" onclick="window.open('https://wa.me/639170000000','_blank')">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</button>
+
+<!-- ── MOBILE NAV ── -->
+<div class="mnav">
+  <div class="mnav-inner">
+    <button class="mni on" id="mn-home" onclick="showPage('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
+    <button class="mni" id="mn-listings" onclick="showPage('listings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Listings</button>
+    <button class="mni" id="mn-buyer" onclick="showPage('buyer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Find</button>
+    <button class="mni" id="mn-contact" onclick="showPage('contact')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Contact</button>
+    <button class="mni" id="mn-about" onclick="showPage('about')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>About</button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────
+const PHONE = '639778290053';
+const EMAIL = 'rebfrancergonzales@gmail.com';
+const API_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
+
+// ── COLUMN MAP ────────────────────────────────────────
+const COL = { id:0, deal:1, type:2, location:3, lot_area:4, floor_area:5, price:6, key_details:7, photos:8, exclusive:9, badge:10, whatsapp:11 };
+
+function buildCOL(headerRow) {
+  const h = headerRow.map(c => c.toLowerCase().trim().replace(/\s+/g,'_'));
+  const aliases = {
+    id:['id'], deal:['sale_lease','deal'], type:['property_type','type'],
+    location:['location'], lot_area:['lot_area','lot'], floor_area:['floor_area','floor'],
+    price:['price','selling_price','amount'], key_details:['key_details','details','key'],
+    photos:['photos','photo'], exclusive:['exclusive'], badge:['badge'], whatsapp:['whatsapp'],
+  };
+  const map = {};
+  Object.entries(aliases).forEach(([field, names]) => {
+    const idx = h.findIndex(col => names.some(a => col.includes(a)));
+    map[field] = idx >= 0 ? idx : COL[field];
+  });
+  return map;
+}
+
+// ── DEAL NORMALISER ───────────────────────────────────
+// Handles: "For Sale", "For Lease", "For Sale, For Lease", "For sale", "-", ""
+function normaliseDeal(raw) {
+  const v = raw.toLowerCase().trim();
+  if (!v || v === '-') return null;               // skip invalid rows
+  const hasSale  = v.includes('sale');
+  const hasLease = v.includes('lease');
+  if (hasSale && hasLease) return 'both';
+  if (hasSale)  return 'sale';
+  if (hasLease) return 'lease';
+  return null;
+}
+
+// ── PRICE FORMATTER ───────────────────────────────────
+// Converts "110000000.00" → "₱110M", "75000000" → "₱75M", "3700000" → "₱3.7M"
+function formatPrice(raw) {
+  if (!raw) return '';
+  const n = parseFloat(raw.replace(/,/g, ''));
+  if (isNaN(n) || n === 0) return '';
+  //if (n >= 1_000_000_000) return '₱' + (n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 2) + 'B';
+  //if (n >= 1_000_000)     return '₱' + (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  //if (n >= 1_000)         return '₱' + (n / 1_000).toFixed(0) + 'K';
+  return '₱' + n.toLocaleString();
+}
+
+// ── TYPE NORMALISER ───────────────────────────────────
+function normaliseType(raw) {
+  const v = raw.toLowerCase().trim();
+  if (/h&l|house|residential/.test(v))            return 'residential';
+  if (/condo/.test(v))                             return 'condominium';
+  if (/warehouse/.test(v))                         return 'warehouse';
+  if (/farm|agri|poultry/.test(v))                return 'farm';
+  if (/beach|resort|coastal/.test(v))             return 'beach';
+  if (/lot only|lot$/.test(v))                    return 'lot';
+  if (/commercial|building|office/.test(v))       return 'commercial';
+  return v || 'property';
+}
+
+// ── STATE ─────────────────────────────────────────────
+let listings         = [];
+let currentFilter    = 'all';
+let currentSort      = '';
+let currentLocFilter = '';
+let previousPage     = 'listings';
+let saved            = new Set();
+let currentListing   = null;
+
+// ── FETCH & PARSE ─────────────────────────────────────
+async function init() {
+  showLoadingState();
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (!data || !data.length) throw new Error('Empty response');
+    // Convert JSON objects → [headerRow, ...dataRows] so existing logic works unchanged
+    const headers = Object.keys(data[0]);
+    const rows = [headers, ...data.map(obj => headers.map(h => String(obj[h] ?? '')))];
+    if (rows.length < 2) throw new Error('No data rows');
+    const cm = buildCOL(rows[0]);
+    listings = rows.slice(1).map((r, i) => {
+      const get      = k => (r[cm[k]] || '').trim();
+      const rawDeal  = get('deal');
+      const deal     = normaliseDeal(rawDeal) || 'sale'; // default to sale if empty
+      const loc      = get('location') || '—';
+      const rawPrice = get('price');
+      const price    = formatPrice(rawPrice) || 'Price on Request';
+      const type     = normaliseType(get('type') || 'property');
+      const kd       = get('key_details');
+      const isEx     = get('exclusive').toUpperCase() === 'TRUE';
+      const photos   = get('photos');
+      const thumbnail = driveThumb(data[i] ? (String(data[i]['thumbnail'] || '')) : '');
+      // Auto-generate name: key_details first item, or type + location
+      const name     = kd.split('|')[0].trim() || cap(type) + ' in ' + loc;
+      // Auto WhatsApp
+      const wa       = get('whatsapp') || `Hi Broker France! I'm interested in your ${cap(type)} in ${loc} at ${price}. Please send details.`;
+      return {
+        id: get('id') || String(i + 1),
+        deal,
+        type, location: loc,
+        lot_area:   get('lot_area'),
+        floor_area: get('floor_area'),
+        price, rawPrice, key_details: kd,
+        photos, thumbnail, exclusive: isEx,
+        badge: get('badge'),
+        whatsapp: wa, name, desc: ''
+      };
+    });
+    if (!listings.length) throw new Error('No valid rows found');
+    document.getElementById('syncBar').classList.add('show');
+    setTimeout(() => document.getElementById('syncBar').classList.remove('show'), 3000);
+  } catch(e) {
+    console.warn('[BrokerFrance] Data load failed:', e.message);
+    showErrorState(e.message);
+    return;
+  }
+  renderAll();
+}
+
+function showLoadingState() {
+  ['home-exclusive','home-sale','home-lease'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading listings\u2026</p></div></div>';
+  });
+}
+
+function showErrorState(msg) {
+  const html = `<div class="lgrid"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><h3>Could not load listings</h3><p>Could not reach the data source. Please try refreshing.<br><small style="color:#9ca3af">${msg}</small></p></div></div>`;
+  ['home-exclusive','home-sale','home-lease'].forEach(id => { const el=document.getElementById(id); if(el) el.innerHTML=html; });
+  const g = document.getElementById('allGrid'); if(g) g.innerHTML=html;
+}
+
+function parseCSV(csv) {
+  return csv.split('\n').filter(l => l.trim()).map(line => {
+    const res = []; let cur = ''; let inQ = false;
+    for (let c of line) {
+      if (c === '"') inQ = !inQ;
+      else if (c === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    res.push(cur.trim());
+    return res;
+  });
+}
+
+// ── RENDER ALL ────────────────────────────────────────
+function renderAll() {
+  const total = listings.length;
+  const heroEl = document.getElementById('heroStatTotal');
+  if (heroEl) heroEl.textContent = total + '+';
+  const subEl = document.getElementById('listSubtitle');
+  if (subEl) subEl.textContent = total + ' properties — residential, commercial, farm & beach.';
+
+  // Area counts
+  const areaMap = {
+    aNuvali:   l => l.location.toLowerCase().includes('nuvali'),
+    aCalamba:  l => l.location.toLowerCase().includes('calamba'),
+    aTagaytay: l => l.location.toLowerCase().includes('tagaytay'),
+    aBatangas: l => l.location.toLowerCase().includes('batangas'),
+    aBinan:    l => l.location.toLowerCase().includes('bi'),
+    aQuezon:   l => l.location.toLowerCase().includes('quezon'),
+  };
+  Object.entries(areaMap).forEach(([id, fn]) => {
+    const el = document.getElementById(id);
+    const n  = listings.filter(fn).length;
+    if (el) el.textContent = n + ' listing' + (n !== 1 ? 's' : '');
+  });
+
+  // Home sections
+  // Exclusive: exclusive === true
+  renderSection('home-exclusive', listings.filter(l => l.exclusive).slice(0, 3));
+  // For Sale: deal is 'sale' or 'both', not exclusive
+  renderSection('home-sale', listings.filter(l => (l.deal === 'sale' || l.deal === 'both') && !l.exclusive).slice(0, 3));
+  // For Lease: deal is 'lease' or 'both'
+  renderSection('home-lease', listings.filter(l => l.deal === 'lease' || l.deal === 'both').slice(0, 3));
+
+  applyFilters();
+}
+
+function renderSection(id, data) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!data.length) {
+    el.innerHTML = '<p style="font-size:13px;color:var(--ink3);padding:8px 0">No listings in this category yet.</p>';
+    return;
+  }
+  el.innerHTML = '<div class="lgrid">' + data.map(renderCard).join('') + '</div>';
+}
+
+// ── CARD RENDER ───────────────────────────────────────
+// Thumbnail shows ONLY: photo/placeholder, deal badges, price, name, location
+const TYPE_COLORS = {
+  residential:'#1a4a2e,#2d9a52', condominium:'#1a3a5f,#2563eb',
+  commercial:'#1e3a5f,#3b6fd4',  farm:'#3a2800,#b58600',
+  beach:'#003a4a,#1e7fa0',       warehouse:'#1a1a2e,#4a4a6a',
+  lot:'#2a1a00,#8b5e00',         property:'#2a2a2a,#555'
+};
+
+function dealBadges(deal, isEx) {
+  let html = '';
+  if (isEx)                              html += '<span class="bdg bdg-ex">Exclusive</span>';
+  if (deal === 'sale' || deal === 'both') html += '<span class="bdg bdg-sale">For Sale</span>';
+  if (deal === 'lease'|| deal === 'both') html += '<span class="bdg bdg-lease">For Lease</span>';
+  return html;
+}
+
+function renderCard(l) {
+  const cols    = TYPE_COLORS[l.type] || '2a2a2a,555';
+  const isSaved = saved.has(l.id);
+  const photos  = getPhotos(l.photos);
+  const thumb   = l.thumbnail || photos[0];
+
+  const rawThumbUrl = esc(l.thumbnail || '');
+  const imgHtml = thumb
+    ? `<img src="${esc(thumb)}" alt="${esc(l.name)}" loading="lazy" onerror="driveThumbFallback(this,'${rawThumbUrl}')">`
+    : '';
+  const phDisplay  = thumb ? 'display:none' : '';
+  const photoCount = photos.length > 1
+    ? `<div class="lcard-photo-count"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>${photos.length}</div>`
+    : '';
+
+  // ── Build single-row specs (max 3, short labels) ──
+  const specs = [];
+
+  if (l.lot_area && l.lot_area !== '—')
+    specs.push({ icon:'lot',   label: l.lot_area + ' sqm lot' });
+
+  if (l.floor_area && l.floor_area !== '—')
+    specs.push({ icon:'floor', label: l.floor_area + ' sqm floor' });
+
+  if (l.key_details) {
+    l.key_details.split('|').map(s => s.trim()).filter(Boolean)
+      .slice(0, 3 - specs.length)
+      .forEach(kd => {
+        const short = kd.length > 22 ? kd.slice(0, 20) + '…' : kd;
+        specs.push({ icon:'check', label: short });
+      });
+  }
+
+  const shown = specs.slice(0, 3);
+
+  const iconSvg = {
+    lot:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg>`,
+    floor: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+    type:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="1"/></svg>`,
+    deal:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  };
+
+  const specsHtml = shown.map(s =>
+    `<div class="lcard-spec">
+      <div class="lcard-spec-icon">${iconSvg[s.icon] || iconSvg.check}</div>
+      <span class="lcard-spec-txt">${esc(s.label)}</span>
+    </div>`
+  ).join('');
+
+  return `<div class="lcard" onclick="openDetail('${esc(l.id)}')">
+    <div class="lcard-img" style="${!thumb ? 'background:linear-gradient(135deg,#'+cols+')' : ''}">
+      ${imgHtml}
+      <div class="lcard-img-ph" style="${phDisplay};background:linear-gradient(135deg,#${cols})">
+        ${getTypeSvg(l.type)}
+        <span>${cap(l.type)}</span>
+      </div>
+      <div class="lcard-badges">${dealBadges(l.deal, l.exclusive)}</div>
+      <button class="lcard-save${isSaved?' saved':''}" onclick="toggleSave(event,'${esc(l.id)}')" title="${isSaved?'Unsave':'Save'}">
+        <svg viewBox="0 0 24 24" fill="${isSaved?'#DC2626':'none'}" stroke="${isSaved?'#DC2626':'#374151'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </button>
+      ${photoCount}
+    </div>
+    <div class="lcard-body">
+      <div class="lcard-price">${esc(l.price)}</div>
+      <div class="lcard-loc">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" width="11" height="11"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${esc(l.location)}
+      </div>
+      <div class="lcard-ptype">${cap(l.type)}</div>
+      <div class="lcard-specs">${specsHtml}</div>
+    </div>
+    <div class="lcard-foot">
+      <button class="btn-view" onclick="event.stopPropagation();openDetail('${esc(l.id)}')">View Details</button>
+      <button class="btn-inq" onclick="event.stopPropagation();quickWA('${esc(l.id)}')">
+        Inquire
+      </button>
+    </div>
+  </div>`;
+}
+
+// ── DETAIL PAGE ───────────────────────────────────────
+function openDetail(id) {
+  const l = listings.find(x => x.id === id);
+  if (!l) return;
+  currentListing = l;
+  previousPage = document.querySelector('.page.active').id.replace('page-', '');
+
+  const cols = TYPE_COLORS[l.type] || '2a2a2a,555';
+  const photos = getPhotos(l.photos);
+  const mainPhoto = l.thumbnail || photos[0] || '';
+  const gallery = document.getElementById('detailGallery');
+
+  if (mainPhoto) {
+    const thumbs = (photos.length > 0 ? photos : [mainPhoto]).slice(0, 6).map((p, i) =>
+      `<div class="gallery-thumb${i===0?' on':''}" onclick="switchPhoto('${esc(p)}',this)"><img src="${esc(p)}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`
+    ).join('');
+    gallery.innerHTML = `
+      <img class="gallery-main" id="galleryMain" src="${esc(mainPhoto)}" alt="${esc(l.name)}" onerror="this.style.display='none'">
+      <div class="gallery-thumbs">${thumbs}</div>
+      ${photos.length > 1 ? `<div class="gallery-count-pill"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>${photos.length} photos</div>` : ''}
+    `;
+  } else {
+    gallery.innerHTML = `<div class="detail-gallery-ph" style="background:linear-gradient(135deg,#${cols})">${getTypeSvg(l.type, 72)}<p>Photos coming soon</p></div>`;
+  }
+
+  // Badges
+  document.getElementById('detailBadges').innerHTML = dealBadges(l.deal, l.exclusive);
+
+  // Core info
+  document.getElementById('detailPrice').textContent = l.price;
+  document.getElementById('detailName').textContent  = l.name;
+  document.getElementById('detailLoc').textContent   = l.location;
+  document.getElementById('detailLocFull').textContent = l.location;
+
+  // Build specs from what we have
+  const specItems = [];
+  if (l.lot_area   && l.lot_area !== '—')   specItems.push({ l:'Lot Area',    v: l.lot_area + ' sqm' });
+  if (l.floor_area && l.floor_area !== '—') specItems.push({ l:'Floor Area',  v: l.floor_area + ' sqm' });
+  specItems.push({ l:'Type', v: cap(l.type) });
+  specItems.push({ l:'Deal', v: l.deal === 'both' ? 'For Sale & Lease' : 'For ' + cap(l.deal) });
+  // Key details as individual spec boxes
+  if (l.key_details) {
+    l.key_details.split('|').filter(Boolean).slice(0, 6).forEach(kd => {
+      const [label, ...rest] = kd.split(':');
+      specItems.push({ l: label.trim(), v: rest.length ? rest.join(':').trim() : '✓' });
+    });
+  }
+  document.getElementById('detailSpecs').innerHTML = specItems.slice(0, 8).map(s =>
+    `<div class="dsbox"><div class="dsl">${esc(s.l)}</div><div class="dsv">${esc(s.v)}</div></div>`
+  ).join('');
+
+  document.getElementById('detailDesc').textContent = l.desc || l.key_details.replace(/\|/g, ' · ') || 'Contact broker for full property details and site visit scheduling.';
+
+  // WhatsApp & email buttons
+  document.getElementById('detailWa').href = `https://wa.me/${PHONE}?text=${encodeURIComponent(l.whatsapp)}`;
+  document.getElementById('detailEmail').href = `mailto:${EMAIL}?subject=${encodeURIComponent('Inquiry: ' + l.name)}&body=${encodeURIComponent('Hi, I am interested in: ' + l.name + '\nLocation: ' + l.location + '\nPrice: ' + l.price + '\n\nPlease send more information.')}`;
+
+  // Pre-fill inline form
+  document.getElementById('inqMsg').value   = `Hi, I'm interested in: ${l.name} (${l.location}) at ${l.price}.\n\nPlease send details and arrange a site visit.`;
+  document.getElementById('inqName').value  = '';
+  document.getElementById('inqPhone').value = '';
+
+  showPage('detail');
+}
+
+function switchPhoto(src, btn) {
+  document.getElementById('galleryMain').src = src;
+  document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function goBack() { showPage(previousPage || 'listings'); }
+
+// ── FILTERS ───────────────────────────────────────────
+function applyFilters() {
+  let data = [...listings];
+
+  // Tab filter
+  if (currentFilter === 'exclusive')   data = data.filter(l => l.exclusive);
+  else if (currentFilter === 'sale')   data = data.filter(l => l.deal === 'sale' || l.deal === 'both');
+  else if (currentFilter === 'lease')  data = data.filter(l => l.deal === 'lease' || l.deal === 'both');
+  else if (['residential','condominium','commercial','farm','beach','warehouse','lot'].includes(currentFilter))
+    data = data.filter(l => l.type === currentFilter);
+  // Location keyword filter
+  else if (currentFilter && currentFilter !== 'all')
+    data = data.filter(l => l.location.toLowerCase().includes(currentFilter));
+
+  // Location dropdown
+  if (currentLocFilter)
+    data = data.filter(l => l.location.toLowerCase().includes(currentLocFilter.split(',')[0].toLowerCase()));
+
+  // Sort
+  if (currentSort === 'asc')  data.sort((a, b) => parseFloat(a.rawPrice) - parseFloat(b.rawPrice));
+  if (currentSort === 'desc') data.sort((a, b) => parseFloat(b.rawPrice) - parseFloat(a.rawPrice));
+
+  document.getElementById('resCount').textContent = data.length + ' propert' + (data.length === 1 ? 'y' : 'ies') + ' found';
+  const grid = document.getElementById('allGrid');
+  grid.innerHTML = data.length
+    ? data.map(renderCard).join('')
+    : `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><h3>No listings found</h3><p>Try a different filter.</p></div>`;
+}
+
+function filterTab(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.ltab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  applyFilters();
+}
+
+function setDealTab(val, btn) {
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function doSearch() {
+  currentFilter    = document.getElementById('sType').value || 'all';
+  currentLocFilter = document.getElementById('sLoc').value  || '';
+  showPage('listings');
+  setTimeout(() => { document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('on')); document.querySelector('.ltab').classList.add('on'); applyFilters(); }, 50);
+}
+
+function quickFilter(f) {
+  currentFilter = f; currentLocFilter = '';
+  showPage('listings');
+  setTimeout(() => { document.querySelectorAll('.ltab').forEach(t=>t.classList.remove('on')); document.querySelector('.ltab').classList.add('on'); applyFilters(); }, 50);
+}
+
+function filterAndGo(f) { quickFilter(f); }
+
+// ── SAVE / WHATSAPP ───────────────────────────────────
+function toggleSave(e, id) {
+  e.stopPropagation();
+  if (saved.has(id)) { saved.delete(id); showToast('Removed from saved'); }
+  else { saved.add(id); showToast('✓ Saved'); }
+  renderAll();
+}
+
+function quickWA(id) {
+  const l = listings.find(x => x.id === id);
+  if (!l) return;
+  window.open(`https://wa.me/${PHONE}?text=${encodeURIComponent(l.whatsapp)}`, '_blank');
+}
+
+// ── PAGE NAV ──────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+  const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about' };
+  document.querySelectorAll('.nl').forEach(l => l.classList.remove('on'));
+  if (nm[name]) document.getElementById(nm[name]).classList.add('on');
+  const mn = { home:'mn-home', listings:'mn-listings', buyer:'mn-buyer', contact:'mn-contact', about:'mn-about' };
+  document.querySelectorAll('.mni').forEach(i => i.classList.remove('on'));
+  if (mn[name]) document.getElementById(mn[name]).classList.add('on');
+  if (name === 'listings') applyFilters();
+}
+
+// ── FORMS ─────────────────────────────────────────────
+function submitInquiry(btn) {
+  const name  = document.getElementById('inqName').value;
+  const phone = document.getElementById('inqPhone').value;
+  if (!name || !phone) { showToast('Please fill in your name and phone number'); return; }
+  btn.textContent = '✓ Inquiry Sent!';
+  btn.style.background = 'var(--green-d)';
+  btn.disabled = true;
+  showToast('Inquiry sent! Broker France will reach out shortly.');
+  setTimeout(() => { btn.textContent='Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 4000);
+}
+
+function submitForm(btn) {
+  btn.textContent = '✓ Sent!';
+  btn.style.background = 'var(--green-d)';
+  btn.disabled = true;
+  showToast('Submitted successfully!');
+  setTimeout(() => { btn.textContent = 'Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 5000);
+}
+
+// ── HELPERS ───────────────────────────────────────────
+function getPhotos(str) { return str ? str.split('|').map(s=>s.trim()).filter(Boolean) : []; }
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ''; }
+
+// Converts any Google Drive share URL → direct image URL
+function driveThumb(url) {
+  if (!url) return '';
+  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return 'https://drive.google.com/uc?export=view&id=' + fileMatch[1];
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) return 'https://drive.google.com/uc?export=view&id=' + openMatch[1];
+  return '';
+}
+function driveThumbFallback(imgEl, url) {
+  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const id = fileMatch ? fileMatch[1] : (url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || [])[1];
+  if (id) { imgEl.src = 'https://lh3.googleusercontent.com/d/' + id; imgEl.onerror = null; }
+  else { imgEl.style.display='none'; imgEl.nextElementSibling && (imgEl.nextElementSibling.style.display='flex'); }
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function getTypeSvg(type, size=52) {
+  const icons = {
+    residential: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    condominium: `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="15" y1="22" x2="15" y2="2"/><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="14" x2="20" y2="14"/></svg>`,
+    commercial:  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><rect x="4" y="2" width="16" height="20" rx="1"/><line x1="9" y1="22" x2="9" y2="2"/><line x1="15" y1="22" x2="15" y2="2"/><line x1="4" y1="8" x2="20" y2="8"/><line x1="4" y1="14" x2="20" y2="14"/></svg>`,
+    farm:        `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>`,
+    beach:       `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><path d="M17 8C8 10 5.9 16.17 3.82 21"/><path d="M9.5 19C11 13 17 10 21 11.5"/><line x1="3" y1="21" x2="21" y2="21"/></svg>`,
+    warehouse:   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><rect x="2" y="7" width="20" height="15"/><polyline points="2 7 12 2 22 7"/></svg>`,
+    lot:         `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width=".9"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg>`,
+  };
+  return icons[type] || icons.residential;
+}
+
+// ── SECURITY ──────────────────────────────────────────
+window.addEventListener('beforeunload', () => { listings = []; currentListing = null; });
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey && ['s','u','S','U'].includes(e.key)) ||
+      (e.ctrlKey && e.shiftKey && ['i','I','j','J','c','C'].includes(e.key)) ||
+      e.key === 'F12') e.preventDefault();
+});
+console.log('%c\u26a0 Stop!', 'color:#DC2626;font-size:40px;font-weight:900');
+console.log('%cThis site contains proprietary listing data owned by Broker France.\nUnauthorized scraping or redistribution is prohibited.', 'color:#0F1117;font-size:14px');
+
+// ── BOOT ──────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
