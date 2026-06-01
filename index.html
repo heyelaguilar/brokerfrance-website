@@ -1252,10 +1252,10 @@ Ideal Property</div>
     <div class="form-card">
       <h2>Send an Inquiry</h2>
       <p>For a specific listing or general questions — I'll reply within 2 hours.</p>
-      <div class="frow"><div class="fgrp"><label>Name</label><input type="text" placeholder="Juan dela Cruz"></div><div class="fgrp"><label>Mobile</label><input type="tel" placeholder="+63 9XX XXX XXXX"></div></div>
-      <div class="fgrp"><label>Email</label><input type="email" placeholder="juan@email.com"></div>
+      <div class="frow"><div class="fgrp"><label>Name</label><input type="text" id="contactName" placeholder="Juan dela Cruz"></div><div class="fgrp"><label>Mobile</label><input type="tel" id="contactPhone" placeholder="+63 9XX XXX XXXX"></div></div>
+      <div class="fgrp"><label>Email</label><input type="email" id="contactEmail" placeholder="juan@email.com"></div>
       <div class="fgrp"><label>I'm interested in</label>
-        <select><option>A specific listing</option><option>Residential property</option><option>Commercial property</option><option>Farm / Agricultural</option><option>Beach / Resort</option><option>Title transfer help</option><option>Bank loan assistance</option><option>General inquiry</option></select>
+        <select id="contactInterest"><option>A specific listing</option><option>Residential property</option><option>Commercial property</option><option>Farm / Agricultural</option><option>Beach / Resort</option><option>Title transfer help</option><option>Bank loan assistance</option><option>General inquiry</option></select>
       </div>
       <div class="fgrp"><label>Message</label><textarea id="contactMsg" placeholder="Tell me what you're looking for, or which listing caught your attention…"></textarea></div>
       <button class="btn-submit" onclick="submitForm(this)">Send Inquiry</button>
@@ -1917,12 +1917,45 @@ function submitInquiry(btn) {
   setTimeout(() => { btn.textContent='Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 4000);
 }
 
-function submitForm(btn) {
-  btn.textContent = '✓ Sent!';
-  btn.style.background = 'var(--green-d)';
+async function submitForm(btn) {
+  const name     = document.getElementById('contactName').value.trim();
+  const phone    = document.getElementById('contactPhone').value.trim();
+  const email    = document.getElementById('contactEmail').value.trim();
+  const interest = document.getElementById('contactInterest').value;
+  const message  = document.getElementById('contactMsg').value.trim();
+
+  if (!name) { showToast('Please enter your name'); return; }
+  if (!message) { showToast('Please enter a message'); return; }
+
+  btn.textContent = 'Sending…';
   btn.disabled = true;
-  showToast('Submitted successfully!');
-  setTimeout(() => { btn.textContent = 'Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 5000);
+
+  try {
+    const res = await fetch('/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, phone, email, interest, message }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      btn.textContent = '✓ Message Sent!';
+      btn.style.background = 'var(--green-d)';
+      showToast('Message sent! Broker France will reply shortly.');
+      document.getElementById('contactName').value = '';
+      document.getElementById('contactPhone').value = '';
+      document.getElementById('contactEmail').value = '';
+      document.getElementById('contactMsg').value = '';
+      setTimeout(() => { btn.textContent = 'Send Inquiry'; btn.style.background = ''; btn.disabled = false; }, 5000);
+    } else {
+      throw new Error(data.error || 'Failed to send');
+    }
+  } catch (err) {
+    showToast('Could not send message. Please try WhatsApp or email directly.');
+    btn.textContent = 'Send Inquiry';
+    btn.disabled = false;
+  }
 }
 
 // ── HELPERS ───────────────────────────────────────────
