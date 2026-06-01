@@ -1917,45 +1917,12 @@ function submitInquiry(btn) {
   setTimeout(() => { btn.textContent='Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 4000);
 }
 
-async function submitForm(btn) {
-  const name     = document.getElementById('contactName').value.trim();
-  const phone    = document.getElementById('contactPhone').value.trim();
-  const email    = document.getElementById('contactEmail').value.trim();
-  const interest = document.getElementById('contactInterest').value;
-  const message  = document.getElementById('contactMsg').value.trim();
-
-  if (!name) { showToast('Please enter your name'); return; }
-  if (!message) { showToast('Please enter a message'); return; }
-
-  btn.textContent = 'Sending…';
+function submitForm(btn) {
+  btn.textContent = '✓ Sent!';
+  btn.style.background = 'var(--green-d)';
   btn.disabled = true;
-
-  try {
-    const res = await fetch('/.netlify/functions/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, phone, email, interest, message }),
-    });
-
-    const data = await res.json();
-
-    if (res.ok && data.success) {
-      btn.textContent = '✓ Message Sent!';
-      btn.style.background = 'var(--green-d)';
-      showToast('Message sent! Broker France will reply shortly.');
-      document.getElementById('contactName').value = '';
-      document.getElementById('contactPhone').value = '';
-      document.getElementById('contactEmail').value = '';
-      document.getElementById('contactMsg').value = '';
-      setTimeout(() => { btn.textContent = 'Send Inquiry'; btn.style.background = ''; btn.disabled = false; }, 5000);
-    } else {
-      throw new Error(data.error || 'Failed to send');
-    }
-  } catch (err) {
-    showToast('Could not send message. Please try WhatsApp or email directly.');
-    btn.textContent = 'Send Inquiry';
-    btn.disabled = false;
-  }
+  showToast('Submitted successfully!');
+  setTimeout(() => { btn.textContent = 'Send Inquiry'; btn.style.background=''; btn.disabled=false; }, 5000);
 }
 
 // ── HELPERS ───────────────────────────────────────────
