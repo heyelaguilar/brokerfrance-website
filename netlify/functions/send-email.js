@@ -27,7 +27,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         from: 'Broker France <onboarding@resend.dev>', // replace with your verified domain email
-        to: ['rebfrancergonzales@gmail.com'],
+        to: ['hey.elaguilar@gmail.com'],
         reply_to: email || undefined,
         subject: `New Inquiry from ${name} — Broker France`,
         html: `
