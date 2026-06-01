@@ -72,7 +72,7 @@ exports.handler = async (event) => {
       console.error('Resend API error:', err);
       return {
         statusCode: 500,
-        body: JSON.stringify({ error: 'Failed to send email. Please try again.' }),
+        body: JSON.stringify({ error: err }),
       };
     }
 
