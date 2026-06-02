@@ -505,27 +505,85 @@ a{text-decoration:none;color:inherit}
    ABOUT PAGE — FRANCE
 ══════════════════════════════════════════════════ */
 :root{--gold:#B8935A}
-/* hero */
-.about-hero{background:#FAF8F5;position:relative;overflow:hidden;min-height:560px;border-bottom:1px solid var(--border)}
-.about-hero-inner{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:480px 1fr;min-height:560px}
-.about-hero-left{position:relative;overflow:hidden;background:var(--bg)}
-.about-photo{width:100%;height:100%;min-height:560px;object-fit:cover;object-position:center top;display:block}
-.about-photo-fade{position:absolute;inset:0;background:linear-gradient(to right,transparent 60%,#FAF8F5 100%)}
-.about-hero-right{padding:64px 64px 56px 48px;display:flex;flex-direction:column;justify-content:center;position:relative;z-index:1}
-.about-name-big{font-family:'Lora',serif;font-size:clamp(60px,6.5vw,90px);font-weight:400;font-style:italic;color:var(--green);line-height:.95;margin-bottom:10px;letter-spacing:-.02em}
-.about-fullname{font-size:17px;font-weight:700;color:var(--gold);letter-spacing:.01em;margin-bottom:18px}
-.about-title-row{font-size:13px;color:var(--ink2);margin-bottom:12px;line-height:1.65;border-left:2px solid var(--gold);padding-left:14px}
-.about-address-row{display:flex;align-items:flex-start;gap:7px;font-size:12.5px;color:var(--ink3);margin-bottom:28px}
-.about-address-row svg{width:13px;height:13px;stroke:var(--green);fill:none;stroke-width:2;flex-shrink:0;margin-top:2px}
-.about-license-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
-.about-license-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:11px 18px;transition:all .2s;box-shadow:var(--sh)}
-.about-license-item:hover{border-color:var(--green);box-shadow:var(--shm)}
-.about-license-item svg{width:17px;height:17px;stroke:var(--gold);fill:none;stroke-width:1.8;flex-shrink:0}
+/* ── ABOUT PAGE ── */
+.about-page{max-width:100%;overflow:hidden}
+/* top header */
+.about-header{background:#fff;padding:80px 56px 72px;border-bottom:1px solid var(--border);text-align:center}
+.about-header-inner{max-width:760px;margin:0 auto}
+.about-label{display:inline-flex;align-items:center;gap:8px;color:var(--green-d);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:20px}
+.about-label::before,.about-label::after{content:'';display:block;width:24px;height:1.5px;background:var(--green)}
+.about-heading{font-size:clamp(32px,4vw,52px);font-weight:800;color:var(--ink);letter-spacing:-.03em;line-height:1.1;margin-bottom:20px}
+.about-heading em{font-family:'Lora',serif;font-style:italic;color:var(--green-d);font-weight:400}
+.about-intro{font-size:16px;color:var(--ink3);line-height:1.8;max-width:600px;margin:0 auto}
+/* mission vision */
+.about-mv-section{background:var(--bg);border-bottom:1px solid var(--border)}
+.about-mv-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr}
+.about-mv-card{padding:56px 48px;position:relative}
+.about-mv-card:first-child{border-right:1px solid var(--border)}
+.about-mv-icon{width:44px;height:44px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.about-mv-icon svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8}
+.about-mv-label{font-size:9px;font-weight:800;color:var(--green-d);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}
+.about-mv-title{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:14px}
+.about-mv-text{font-size:14px;color:var(--ink2);line-height:1.85}
+/* core values */
+.about-values-section{background:#fff;padding:80px 56px;border-bottom:1px solid var(--border)}
+.about-values-inner{max-width:1200px;margin:0 auto}
+.about-section-label{font-size:9px;font-weight:800;color:var(--green-d);letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.about-section-label::before{content:'';display:block;width:20px;height:1.5px;background:var(--green)}
+.about-section-title{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:40px}
+.about-values-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.about-value{background:#fff;padding:36px 32px;transition:background .2s}
+.about-value:hover{background:var(--green-l)}
+.about-value-num{font-size:11px;font-weight:800;color:var(--green-d);letter-spacing:.1em;margin-bottom:14px;opacity:.7}
+.about-value-title{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:10px;letter-spacing:-.01em}
+.about-value-text{font-size:13px;color:var(--ink3);line-height:1.75}
+/* broker identity */
+.about-identity-section{background:var(--bg);padding:80px 56px;border-bottom:1px solid var(--border)}
+.about-identity-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:start}
+.about-identity-creds{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.about-cred-item{display:flex;align-items:center;gap:14px;padding:14px 18px;background:#fff;border:1px solid var(--border);border-radius:var(--rs)}
+.about-cred-icon{width:36px;height:36px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.about-cred-icon svg{width:16px;height:16px;stroke:var(--green-d);fill:none;stroke-width:2}
+.about-cred-label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+.about-cred-value{font-size:13px;font-weight:700;color:var(--ink);margin-top:2px}
+.about-why-list{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+.about-why-item{display:flex;gap:14px;align-items:flex-start}
+.about-why-dot{width:28px;height:28px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--green-d);flex-shrink:0;margin-top:2px}
+.about-why-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.about-why-desc{font-size:13px;color:var(--ink3);line-height:1.65}
+/* license badges */
+.about-license-row{display:flex;gap:12px;flex-wrap:wrap}
+.about-license-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:11px 18px;box-shadow:var(--sh)}
+.about-license-item svg{width:16px;height:16px;stroke:var(--gold);fill:none;stroke-width:1.8;flex-shrink:0}
 .about-license-label{font-size:8.5px;font-weight:700;color:var(--ink3);letter-spacing:.12em;text-transform:uppercase}
-.about-license-value{font-size:14px;font-weight:800;color:var(--ink);margin-top:2px}
-.about-quote-inline{border-top:1px solid var(--border);padding-top:24px;display:flex;gap:12px;align-items:flex-start}
-.about-quote-inline-mark{font-family:'Lora',serif;font-size:36px;color:var(--gold);line-height:.8;flex-shrink:0;opacity:.8;margin-top:4px}
-.about-quote-inline-text{font-size:12.5px;color:var(--ink3);line-height:1.78;font-style:italic;font-family:'Lora',serif}
+.about-license-value{font-size:13px;font-weight:800;color:var(--ink);margin-top:2px}
+/* areas */
+.about-areas-section{background:#fff;padding:56px 56px;border-bottom:1px solid var(--border)}
+.about-areas-inner{max-width:1200px;margin:0 auto}
+.about-areas-header{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;color:var(--ink);letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px}
+.about-areas-header svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2}
+.about-areas-grid{display:flex;gap:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;background:var(--border);border:1px solid var(--border)}
+.about-areas-grid::-webkit-scrollbar{display:none}
+.about-area-item{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 32px;background:#fff;flex:1;min-width:120px;text-align:center;border-right:1px solid var(--border)}
+.about-area-item:last-child{border-right:none}
+.about-area-icon{width:36px;height:36px;stroke:var(--green);fill:none;stroke-width:1.4}
+.about-area-name{font-size:9px;font-weight:800;color:var(--ink);letter-spacing:.1em;text-transform:uppercase}
+/* CTA strip */
+.about-cta-strip{background:var(--green);padding:48px 56px;display:flex;align-items:center;justify-content:space-between;gap:32px;flex-wrap:wrap}
+.about-cta-text{font-size:clamp(14px,1.6vw,18px);font-weight:700;color:rgba(255,255,255,.9);max-width:560px;line-height:1.5}
+.about-cta-text em{color:var(--gold);font-style:normal}
+.about-cta-btn{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--green);font-size:12px;font-weight:800;padding:14px 28px;border-radius:var(--rs);border:none;cursor:pointer;transition:all .2s;white-space:nowrap;letter-spacing:.04em;flex-shrink:0}
+.about-cta-btn:hover{background:var(--green-l)}
+@media(max-width:768px){
+  .about-header{padding:56px 20px 48px}
+  .about-mv-inner{grid-template-columns:1fr}
+  .about-mv-card:first-child{border-right:none;border-bottom:1px solid var(--border)}
+  .about-mv-card{padding:36px 20px}
+  .about-values-section,.about-identity-section,.about-areas-section{padding:48px 20px}
+  .about-values-grid{grid-template-columns:1fr}
+  .about-identity-inner{grid-template-columns:1fr;gap:32px}
+  .about-cta-strip{padding:36px 20px;flex-direction:column;align-items:flex-start}
+}
 /* highlights */
 .about-highlights-section{background:#fff;border-bottom:1px solid var(--border)}
 .about-highlights-inner{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr)}
@@ -1359,75 +1417,103 @@ Ideal Property</div>
      ABOUT PAGE
 ══════════════════════════════════════════════════ -->
 <div class="page" id="page-about">
+  <div class="about-page">
 
-  <!-- ── HERO ── -->
-  <div class="about-hero">
-    <div class="about-hero-inner">
-      <!-- Left: Photo with fade -->
-      <div class="about-hero-left">
-        <img src="image/mfrg-img.png" alt="France Gonzales" class="about-photo">
-        <div class="about-photo-fade"></div>
+  <!-- ── HEADER ── -->
+  <div class="about-header">
+    <div class="about-header-inner">
+      <div class="about-label">About Us</div>
+      <h1 class="about-heading">Built on Trust,<br>Driven by <em>Expertise</em></h1>
+      <p class="about-intro">Broker France is a PRC-licensed real estate brokerage committed to connecting clients with the right properties through integrity, professionalism, and in-depth market knowledge across Southern Luzon and Metro Manila.</p>
+    </div>
+  </div>
+
+  <!-- ── MISSION & VISION ── -->
+  <div class="about-mv-section">
+    <div class="about-mv-inner">
+      <div class="about-mv-card">
+        <div class="about-mv-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div class="about-mv-label">Our Mission</div>
+        <div class="about-mv-title">To Make Every Transaction Count</div>
+        <p class="about-mv-text">We are dedicated to providing seamless, transparent, and professional real estate services — guiding buyers, sellers, and investors toward decisions that create lasting value. Every client deserves honest counsel, thorough due diligence, and a broker who truly cares about the outcome.</p>
       </div>
-      <!-- Right: Identity -->
-      <div class="about-hero-right">
-        <div class="about-name-big">France</div>
-        <div class="about-fullname">May Francia Rivares-Gonzales</div>
-        <div class="about-title-row">Real Estate Broker · President of Brookland Ventures, Inc. &amp; STAREB</div>
-        <div class="about-address-row">
-          <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Property Management — <strong style="color:rgba(255,255,255,.82)">201 Brookland Building</strong>, Sta. Rosa – Tagaytay Rd.
+      <div class="about-mv-card">
+        <div class="about-mv-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="about-mv-label">Our Vision</div>
+        <div class="about-mv-title">The Most Trusted Name in Southern Luzon</div>
+        <p class="about-mv-text">To be the leading real estate brokerage in Southern Luzon — recognized for unmatched market expertise, ethical standards, and client-centered service. We envision a firm where every broker, every listing, and every transaction reflects a commitment to excellence and community growth.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CORE VALUES ── -->
+  <div class="about-values-section">
+    <div class="about-values-inner">
+      <div class="about-section-label">Core Values</div>
+      <div class="about-section-title">What We Stand For</div>
+      <div class="about-values-grid">
+        <div class="about-value">
+          <div class="about-value-num">01</div>
+          <div class="about-value-title">Integrity</div>
+          <p class="about-value-text">We conduct every transaction with full transparency. No hidden fees, no dual agency without disclosure — just honest advice you can rely on.</p>
         </div>
-        <div class="about-license-row">
-          <div class="about-license-item">
-            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            <div>
-              <div class="about-license-label">PRC License</div>
-              <div class="about-license-value">020049</div>
-            </div>
-          </div>
-          <div class="about-license-item">
-            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            <div>
-              <div class="about-license-label">DSHUD NCR</div>
-              <div class="about-license-value">B-10386</div>
-            </div>
-          </div>
+        <div class="about-value">
+          <div class="about-value-num">02</div>
+          <div class="about-value-title">Professionalism</div>
+          <p class="about-value-text">Every client interaction, document, and negotiation is handled with the highest standard of care, competence, and discretion.</p>
         </div>
-        <div class="about-quote-inline">
-          <div class="about-quote-inline-mark">"</div>
-          <p class="about-quote-inline-text">Committed to serving clients and fellow brokers with integrity, professionalism, and a collaborative spirit while helping create meaningful real estate opportunities.</p>
+        <div class="about-value">
+          <div class="about-value-num">03</div>
+          <div class="about-value-title">Client-First</div>
+          <p class="about-value-text">Your goals are our priority. We listen first, advise second — ensuring every recommendation is aligned with your best interest.</p>
+        </div>
+        <div class="about-value">
+          <div class="about-value-num">04</div>
+          <div class="about-value-title">Market Expertise</div>
+          <p class="about-value-text">15+ years of on-the-ground knowledge across Southern Luzon, Nuvali, Alabang, and Metro Manila means smarter decisions for you.</p>
+        </div>
+        <div class="about-value">
+          <div class="about-value-num">05</div>
+          <div class="about-value-title">Collaboration</div>
+          <p class="about-value-text">We welcome referrals, joint ventures, and co-brokering. Growth is best achieved together — with fellow brokers and investor partners.</p>
+        </div>
+        <div class="about-value">
+          <div class="about-value-num">06</div>
+          <div class="about-value-title">Compliance</div>
+          <p class="about-value-text">Fully PRC-licensed and DSHUD-registered. Every transaction is conducted within the bounds of Philippine real estate law.</p>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ── HIGHLIGHTS ── -->
-  <div class="about-highlights-section">
-    <div class="about-highlights-inner">
-      <!-- Career -->
-      <div class="about-highlight">
-        <div class="about-highlight-icon">
-          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12"/></svg>
+  <!-- ── WHO WE ARE ── -->
+  <div class="about-identity-section">
+    <div class="about-identity-inner">
+      <div>
+        <div class="about-section-label">Who We Are</div>
+        <div class="about-section-title">May Francia Rivares-Gonzales</div>
+        <p style="font-size:14px;color:var(--ink3);line-height:1.85;margin-bottom:24px">Real Estate Broker · President of <strong style="color:var(--ink)">Brookland Ventures, Inc.</strong> & STAREB. With 15+ years of experience in residential, commercial, industrial, farm, and property management, France has built a reputation for being a trusted partner in every transaction.</p>
+        <div class="about-license-row" style="margin-bottom:24px">
+          <div class="about-license-item">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div><div class="about-license-label">PRC License</div><div class="about-license-value">020049</div></div>
+          </div>
+          <div class="about-license-item">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <div><div class="about-license-label">DSHUD NCR</div><div class="about-license-value">B-10386</div></div>
+          </div>
         </div>
-        <div class="about-highlight-title">Career Highlights</div>
-        <div class="about-highlight-stat">15+<span>Years</span></div>
-        <div class="about-highlight-body">of experience in real estate and property management across Southern Luzon and Metro Manila.</div>
+        <p style="font-size:13px;color:var(--ink3)">📍 Property Management — <strong style="color:var(--ink)">201 Brookland Building</strong>, Sta. Rosa – Tagaytay Rd.</p>
       </div>
-      <!-- Focus -->
-      <div class="about-highlight">
-        <div class="about-highlight-icon">
-          <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <div>
+        <div class="about-section-label">Why Work With Us</div>
+        <div class="about-section-title" style="margin-bottom:0">Our Promise to You</div>
+        <div class="about-why-list">
+          <div class="about-why-item"><div class="about-why-dot">1</div><div><div class="about-why-title">Title Due Diligence — Included</div><div class="about-why-desc">TCT authenticity, encumbrance check, tax declaration, and zoning classification done before any listing is shown.</div></div></div>
+          <div class="about-why-item"><div class="about-why-dot">2</div><div><div class="about-why-title">Full Documentation Assistance</div><div class="about-why-desc">Deed of Sale, BIR-CAR, Registry of Deeds — coordinated from signing all the way to title transfer.</div></div></div>
+          <div class="about-why-item"><div class="about-why-dot">3</div><div><div class="about-why-title">Off-Market Access</div><div class="about-why-desc">A private portfolio of off-market properties available for qualified, serious buyers.</div></div></div>
+          <div class="about-why-item"><div class="about-why-dot">4</div><div><div class="about-why-title">Bank Loan Coordination</div><div class="about-why-desc">Documents submitted to BDO, BPI, Metrobank, RCBC for fast, high-approval-rate processing.</div></div></div>
         </div>
-        <div class="about-highlight-title">Real Estate Focus</div>
-        <div class="about-highlight-body" style="margin-top:8px">Residential, commercial, industrial, farm lots, project development, and property management.</div>
-      </div>
-      <!-- Collaborations -->
-      <div class="about-highlight">
-        <div class="about-highlight-icon">
-          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        </div>
-        <div class="about-highlight-title">Referrals &amp; Collaborations</div>
-        <div class="about-highlight-body" style="margin-top:8px">Property sales and leasing referrals, joint ventures, project development, brokerage collaborations, and investor partnerships.</div>
       </div>
     </div>
   </div>
@@ -1440,47 +1526,27 @@ Ideal Property</div>
         Areas We Serve
       </div>
       <div class="about-areas-grid">
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/><path d="M12 3v4M8 7h8"/></svg>
-          <span class="about-area-name">Nuvali Area</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M2 22h20M6 18V9l6-5 6 5v9M10 22v-4h4v4"/><path d="M12 4v1"/></svg>
-          <span class="about-area-name">Laguna</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-          <span class="about-area-name">Alabang</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M4 22V6l8-4 8 4v16"/><path d="M4 12h16M4 17h16M10 22v-5h4v5"/></svg>
-          <span class="about-area-name">Taguig</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg>
-          <span class="about-area-name">Cavite</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M12 22s-8-6-8-12a8 8 0 0116 0c0 6-8 12-8 12z"/><circle cx="12" cy="10" r="3"/></svg>
-          <span class="about-area-name">Batangas</span>
-        </div>
-        <div class="about-area-item">
-          <svg class="about-area-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-          <span class="about-area-name">Bicol</span>
-        </div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg><span class="about-area-name">Nuvali Area</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M2 22h20M6 18V9l6-5 6 5v9M10 22v-4h4v4"/></svg><span class="about-area-name">Laguna</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><span class="about-area-name">Alabang</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M4 22V6l8-4 8 4v16"/><path d="M4 12h16M4 17h16"/></svg><span class="about-area-name">Taguig</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg><span class="about-area-name">Cavite</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M12 22s-8-6-8-12a8 8 0 0116 0c0 6-8 12-8 12z"/><circle cx="12" cy="10" r="3"/></svg><span class="about-area-name">Batangas</span></div>
+        <div class="about-area-item"><svg class="about-area-icon" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><span class="about-area-name">Bicol</span></div>
       </div>
     </div>
   </div>
 
-  <!-- ── CTA STRIP ── -->
+  <!-- ── CTA ── -->
   <div class="about-cta-strip">
     <div class="about-cta-text">Let's work together to find the <em>right property solutions</em> for you.</div>
     <button class="about-cta-btn" onclick="showPage('contact')">
-      Contact France
+      Get in Touch
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
     </button>
   </div>
 
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════
@@ -2182,7 +2248,24 @@ function showPage(name) {
   document.querySelectorAll('.mni').forEach(i => i.classList.remove('on'));
   if (mn[name]) document.getElementById(mn[name]).classList.add('on');
   if (name === 'listings') applyFilters();
+  // Update URL
+  const urlMap = { home:'/', listings:'/listings', about:'/about', contact:'/contact', buyer:'/buyer', match:'/match' };
+  const url = urlMap[name] || '/';
+  if (window.location.pathname !== url) history.pushState({ page: name }, '', url);
 }
+
+// Handle browser back/forward for named pages
+window.addEventListener('popstate', e => {
+  if (e.state && e.state.page) showPage(e.state.page);
+});
+
+// On load: resolve path to page
+(function resolveRoute() {
+  const path = window.location.pathname.replace(/\/$/, '') || '/';
+  const routes = { '/listings':'listings', '/about':'about', '/contact':'contact', '/buyer':'buyer', '/match':'match' };
+  const page = routes[path];
+  if (page) showPage(page);
+})();
 
 // ── FORMS ─────────────────────────────────────────────
 async function submitInquiry(btn) {
