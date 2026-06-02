@@ -927,14 +927,16 @@ a{text-decoration:none;color:inherit}
   <!-- EXCLUSIVE LISTINGS -->
   <section class="listings-home">
     <div class="lh-inner">
-      <div class="section-hdr">
-        <div class="section-hdr-left">
-          <div class="section-eyebrow">Featured</div>
-          <div class="section-title">Exclusive Listings</div>
+      <div id="exclusive-section">
+        <div class="section-hdr">
+          <div class="section-hdr-left">
+            <div class="section-eyebrow">Featured</div>
+            <div class="section-title">Exclusive Listings</div>
+          </div>
+          <button class="section-view-all" onclick="filterAndGo('exclusive')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
         </div>
-        <button class="section-view-all" onclick="filterAndGo('exclusive')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <div id="home-exclusive"><div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading…</p></div></div></div>
       </div>
-      <div id="home-exclusive"><div class="lgrid"><div class="loading-state"><div class="spinner"></div><p>Loading…</p></div></div></div>
 
       <div class="section-hdr" style="margin-top:56px">
         <div class="section-hdr-left">
@@ -1717,8 +1719,15 @@ function renderAll() {
   });
 
   // Home sections
-  // Exclusive: exclusive === true
-  renderSection('home-exclusive', listings.filter(l => l.exclusive).slice(0, 3));
+  // Exclusive: only show section if there are exclusive listings
+  const exclusiveListings = listings.filter(l => l.exclusive);
+  const exclusiveSection = document.getElementById('exclusive-section');
+  if (exclusiveListings.length) {
+    if (exclusiveSection) exclusiveSection.style.display = '';
+    renderSection('home-exclusive', exclusiveListings.slice(0, 3));
+  } else {
+    if (exclusiveSection) exclusiveSection.style.display = 'none';
+  }
   // For Sale: deal is 'sale' or 'both', not exclusive
   renderSection('home-sale', listings.filter(l => (l.deal === 'sale' || l.deal === 'both') && !l.exclusive).slice(0, 3));
   // For Lease: deal is 'lease' or 'both'
