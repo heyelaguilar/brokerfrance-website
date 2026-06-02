@@ -1791,14 +1791,11 @@ function openDetail(id) {
 
   document.getElementById('detailDesc').textContent = l.desc || l.key_details.replace(/\|/g, ' · ') || 'Contact broker for full property details and site visit scheduling.';
 
-  // WhatsApp & email buttons
-  document.getElementById('detailWa').href = `https://wa.me/${PHONE}?text=${encodeURIComponent(l.whatsapp)}`;
-  document.getElementById('detailEmail').href = `mailto:${EMAIL}?subject=${encodeURIComponent('Inquiry: ' + l.name)}&body=${encodeURIComponent('Hi, I am interested in: ' + l.name + '\nLocation: ' + l.location + '\nPrice: ' + l.price + '\n\nPlease send more information.')}`;
-
   // Pre-fill inline form
   document.getElementById('inqMsg').value   = `Hi, I'm interested in: ${l.name} (${l.location}) at ${l.price}.\n\nPlease send details and arrange a site visit.`;
   document.getElementById('inqName').value  = '';
   document.getElementById('inqPhone').value = '';
+  document.getElementById('inqEmail').value = '';
 
   showPage('detail');
 }
