@@ -986,11 +986,12 @@ a{text-decoration:none;color:inherit}
         <div class="list-cta-tag">Property Owners</div>
         <h2 class="list-cta-title">Have a Property to<br><em>Sell or Rent Out?</em></h2>
         <p class="list-cta-sub">List with Broker France and connect with thousands of qualified buyers and tenants across Southern Luzon. We handle everything — from marketing to closing.</p>
-        <button class="list-cta-btn" onclick="showPage('contact')">
+       
+      </div>
+     <button class="list-cta-btn" onclick="showPage('contact')">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         Submit My Property
       </button>
-    </div>
       </div>
      
   </section>
@@ -1647,25 +1648,7 @@ async function init() {
     return;
   }
   renderAll();
-
-  // ── Deep link: open listing from URL ──
-  const params = new URLSearchParams(window.location.search);
-  const deepId = params.get('listing');
-  if (deepId && listings.find(l => l.id === deepId)) {
-    openDetail(deepId);
-  }
 }
-
-// Handle browser back/forward buttons
-window.addEventListener('popstate', () => {
-  const params = new URLSearchParams(window.location.search);
-  const deepId = params.get('listing');
-  if (deepId && listings.find(l => l.id === deepId)) {
-    openDetail(deepId);
-  } else {
-    showPage(previousPage || 'listings');
-  }
-});
 
 function showLoadingState() {
   ['home-exclusive','home-sale','home-lease'].forEach(id => {
@@ -1909,7 +1892,6 @@ function openDetail(id) {
   document.getElementById('inqPhone').value = '';
   document.getElementById('inqEmail').value = '';
 
-  history.pushState({ listing: id }, '', '?listing=' + encodeURIComponent(id));
   showPage('detail');
 }
 
@@ -1922,10 +1904,7 @@ function galleryNav(dir) {
   if (pill) pill.textContent = `${galleryIndex + 1} / ${galleryPhotos.length}`;
 }
 
-function goBack() {
-  history.pushState({}, '', '/');
-  showPage(previousPage || 'listings');
-}
+function goBack() { showPage(previousPage || 'listings'); }
 
 // ── FILTERS ───────────────────────────────────────────
 function applyFilters() {
