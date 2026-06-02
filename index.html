@@ -610,6 +610,47 @@ a{text-decoration:none;color:inherit}
 }
 
 /* ══════════════════════════════════════════════════
+   SOCIAL FOLLOW SECTION
+══════════════════════════════════════════════════ */
+.social-section{background:#fff;padding:72px 40px;border-top:1px solid var(--border)}
+.social-inner{max-width:860px;margin:0 auto;text-align:center}
+.social-eyebrow{display:inline-flex;align-items:center;gap:7px;background:var(--green-l);color:var(--green-d);font-size:12px;font-weight:700;padding:5px 14px;border-radius:99px;margin-bottom:18px;letter-spacing:.02em}
+.social-eyebrow span{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.social-title{font-size:clamp(22px,3vw,32px);font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:10px}
+.social-title em{font-family:'Lora',serif;font-style:italic;color:var(--green-d)}
+.social-sub{font-size:15px;color:var(--ink2);margin-bottom:40px}
+.social-cards{display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+.social-card{display:flex;flex-direction:column;align-items:center;gap:12px;padding:28px 36px;border-radius:var(--rl);border:1.5px solid var(--border);background:#fff;text-decoration:none;transition:all .2s;min-width:160px}
+.social-card:hover{transform:translateY(-4px);box-shadow:var(--shm)}
+.social-card.sc-fb:hover{border-color:#1877F2;background:#F0F4FF}
+.social-card.sc-ig:hover{border-color:#E1306C;background:#FFF0F5}
+.social-card.sc-tt:hover{border-color:#000;background:#F5F5F5}
+.social-card-icon{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center}
+.sc-fb .social-card-icon{background:#1877F2}
+.sc-ig .social-card-icon{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+.sc-tt .social-card-icon{background:#000}
+.social-card-icon svg{width:26px;height:26px;fill:#fff}
+.social-card-name{font-size:14px;font-weight:800;color:var(--ink)}
+.social-card-handle{font-size:12px;color:var(--ink3);font-weight:600}
+.social-card-follow{font-size:11px;font-weight:800;color:var(--green-d);background:var(--green-l);padding:4px 12px;border-radius:99px;margin-top:2px}
+
+/* ══════════════════════════════════════════════════
+   LIST YOUR PROPERTY CTA
+══════════════════════════════════════════════════ */
+.list-cta-section{padding:72px 40px;background:var(--green)}
+.list-cta-inner{max-width:860px;margin:0 auto;display:grid;grid-template-columns:1fr auto;align-items:center;gap:40px}
+.list-cta-left{}
+.list-cta-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:800;padding:4px 12px;border-radius:99px;margin-bottom:16px;letter-spacing:.04em}
+.list-cta-title{font-size:clamp(22px,3vw,34px);font-weight:800;color:#fff;letter-spacing:-.02em;line-height:1.2;margin-bottom:12px}
+.list-cta-title em{font-family:'Lora',serif;font-style:italic;opacity:.9}
+.list-cta-sub{font-size:15px;color:rgba(255,255,255,.8);line-height:1.65;max-width:480px}
+.list-cta-perks{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.list-cta-perk{font-size:12px;font-weight:700;color:rgba(255,255,255,.9);background:rgba(255,255,255,.12);padding:5px 14px;border-radius:99px}
+.list-cta-btn{flex-shrink:0;display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--green);font-size:15px;font-weight:800;padding:16px 32px;border-radius:var(--rs);border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.list-cta-btn:hover{background:var(--green-l);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.15)}
+.list-cta-btn svg{width:18px;height:18px;stroke:var(--green);fill:none;stroke-width:2.5}
+
+/* ══════════════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════════════ */
 @media(max-width:1024px){
@@ -954,6 +995,65 @@ a{text-decoration:none;color:inherit}
   </section>
 
 
+  <!-- SOCIAL FOLLOW SECTION -->
+  <section class="social-section">
+    <div class="social-inner">
+      <div class="social-eyebrow"><span></span> Stay Connected</div>
+      <h2 class="social-title">Follow <em>Broker France</em> on Social Media</h2>
+      <p class="social-sub">Get the latest property listings, market updates, and real estate tips straight to your feed.</p>
+      <div class="social-cards">
+        <!-- Facebook -->
+        <a class="social-card sc-fb" href="https://facebook.com/BrokerFrance" target="_blank">
+          <div class="social-card-icon">
+            <svg viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </div>
+          <div class="social-card-name">Facebook</div>
+          <div class="social-card-handle">Broker France</div>
+          <div class="social-card-follow">+ Follow</div>
+        </a>
+        <!-- Instagram -->
+        <a class="social-card sc-ig" href="https://instagram.com/brokerfrance" target="_blank">
+          <div class="social-card-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </div>
+          <div class="social-card-name">Instagram</div>
+          <div class="social-card-handle">@brokerfrance</div>
+          <div class="social-card-follow">+ Follow</div>
+        </a>
+        <!-- TikTok -->
+        <a class="social-card sc-tt" href="https://tiktok.com/@brokerfrance" target="_blank">
+          <div class="social-card-icon">
+            <svg viewBox="0 0 24 24"><path d="M9 12a4 4 0 104 4V4a5 5 0 005 5"/></svg>
+          </div>
+          <div class="social-card-name">TikTok</div>
+          <div class="social-card-handle">@brokerfrance</div>
+          <div class="social-card-follow">+ Follow</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- LIST YOUR PROPERTY CTA -->
+  <section class="list-cta-section">
+    <div class="list-cta-inner">
+      <div class="list-cta-left">
+        <div class="list-cta-tag">🏡 Property Owners</div>
+        <h2 class="list-cta-title">Have a Property to<br><em>Sell or Rent Out?</em></h2>
+        <p class="list-cta-sub">List with Broker France and connect with thousands of qualified buyers and tenants across Southern Luzon. We handle everything — from marketing to closing.</p>
+        <div class="list-cta-perks">
+          <span class="list-cta-perk">✓ Free listing</span>
+          <span class="list-cta-perk">✓ Wide buyer network</span>
+          <span class="list-cta-perk">✓ PRC-licensed broker</span>
+          <span class="list-cta-perk">✓ Fast turnaround</span>
+        </div>
+      </div>
+      <button class="list-cta-btn" onclick="showPage('contact')">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Submit My Property
+      </button>
+    </div>
+  </section>
+
   <!-- WTB SECTION 
   <section class="wtb-container">
     <div class="wtb-section">
@@ -1137,8 +1237,8 @@ Ideal Property</div>
             <div class="broker-mini-av">F</div>
             <div>
               <div class="broker-mini-name">Broker France</div>
-              <div class="broker-mini-title">PRC Licensed Real Estate Broker</div>
-              <span class="broker-mini-badge">✓ PRC Licensed</span>
+              <div class="broker-mini-title">Real Estate Broker</div>
+              <span class="broker-mini-badge">✓ PRC License 020049</span>
             </div>
           </div>
           <div class="dsc-divider"></div>
