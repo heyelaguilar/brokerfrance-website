@@ -379,6 +379,11 @@ a{text-decoration:none;color:inherit}
 .listings-toolbar{padding:16px 48px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);background:#fff}
 .filter-sel{font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:8px 14px;outline:none;cursor:pointer;-webkit-appearance:none;transition:border-color .15s}
 .filter-sel:focus{border-color:var(--ink3)}
+.search-input-wrap{position:relative;flex:1;max-width:320px}
+.search-input-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--ink3);fill:none;stroke-width:2;pointer-events:none}
+.search-input{width:100%;font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;color:var(--ink);background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:8px 14px 8px 36px;outline:none;transition:border-color .15s}
+.search-input:focus{border-color:var(--green)}
+.search-input::placeholder{color:var(--ink3)}
 .res-count{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600}
 .listings-content{padding:40px 48px;max-width:calc(1200px + 96px);margin:0 auto}
 
@@ -1155,6 +1160,10 @@ Ideal Property</div>
     </div>
   </div>
   <div class="listings-toolbar">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" type="text" id="listingSearch" placeholder="Search by location, type, keyword…" oninput="currentSearch=this.value;applyFilters()">
+    </div>
     <select class="filter-sel" onchange="currentSort=this.value;applyFilters()">
       <option value="">Sort: Default</option>
       <option value="asc">Price: Low → High</option>
@@ -1592,6 +1601,7 @@ let listings         = [];
 let currentFilter    = 'all';
 let currentSort      = '';
 let currentLocFilter = '';
+let currentSearch    = '';
 let previousPage     = 'listings';
 let saved            = new Set();
 let currentListing   = null;
@@ -1923,6 +1933,19 @@ function applyFilters() {
   // Location dropdown
   if (currentLocFilter)
     data = data.filter(l => l.location.toLowerCase().includes(currentLocFilter.split(',')[0].toLowerCase()));
+
+  // Keyword search
+  if (currentSearch.trim()) {
+    const q = currentSearch.trim().toLowerCase();
+    data = data.filter(l =>
+      l.name.toLowerCase().includes(q) ||
+      l.location.toLowerCase().includes(q) ||
+      l.type.toLowerCase().includes(q) ||
+      l.price.toLowerCase().includes(q) ||
+      l.key_details.toLowerCase().includes(q) ||
+      l.deal.toLowerCase().includes(q)
+    );
+  }
 
   // Sort
   if (currentSort === 'asc')  data.sort((a, b) => parseFloat(a.rawPrice) - parseFloat(b.rawPrice));
