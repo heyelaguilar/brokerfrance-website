@@ -1942,7 +1942,7 @@ async function submitInquiry(btn) {
     } else {
       throw new Error(data.error || 'Failed');
     }
-  } catch {
+  } catch (err) {
     showToast('Could not send. Please call or email directly.');
     btn.textContent = 'Send Inquiry';
     btn.disabled = false;
