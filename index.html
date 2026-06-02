@@ -1602,7 +1602,7 @@ let galleryIndex     = 0;
 async function init() {
   showLoadingState();
   try {
-    const res = await fetch(API_URL, { cache: 'no-store' });
+    const res = await fetch(API_URL, { cache: 'no-store', redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (!data || !data.length) throw new Error('Empty response');
