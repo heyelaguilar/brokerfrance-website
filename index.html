@@ -266,6 +266,8 @@ a{text-decoration:none;color:inherit}
 .bdg-lease{background:#2563EB;color:#fff}
 .bdg-new{background:#D97706;color:#fff}
 .bdg-hot{background:#DC2626;color:#fff}
+.bdg-hold{background:#F59E0B;color:#fff}
+.bdg-sold{background:#6B7280;color:#fff}
 .lcard-save{
   position:absolute;top:12px;right:12px;
   width:34px;height:34px;border-radius:50%;
@@ -1464,7 +1466,9 @@ function buildCOL(headerRow) {
 // Handles: "For Sale", "For Lease", "For Sale, For Lease", "For sale", "-", ""
 function normaliseDeal(raw) {
   const v = raw.toLowerCase().trim();
-  if (!v || v === '-') return null;               // skip invalid rows
+  if (!v || v === '-') return null;
+  if (v.includes('sold'))              return 'sold';
+  if (v.includes('hold'))              return 'hold';
   const hasSale  = v.includes('sale');
   const hasLease = v.includes('lease');
   if (hasSale && hasLease) return 'both';
@@ -1642,9 +1646,11 @@ const TYPE_COLORS = {
 
 function dealBadges(deal, isEx) {
   let html = '';
-  if (isEx)                              html += '<span class="bdg bdg-ex">Exclusive</span>';
-  if (deal === 'sale' || deal === 'both') html += '<span class="bdg bdg-sale">For Sale</span>';
-  if (deal === 'lease'|| deal === 'both') html += '<span class="bdg bdg-lease">For Lease</span>';
+  if (isEx)                               html += '<span class="bdg bdg-ex">Exclusive</span>';
+  if (deal === 'sold')                    { html += '<span class="bdg bdg-sold">Sold</span>'; return html; }
+  if (deal === 'hold')                    { html += '<span class="bdg bdg-hold">On Hold</span>'; return html; }
+  if (deal === 'sale' || deal === 'both')   html += '<span class="bdg bdg-sale">For Sale</span>';
+  if (deal === 'lease' || deal === 'both')  html += '<span class="bdg bdg-lease">For Lease</span>';
   return html;
 }
 
