@@ -1647,7 +1647,25 @@ async function init() {
     return;
   }
   renderAll();
+
+  // ── Deep link: open listing from URL ──
+  const params = new URLSearchParams(window.location.search);
+  const deepId = params.get('listing');
+  if (deepId && listings.find(l => l.id === deepId)) {
+    openDetail(deepId);
+  }
 }
+
+// Handle browser back/forward buttons
+window.addEventListener('popstate', () => {
+  const params = new URLSearchParams(window.location.search);
+  const deepId = params.get('listing');
+  if (deepId && listings.find(l => l.id === deepId)) {
+    openDetail(deepId);
+  } else {
+    showPage(previousPage || 'listings');
+  }
+});
 
 function showLoadingState() {
   ['home-exclusive','home-sale','home-lease'].forEach(id => {
@@ -1891,6 +1909,7 @@ function openDetail(id) {
   document.getElementById('inqPhone').value = '';
   document.getElementById('inqEmail').value = '';
 
+  history.pushState({ listing: id }, '', '?listing=' + encodeURIComponent(id));
   showPage('detail');
 }
 
@@ -1903,7 +1922,10 @@ function galleryNav(dir) {
   if (pill) pill.textContent = `${galleryIndex + 1} / ${galleryPhotos.length}`;
 }
 
-function goBack() { showPage(previousPage || 'listings'); }
+function goBack() {
+  history.pushState({}, '', '/');
+  showPage(previousPage || 'listings');
+}
 
 // ── FILTERS ───────────────────────────────────────────
 function applyFilters() {
