@@ -27,7 +27,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         from: 'Broker France <info@francebrokerage.com>',
-        to: ['rebfrancergonzales@gmail.com'],
+        to: ['info@francebrokerage.com'],
         reply_to: email || undefined,
         subject: `New Inquiry from ${name} — Broker France`,
         html: `
