@@ -728,6 +728,43 @@ a{text-decoration:none;color:inherit}
 }
 
 /* ══════════════════════════════════════════════════
+   SUBMIT PROPERTY PAGE
+══════════════════════════════════════════════════ */
+.submit-page{max-width:860px;margin:0 auto;padding:56px 40px 100px}
+.submit-header{margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border)}
+.submit-header h1{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
+.submit-header p{font-size:14px;color:var(--ink3);line-height:1.7}
+.submit-form-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:36px;box-shadow:var(--sh)}
+.submit-section{margin-bottom:36px;padding-bottom:36px;border-bottom:1px solid var(--border)}
+.submit-section:last-of-type{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.submit-section-title{font-size:11px;font-weight:800;color:var(--green-d);text-transform:uppercase;letter-spacing:.12em;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.submit-section-title::before{content:'';display:block;width:16px;height:2px;background:var(--green)}
+.submit-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.submit-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.submit-field{display:flex;flex-direction:column;gap:6px}
+.submit-field.full{grid-column:1/-1}
+.submit-field label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
+.submit-field label span{color:var(--green-d);margin-left:2px}
+.submit-field input,.submit-field select,.submit-field textarea{font-family:'Manrope',sans-serif;font-size:13.5px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;outline:none;transition:border-color .15s;width:100%}
+.submit-field input:focus,.submit-field select:focus,.submit-field textarea:focus{border-color:var(--green);background:#fff}
+.submit-field textarea{resize:vertical;min-height:90px}
+.submit-field .hint{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.5}
+.submit-field .input-prefix{position:relative}
+.submit-field .input-prefix input{padding-left:32px}
+.submit-field .input-prefix::before{content:'₱';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink3);font-weight:600;pointer-events:none}
+.submit-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:28px;flex-wrap:wrap}
+.submit-footer-note{font-size:12px;color:var(--ink3);line-height:1.5;flex:1}
+.submit-footer-note strong{color:var(--ink)}
+.submit-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.submit-btn:hover{background:var(--green-d);transform:translateY(-1px);box-shadow:0 6px 20px rgba(27,58,45,.25)}
+.submit-btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5}
+@media(max-width:768px){
+  .submit-page{padding:36px 20px 80px}
+  .submit-grid,.submit-grid-3{grid-template-columns:1fr}
+  .submit-form-card{padding:24px}
+}
+
+/* ══════════════════════════════════════════════════
    SOCIAL FOLLOW SECTION
 ══════════════════════════════════════════════════ */
 .social-section{background:var(--bg);padding:96px 48px;border-top:1px solid var(--border)}
@@ -1130,7 +1167,7 @@ a{text-decoration:none;color:inherit}
         <span class="list-cta-perk">✓ PRC-licensed broker</span>
         <span class="list-cta-perk">✓ Fast turnaround</span>
       </div>
-      <button class="list-cta-btn" onclick="showPage('contact')">
+      <button class="list-cta-btn" onclick="showPage('submit')">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
         Submit My Property
       </button>
@@ -1754,6 +1791,142 @@ Ideal Property</div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     SUBMIT PROPERTY PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-submit">
+  <div class="submit-page">
+    <div class="submit-header">
+      <h1>Submit Your Property</h1>
+      <p>Fill in the details below and we'll review your listing within 24 hours. All fields marked <span style="color:var(--green-d);font-weight:700">*</span> are required.</p>
+    </div>
+    <div class="submit-form-card">
+
+      <!-- Contact Info -->
+      <div class="submit-section">
+        <div class="submit-section-title">Your Contact Details</div>
+        <div class="submit-grid">
+          <div class="submit-field">
+            <label>Full Name <span>*</span></label>
+            <input type="text" id="sp-name" placeholder="Juan dela Cruz">
+          </div>
+          <div class="submit-field">
+            <label>Mobile Number <span>*</span></label>
+            <input type="tel" id="sp-phone" placeholder="+63 9XX XXX XXXX">
+          </div>
+          <div class="submit-field">
+            <label>Email Address</label>
+            <input type="email" id="sp-email" placeholder="juan@email.com">
+          </div>
+          <div class="submit-field">
+            <label>Relationship to Property</label>
+            <select id="sp-relation">
+              <option>Owner</option>
+              <option>Co-owner</option>
+              <option>Authorized representative</option>
+              <option>Broker / Agent</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Info -->
+      <div class="submit-section">
+        <div class="submit-section-title">Property Details</div>
+        <div class="submit-grid">
+          <div class="submit-field">
+            <label>Deal Type <span>*</span></label>
+            <select id="sp-deal">
+              <option value="For Sale">For Sale</option>
+              <option value="For Lease">For Lease</option>
+              <option value="For Sale, For Lease">For Sale &amp; For Lease</option>
+            </select>
+          </div>
+          <div class="submit-field">
+            <label>Property Type <span>*</span></label>
+            <select id="sp-type">
+              <option value="Residential H&L">Residential House &amp; Lot</option>
+              <option value="Condominium">Condominium</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Commercial Lot">Commercial Lot</option>
+              <option value="Commercial Bldg">Commercial Building</option>
+              <option value="Farm">Farm / Agricultural</option>
+              <option value="Beach">Beach / Resort</option>
+              <option value="Warehouse">Warehouse</option>
+              <option value="Lot Only">Lot Only</option>
+              <option value="Hotel">Hotel</option>
+            </select>
+          </div>
+          <div class="submit-field full">
+            <label>Location / Address <span>*</span></label>
+            <input type="text" id="sp-location" placeholder="e.g. Nuvali, Sta. Rosa, Laguna">
+          </div>
+        </div>
+      </div>
+
+      <!-- Size & Price -->
+      <div class="submit-section">
+        <div class="submit-section-title">Size &amp; Pricing</div>
+        <div class="submit-grid-3">
+          <div class="submit-field">
+            <label>Lot Area (sqm)</label>
+            <input type="number" id="sp-lot" placeholder="e.g. 150">
+            <span class="hint">Leave blank if not applicable</span>
+          </div>
+          <div class="submit-field">
+            <label>Floor Area (sqm)</label>
+            <input type="number" id="sp-floor" placeholder="e.g. 120">
+            <span class="hint">Leave blank if not applicable</span>
+          </div>
+          <div class="submit-field">
+            <label>Asking Price (PHP) <span>*</span></label>
+            <div class="input-prefix">
+              <input type="number" id="sp-amount" placeholder="e.g. 5500000">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Key Details -->
+      <div class="submit-section">
+        <div class="submit-section-title">Key Features &amp; Description</div>
+        <div class="submit-field full">
+          <label>Key Details</label>
+          <textarea id="sp-key" placeholder="e.g. 3 Bedrooms | 2 Bathrooms | With Garage | Corner Lot | Clean Title&#10;&#10;Separate features with a pipe | character or new line."></textarea>
+          <span class="hint">Separate features with | (pipe). E.g. 3 Bedrooms | 2 Bathrooms | Corner Lot</span>
+        </div>
+      </div>
+
+      <!-- Photos -->
+      <div class="submit-section">
+        <div class="submit-section-title">Photos</div>
+        <div class="submit-grid">
+          <div class="submit-field">
+            <label>Thumbnail / Main Photo (Google Drive link)</label>
+            <input type="url" id="sp-thumbnail" placeholder="https://drive.google.com/file/d/...">
+            <span class="hint">Share the Google Drive link for the main property photo</span>
+          </div>
+          <div class="submit-field">
+            <label>Photo Album / Folder Name or Link</label>
+            <input type="text" id="sp-photos" placeholder="Google Drive folder link or album name">
+            <span class="hint">Paste a Google Drive folder link or describe where photos are</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submit -->
+      <div class="submit-footer">
+        <p class="submit-footer-note">🔒 Your information is <strong>private and confidential</strong>. We will contact you within 24 hours to verify the listing before publishing.</p>
+        <button class="submit-btn" onclick="submitProperty(this)">
+          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+          Submit Listing
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <!-- ── MOBILE NAV ── -->
 <div class="mnav">
   <div class="mnav-inner">
@@ -2249,7 +2422,7 @@ function showPage(name) {
   if (mn[name]) document.getElementById(mn[name]).classList.add('on');
   if (name === 'listings') applyFilters();
   // Update URL
-  const urlMap = { home:'/', listings:'/listings', about:'/about', contact:'/contact', buyer:'/buyer', match:'/match' };
+  const urlMap = { home:'/', listings:'/listings', about:'/about', contact:'/contact', buyer:'/buyer', match:'/match', submit:'/submit' };
   const url = urlMap[name] || '/';
   if (window.location.pathname !== url) history.pushState({ page: name }, '', url);
 }
@@ -2262,7 +2435,7 @@ window.addEventListener('popstate', e => {
 // On load: resolve path to page
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
-  const routes = { '/listings':'listings', '/about':'about', '/contact':'contact', '/buyer':'buyer', '/match':'match' };
+  const routes = { '/listings':'listings', '/about':'about', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit' };
   const page = routes[path];
   if (page) showPage(page);
 })();
@@ -2355,6 +2528,87 @@ async function submitForm(btn) {
   } catch (err) {
     showToast('Could not send message. Please try WhatsApp or email directly.');
     btn.textContent = 'Send Inquiry';
+    btn.disabled = false;
+  }
+}
+
+// ── SUBMIT PROPERTY ───────────────────────────────────
+async function submitProperty(btn) {
+  const name      = document.getElementById('sp-name').value.trim();
+  const phone     = document.getElementById('sp-phone').value.trim();
+  const email     = document.getElementById('sp-email').value.trim();
+  const relation  = document.getElementById('sp-relation').value;
+  const deal      = document.getElementById('sp-deal').value;
+  const type      = document.getElementById('sp-type').value;
+  const location  = document.getElementById('sp-location').value.trim();
+  const lot       = document.getElementById('sp-lot').value.trim();
+  const floor     = document.getElementById('sp-floor').value.trim();
+  const amount    = document.getElementById('sp-amount').value.trim();
+  const key       = document.getElementById('sp-key').value.trim();
+  const thumbnail = document.getElementById('sp-thumbnail').value.trim();
+  const photos    = document.getElementById('sp-photos').value.trim();
+
+  if (!name)     { showToast('Please enter your name'); return; }
+  if (!phone)    { showToast('Please enter your mobile number'); return; }
+  if (!location) { showToast('Please enter the property location'); return; }
+  if (!amount)   { showToast('Please enter the asking price'); return; }
+
+  btn.textContent = 'Submitting…';
+  btn.disabled = true;
+
+  const message = `
+PROPERTY SUBMISSION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONTACT
+  Name:       ${name}
+  Phone:      ${phone}
+  Email:      ${email || '—'}
+  Role:       ${relation}
+
+SPREADSHEET DATA
+  id:         (auto-assign)
+  deal:       ${deal}
+  type:       ${type}
+  location:   ${location}
+  lot:        ${lot || '—'}
+  floor:      ${floor || '—'}
+  amount:     ${amount}
+  key:        ${key || '—'}
+  photos:     ${photos || '—'}
+  thumbnail:  ${thumbnail || '—'}
+  `;
+
+  try {
+    const res = await fetch('/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        phone,
+        email,
+        interest: `Property Submission — ${type} in ${location}`,
+        message,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      btn.innerHTML = '✓ Submitted!';
+      btn.style.background = 'var(--green-d)';
+      showToast('Listing submitted! We will review and contact you within 24 hours.');
+      ['sp-name','sp-phone','sp-email','sp-location','sp-lot','sp-floor','sp-amount','sp-key','sp-thumbnail','sp-photos'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      setTimeout(() => { btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg> Submit Listing'; btn.style.background = ''; btn.disabled = false; }, 5000);
+    } else {
+      throw new Error(data.error || 'Failed');
+    }
+  } catch (err) {
+    showToast('Could not submit. Please contact us directly.');
+    btn.textContent = 'Submit Listing';
     btn.disabled = false;
   }
 }
