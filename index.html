@@ -765,6 +765,62 @@ a{text-decoration:none;color:inherit}
 }
 
 /* ══════════════════════════════════════════════════
+   DEVELOPERS PAGE
+══════════════════════════════════════════════════ */
+.dev-page{max-width:1200px;margin:0 auto;padding:56px 48px 100px}
+.dev-page-header{margin-bottom:48px;padding-bottom:32px;border-bottom:1px solid var(--border)}
+.dev-page-header h1{font-size:28px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
+.dev-page-header p{font-size:14px;color:var(--ink3);line-height:1.7;max-width:560px}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px}
+.dev-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.dev-card:hover{transform:translateY(-3px);box-shadow:var(--shl)}
+.dev-card-stripe{height:5px}
+.dev-card-body{padding:22px 22px 20px}
+.dev-card-initial{width:48px;height:48px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;margin-bottom:14px;letter-spacing:.02em}
+.dev-card-name{font-size:17px;font-weight:800;color:var(--ink);letter-spacing:-.01em;margin-bottom:2px}
+.dev-card-full{font-size:11px;color:var(--ink3);margin-bottom:10px}
+.dev-card-desc{font-size:12.5px;color:var(--ink2);line-height:1.65;margin-bottom:16px}
+.dev-card-footer{display:flex;align-items:center;justify-content:space-between;padding-top:14px;border-top:1px solid var(--border)}
+.dev-card-count{font-size:11px;color:var(--ink3);font-weight:600}
+.dev-card-btn{font-size:11px;font-weight:700;color:var(--green-d);display:flex;align-items:center;gap:4px;background:none;border:none;cursor:pointer;transition:gap .15s}
+.dev-card:hover .dev-card-btn{gap:7px}
+.dev-card-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.5}
+/* developer detail */
+.dev-detail{display:none}
+.dev-detail.active{display:block}
+.dev-list{display:block}
+.dev-list.hidden{display:none}
+.dev-back{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;padding:0 0 32px;cursor:pointer;transition:color .15s}
+.dev-back:hover{color:var(--ink)}
+.dev-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5}
+.dev-detail-header{display:flex;align-items:flex-start;gap:20px;padding:28px 28px 24px;border-radius:var(--r);border:1px solid var(--border);margin-bottom:32px;background:#fff;box-shadow:var(--sh)}
+.dev-detail-badge{width:64px;height:64px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+.dev-detail-name{font-size:24px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:3px}
+.dev-detail-full{font-size:13px;color:var(--ink3);margin-bottom:8px}
+.dev-detail-tagline{font-size:13px;color:var(--ink2);font-style:italic;border-left:3px solid var(--border);padding-left:10px}
+.dev-detail-desc{font-size:13.5px;color:var(--ink3);line-height:1.75;margin-top:10px}
+.dev-projects-label{font-size:10px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:20px}
+.dev-projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.dev-project-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:20px;box-shadow:var(--sh);transition:all .2s}
+.dev-project-card:hover{box-shadow:var(--shm);transform:translateY(-2px)}
+.dev-project-name{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:5px;line-height:1.3}
+.dev-project-loc{font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:4px;margin-bottom:12px}
+.dev-project-loc svg{width:11px;height:11px;stroke:var(--green-d);fill:none;stroke-width:2;flex-shrink:0}
+.dev-project-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.dev-tag{font-size:9px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.04em;text-transform:uppercase}
+.dev-tag-type{background:var(--bg);color:var(--ink2);border:1px solid var(--border)}
+.dev-tag-rfo{background:#DCFCE7;color:#15803D}
+.dev-tag-pre{background:#FEF9C3;color:#854D0E}
+.dev-project-units{font-size:11.5px;color:var(--ink3);margin-bottom:14px}
+.dev-project-units strong{color:var(--ink)}
+.dev-project-btn{width:100%;padding:10px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:11px;font-weight:700;border:none;cursor:pointer;transition:background .15s;letter-spacing:.04em}
+.dev-project-btn:hover{background:var(--green-d)}
+@media(max-width:768px){
+  .dev-page{padding:36px 20px 80px}
+  .dev-grid,.dev-projects-grid{grid-template-columns:1fr}
+}
+
+/* ══════════════════════════════════════════════════
    SOCIAL FOLLOW SECTION
 ══════════════════════════════════════════════════ */
 .social-section{background:var(--bg);padding:96px 48px;border-top:1px solid var(--border)}
@@ -894,6 +950,7 @@ a{text-decoration:none;color:inherit}
   <div class="nav-links">
     <button class="nl on" id="nl-home" onclick="showPage('home')">HOME</button>
     <button class="nl" id="nl-listings" onclick="showPage('listings')">VIEW ALL LISTING</button>
+    <button class="nl" id="nl-developers" onclick="showPage('developers')">DEVELOPERS</button>
     <button class="nl" id="nl-buyer" onclick="showPage('buyer')">LOOKING TO BUY</button>
   </div>
 
@@ -1927,6 +1984,32 @@ Ideal Property</div>
   </div>
 </div>
 
+<!-- ══════════════════════════════════════════════════
+     DEVELOPERS PAGE
+══════════════════════════════════════════════════ -->
+<div class="page" id="page-developers">
+  <div class="dev-page">
+    <!-- Developer List -->
+    <div class="dev-list" id="devList">
+      <div class="dev-page-header">
+        <h1>Property Developers</h1>
+        <p>Browse projects from the Philippines' leading real estate developers. Click any developer to explore their available units and projects.</p>
+      </div>
+      <div class="dev-grid" id="devGrid"></div>
+    </div>
+    <!-- Developer Detail -->
+    <div class="dev-detail" id="devDetail">
+      <button class="dev-back" onclick="closeDeveloper()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Developers
+      </button>
+      <div class="dev-detail-header" id="devDetailHeader"></div>
+      <div class="dev-projects-label" id="devProjectsLabel"></div>
+      <div class="dev-projects-grid" id="devProjectsGrid"></div>
+    </div>
+  </div>
+</div>
+
 <!-- ── MOBILE NAV ── -->
 <div class="mnav">
   <div class="mnav-inner">
@@ -2005,6 +2088,90 @@ function normaliseType(raw) {
   if (/commercial|building|office/.test(v))       return 'commercial';
   return v || 'property';
 }
+
+// ── DEVELOPER DATA ────────────────────────────────────
+const DEVELOPERS = [
+  { id:'smdc', name:'SMDC', full:'SM Development Corporation', tagline:'Live at the Center of It All', accent:'#C62828', desc:'One of the largest developers of mid-rise and high-rise condominiums in the Philippines, with properties across major CBDs and growth areas.',
+    projects:[
+      { name:'Air Residences', location:'Ayala Ave., Makati City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Gold Residences', location:'Bicutan, Parañaque City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+      { name:'Shore Residences', location:'MOA Complex, Pasay City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR, 3BR' },
+      { name:'Sail Residences', location:'MOA Complex, Pasay City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Mezza II Residences', location:'Quezon Ave., Quezon City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+    ]},
+  { id:'ayala', name:'Ayala Land', full:'Ayala Land Inc.', tagline:'Building Sustainable Communities', accent:'#1B5E20', desc:'The Philippines\' leading real estate developer with premium brands including Alveo, Avida, and Ayala Land Premier across integrated townships.',
+    projects:[
+      { name:'Avida Towers Nuvali', location:'Nuvali, Sta. Rosa, Laguna', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Avida Settings Nuvali', location:'Nuvali, Sta. Rosa, Laguna', type:'Residential H&L', status:'Pre-selling', units:'Various' },
+      { name:'Ayala Westgrove Heights', location:'Sta. Rosa, Laguna', type:'Residential H&L', status:'RFO', units:'Various' },
+      { name:'Alveo High Street South', location:'BGC, Taguig', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR, 3BR' },
+      { name:'Ayala Alabang Village', location:'Muntinlupa City', type:'Residential H&L', status:'RFO', units:'Various' },
+    ]},
+  { id:'empire-east', name:'Empire East', full:'Empire East Land Holdings Inc.', tagline:'Building Homes, Building Dreams', accent:'#1A237E', desc:'Pioneer of affordable yet quality-built condominium communities across Metro Manila, known for well-planned integrated neighborhoods.',
+    projects:[
+      { name:'The Rochester', location:'Pasig City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Pioneer Woodlands', location:'Mandaluyong City', type:'Condominium', status:'RFO', units:'Studio, 1BR' },
+      { name:'San Lorenzo Place', location:'Makati City', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR' },
+      { name:'Covent Garden', location:'San Juan City', type:'Condominium', status:'RFO', units:'Studio, 1BR' },
+      { name:'Little Baguio Terraces', location:'San Juan City', type:'Condominium', status:'RFO', units:'1BR, 2BR' },
+    ]},
+  { id:'megaworld', name:'Megaworld', full:'Megaworld Corporation', tagline:'Live-Work-Play Townships', accent:'#B8860B', desc:'Pioneer of the live-work-play township concept with integrated developments across the Philippines featuring offices, retail, and residences.',
+    projects:[
+      { name:'The Florence', location:'McKinley Hill, Taguig', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR' },
+      { name:'The Albany', location:'McKinley West, Taguig', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR' },
+      { name:'Eastwood Parkview', location:'Eastwood City, Quezon City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'One Eastwood Avenue', location:'Eastwood City, Quezon City', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR, 3BR' },
+      { name:'Sonata Private Residences', location:'Ortigas, Pasig City', type:'Condominium', status:'RFO', units:'1BR, 2BR' },
+    ]},
+  { id:'filinvest', name:'Filinvest', full:'Filinvest Land Inc.', tagline:'Building a Better Future', accent:'#BF360C', desc:'Known for affordable to mid-market residential developments, integrated urban communities, and sustainable township projects.',
+    projects:[
+      { name:'One Oasis Ortigas', location:'Ortigas Ext., Pasig City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Balmori Suites', location:'Rockwell, Makati City', type:'Condominium', status:'RFO', units:'2BR, 3BR, 4BR' },
+      { name:'Spatial', location:'Alabang, Muntinlupa', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+      { name:'Studio One', location:'New Manila, Quezon City', type:'Condominium', status:'RFO', units:'Studio, 1BR' },
+      { name:'Futura by Filinvest', location:'Sta. Rosa, Laguna', type:'Residential H&L', status:'Pre-selling', units:'Various' },
+    ]},
+  { id:'dmci', name:'DMCI Homes', full:'D.M. Consunji, Inc.', tagline:'Resort-Inspired Living', accent:'#0D47A1', desc:'Award-winning developer known for lush, resort-inspired condominium communities that bring nature into everyday urban living.',
+    projects:[
+      { name:'Illumina Residences', location:'Manila', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Arista Place', location:'Parañaque City', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR' },
+      { name:'Levina Place', location:'Pasig City', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR' },
+      { name:'Tivoli Garden Residences', location:'Mandaluyong City', type:'Condominium', status:'RFO', units:'1BR, 2BR' },
+      { name:'Rhapsody Residences', location:'Las Piñas City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+    ]},
+  { id:'robinsons', name:'Robinsons Land', full:'Robinsons Land Corporation', tagline:'Enriching Life Every Day', accent:'#1565C0', desc:'A diversified real estate company with residential, commercial, leisure, and hospitality developments across the Philippines.',
+    projects:[
+      { name:'Chic Towers', location:'Mandaluyong City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR' },
+      { name:'The Trion Towers', location:'BGC, Taguig', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR' },
+      { name:'Woodsville Mansions', location:'Parañaque City', type:'Condominium', status:'RFO', units:'Studio, 1BR' },
+      { name:'Escalades', location:'Pasig City', type:'Condominium', status:'RFO', units:'1BR, 2BR' },
+      { name:'Robinsons Residences', location:'Quezon City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+    ]},
+  { id:'rockwell', name:'Rockwell Land', full:'Rockwell Land Corporation', tagline:'The Premium Standard', accent:'#212121', desc:'Premium developer synonymous with quality, exclusivity, and upscale urban living. Known for world-class residences and retail lifestyle centers.',
+    projects:[
+      { name:'One Rockwell', location:'Rockwell, Makati City', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR, 4BR' },
+      { name:'East Residences', location:'Rockwell, Makati City', type:'Condominium', status:'RFO', units:'2BR, 3BR' },
+      { name:'The Proscenium', location:'Rockwell, Makati City', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR, 3BR' },
+      { name:'32 Sanson', location:'Lahug, Cebu City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+      { name:'Rockwell Primaries', location:'Taguig City', type:'Condominium', status:'Pre-selling', units:'1BR, 2BR' },
+    ]},
+  { id:'camella', name:'Camella', full:'Camella Homes / Vista Land', tagline:'The Home of the Filipino Family', accent:'#E64A19', desc:'The country\'s largest homebuilder with affordable to mid-cost house-and-lot communities across Southern Luzon and all major Philippine regions.',
+    projects:[
+      { name:'Camella Nuvali', location:'Nuvali, Sta. Rosa, Laguna', type:'Residential H&L', status:'Pre-selling', units:'Various' },
+      { name:'Camella Sta. Rosa', location:'Sta. Rosa, Laguna', type:'Residential H&L', status:'RFO', units:'Various' },
+      { name:'Camella Calamba', location:'Calamba, Laguna', type:'Residential H&L', status:'Pre-selling', units:'Various' },
+      { name:'Camella Sto. Tomas', location:'Sto. Tomas, Batangas', type:'Residential H&L', status:'Pre-selling', units:'Various' },
+      { name:'Lessandra Nuvali', location:'Sta. Rosa, Laguna', type:'Residential H&L', status:'RFO', units:'Various' },
+    ]},
+  { id:'federal', name:'Federal Land', full:'Federal Land Inc.', tagline:'Crafted for Life\'s Finest Moments', accent:'#880E4F', desc:'Premium developer known for master-planned townships and world-class residences, hospitality, and commercial developments in Metro Manila.',
+    projects:[
+      { name:'Grand Hyatt Manila Residences', location:'BGC, Taguig', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR, 4BR' },
+      { name:'Marco Polo Residences', location:'Cebu City', type:'Condominium', status:'RFO', units:'Studio, 1BR, 2BR' },
+      { name:'Mplace at South Triangle', location:'Quezon City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+      { name:'Pacific Plaza Towers', location:'BGC, Taguig', type:'Condominium', status:'RFO', units:'1BR, 2BR, 3BR' },
+      { name:'The Radiance Manila Bay', location:'Pasay City', type:'Condominium', status:'Pre-selling', units:'Studio, 1BR, 2BR' },
+    ]},
+];
 
 // ── STATE ─────────────────────────────────────────────
 let listings         = [];
@@ -2326,6 +2493,71 @@ function galleryNav(dir) {
 
 function goBack() { showPage(previousPage || 'listings'); }
 
+// ── DEVELOPERS ────────────────────────────────────────
+function renderDevelopers() {
+  const grid = document.getElementById('devGrid');
+  if (!grid || grid.children.length) return;
+  grid.innerHTML = DEVELOPERS.map(d => `
+    <div class="dev-card" onclick="openDeveloper('${d.id}')">
+      <div class="dev-card-stripe" style="background:${d.accent}"></div>
+      <div class="dev-card-body">
+        <div class="dev-card-initial" style="background:${d.accent}">${d.name.substring(0,2).toUpperCase()}</div>
+        <div class="dev-card-name">${d.name}</div>
+        <div class="dev-card-full">${d.full}</div>
+        <div class="dev-card-desc">${d.desc}</div>
+        <div class="dev-card-footer">
+          <span class="dev-card-count">${d.projects.length} Featured Projects</span>
+          <button class="dev-card-btn">View Projects <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function openDeveloper(id) {
+  const d = DEVELOPERS.find(x => x.id === id);
+  if (!d) return;
+  document.getElementById('devList').classList.add('hidden');
+  document.getElementById('devDetail').classList.add('active');
+  document.getElementById('devDetailHeader').innerHTML = `
+    <div class="dev-detail-badge" style="background:${d.accent}">${d.name.substring(0,2).toUpperCase()}</div>
+    <div>
+      <div class="dev-detail-name">${d.name}</div>
+      <div class="dev-detail-full">${d.full}</div>
+      <div class="dev-detail-tagline">${d.tagline}</div>
+      <div class="dev-detail-desc">${d.desc}</div>
+    </div>`;
+  document.getElementById('devProjectsLabel').textContent = `${d.projects.length} Featured Projects`;
+  document.getElementById('devProjectsGrid').innerHTML = d.projects.map(p => `
+    <div class="dev-project-card">
+      <div class="dev-project-name">${p.name}</div>
+      <div class="dev-project-loc">
+        <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${p.location}
+      </div>
+      <div class="dev-project-tags">
+        <span class="dev-tag dev-tag-type">${p.type}</span>
+        <span class="dev-tag ${p.status === 'RFO' ? 'dev-tag-rfo' : 'dev-tag-pre'}">${p.status === 'RFO' ? 'Ready for Occupancy' : 'Pre-selling'}</span>
+      </div>
+      <div class="dev-project-units"><strong>Units:</strong> ${p.units}</div>
+      <button class="dev-project-btn" onclick="inquireDeveloperProject('${d.name}', '${p.name}')">Inquire About This Project</button>
+    </div>`).join('');
+  history.pushState({ page: 'developers', dev: id }, '', `/developers?dev=${id}`);
+  window.scrollTo(0, 0);
+}
+
+function closeDeveloper() {
+  document.getElementById('devList').classList.remove('hidden');
+  document.getElementById('devDetail').classList.remove('active');
+  history.pushState({ page: 'developers' }, '', '/developers');
+  window.scrollTo(0, 0);
+}
+
+function inquireDeveloperProject(devName, projectName) {
+  showPage('contact');
+  const msg = document.getElementById('contactMsg');
+  if (msg) msg.value = `Hi, I am interested in ${projectName} by ${devName}. Please send more information about available units, pricing, and payment terms.`;
+}
+
 // ── FILTERS ───────────────────────────────────────────
 function applyFilters() {
   let data = [...listings];
@@ -2414,7 +2646,8 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   window.scrollTo(0, 0);
-  const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about' };
+  if (name === 'developers') renderDevelopers();
+  const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about', developers:'nl-developers' };
   document.querySelectorAll('.nl').forEach(l => l.classList.remove('on'));
   if (nm[name]) document.getElementById(nm[name]).classList.add('on');
   const mn = { home:'mn-home', listings:'mn-listings', buyer:'mn-buyer', contact:'mn-contact', about:'mn-about' };
@@ -2422,7 +2655,7 @@ function showPage(name) {
   if (mn[name]) document.getElementById(mn[name]).classList.add('on');
   if (name === 'listings') applyFilters();
   // Update URL
-  const urlMap = { home:'/', listings:'/listings', about:'/about', contact:'/contact', buyer:'/buyer', match:'/match', submit:'/submit' };
+  const urlMap = { home:'/', listings:'/listings', about:'/about', contact:'/contact', buyer:'/buyer', match:'/match', submit:'/submit', developers:'/developers' };
   const url = urlMap[name] || '/';
   if (window.location.pathname !== url) history.pushState({ page: name }, '', url);
 }
@@ -2435,7 +2668,7 @@ window.addEventListener('popstate', e => {
 // On load: resolve path to page
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
-  const routes = { '/listings':'listings', '/about':'about', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit' };
+  const routes = { '/listings':'listings', '/about':'about', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit', '/developers':'developers' };
   const page = routes[path];
   if (page) showPage(page);
 })();
