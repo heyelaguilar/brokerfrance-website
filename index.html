@@ -952,6 +952,7 @@ a{text-decoration:none;color:inherit}
     <button class="nl" id="nl-listings" onclick="showPage('listings')">VIEW ALL LISTING</button>
     <button class="nl" id="nl-developers" onclick="showPage('developers')">DEVELOPERS</button>
     <button class="nl" id="nl-buyer" onclick="showPage('buyer')">LOOKING TO BUY</button>
+    <button class="nl" id="nl-submit" onclick="showPage('submit')">LIST WITH US</button>
   </div>
 
   <div class="nav-actions">
@@ -1854,8 +1855,15 @@ Ideal Property</div>
 <div class="page" id="page-submit">
   <div class="submit-page">
     <div class="submit-header">
-      <h1>Submit Your Property</h1>
-      <p>Fill in the details below and we'll review your listing within 24 hours. All fields marked <span style="color:var(--green-d);font-weight:700">*</span> are required.</p>
+      <div style="font-size:10px;font-weight:800;color:var(--green-d);letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="display:block;width:18px;height:1.5px;background:var(--green)"></span>List With Us</div>
+      <h1>Submit Your Property Listing</h1>
+      <p>Partner with Broker France to sell or lease your property. We connect you with qualified buyers and tenants across Southern Luzon and Metro Manila. Fill in the details below and we'll reach out within 24 hours.</p>
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Free listing</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>PRC-licensed broker</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Wide buyer network</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Reply within 24 hours</div>
+      </div>
     </div>
     <div class="submit-form-card">
 
@@ -2647,7 +2655,7 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   window.scrollTo(0, 0);
   if (name === 'developers') renderDevelopers();
-  const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about', developers:'nl-developers' };
+  const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about', developers:'nl-developers', submit:'nl-submit' };
   document.querySelectorAll('.nl').forEach(l => l.classList.remove('on'));
   if (nm[name]) document.getElementById(nm[name]).classList.add('on');
   const mn = { home:'mn-home', listings:'mn-listings', buyer:'mn-buyer', contact:'mn-contact', about:'mn-about' };
