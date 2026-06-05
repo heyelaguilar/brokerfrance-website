@@ -2706,9 +2706,11 @@ const WIZARD_STEPS = [
   {
     num: 'Step 4 of 4', title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
     fields: [
-      { id:'sp-name',  label:'Full Name',     req:true,  type:'text',  ph:'Juan dela Cruz' },
-      { id:'sp-phone', label:'Mobile Number', req:true,  type:'tel',   ph:'+63 9XX XXX XXXX' },
-      { id:'sp-email', label:'Email Address', req:false, type:'email', ph:'juan@email.com' },
+      { id:'sp-name',     label:'Full Name',     req:true,  type:'text',   ph:'Juan dela Cruz' },
+      { id:'sp-phone',    label:'Mobile Number', req:true,  type:'tel',    ph:'+63 9XX XXX XXXX' },
+      { id:'sp-email',    label:'Email Address', req:false, type:'email',  ph:'juan@email.com' },
+      { id:'sp-role',     label:'I am the',      req:true,  type:'select', opts:['Owner','Broker','Sales Person','Authorized Representative'] },
+      { id:'sp-tct',      label:'',              req:false, type:'checkbox', text:'Property has a Transfer Certificate of Title (TCT)' },
     ]
   }
 ];
@@ -2732,6 +2734,11 @@ function renderWizardStep() {
       input = `<select id="${f.id}">${f.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
     } else if (f.type === 'textarea') {
       input = `<textarea id="${f.id}" placeholder="${f.ph || ''}"></textarea>`;
+    } else if (f.type === 'checkbox') {
+      return `<div class="wf" style="flex-direction:row;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer" onclick="document.getElementById('${f.id}').click()">
+        <input type="checkbox" id="${f.id}" style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;cursor:pointer">
+        <label for="${f.id}" style="font-size:14px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer">${f.text}</label>
+      </div>`;
     } else {
       const wrap = f.prefix ? `style="position:relative"` : '';
       const pre  = f.prefix ? `<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none">${f.prefix}</span>` : '';
@@ -2767,7 +2774,9 @@ function renderWizardStep() {
   // Restore saved values
   s.fields.forEach(f => {
     const el = document.getElementById(f.id);
-    if (el && wData[f.id]) el.value = wData[f.id];
+    if (!el) return;
+    if (f.type === 'checkbox') { el.checked = wData[f.id] === 'Yes'; }
+    else if (wData[f.id]) el.value = wData[f.id];
   });
 }
 
@@ -2777,9 +2786,11 @@ function wizardNext() {
   const s = WIZARD_STEPS[wStep];
   for (const f of s.fields) {
     const el = document.getElementById(f.id);
-    const val = el ? el.value.trim() : '';
-    if (f.req && !val) { showToast(`Please fill in: ${f.label}`); el && el.focus(); return; }
-    if (el) wData[f.id] = val || el.value;
+    if (!el) continue;
+    if (f.type === 'checkbox') { wData[f.id] = el.checked ? 'Yes' : 'No'; continue; }
+    const val = el.value.trim();
+    if (f.req && !val) { showToast(`Please fill in: ${f.label}`); el.focus(); return; }
+    wData[f.id] = val || el.value;
   }
   if (wStep < WIZARD_STEPS.length - 1) {
     wStep++;
@@ -2797,6 +2808,7 @@ function renderWizardReview() {
   document.getElementById('wProgressBar').style.width = '100%';
   const rows = [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
+    ['Role', wData['sp-role'] || '—'], ['Has TCT', wData['sp-tct'] || 'No'],
     ['Deal', wData['sp-deal']], ['Type', wData['sp-type']], ['Location', wData['sp-location']],
     ['Lot Area', wData['sp-lot'] ? wData['sp-lot'] + ' sqm' : '—'],
     ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
