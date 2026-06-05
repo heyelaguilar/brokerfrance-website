@@ -2680,15 +2680,7 @@ const SUBMIT_SHEET_URL = API_URL; // same script, doPost handles saves
 
 const WIZARD_STEPS = [
   {
-    num: 'Step 1 of 4', title: 'Who are you?', sub: 'Tell us a little about yourself so we can reach you.',
-    fields: [
-      { id:'sp-name',  label:'Full Name',           req:true,  type:'text',  ph:'Juan dela Cruz' },
-      { id:'sp-phone', label:'Mobile Number',        req:true,  type:'tel',   ph:'+63 9XX XXX XXXX' },
-      { id:'sp-email', label:'Email Address',        req:false, type:'email', ph:'juan@email.com' },
-    ]
-  },
-  {
-    num: 'Step 2 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
+    num: 'Step 1 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
     fields: [
       { id:'sp-deal',     label:'Deal Type',     req:true,  type:'select', opts:['For Sale','For Lease','For Sale & For Lease'] },
       { id:'sp-type',     label:'Property Type', req:true,  type:'select', opts:['Residential H&L','Condominium','Commercial','Commercial Lot','Commercial Bldg','Farm','Beach','Warehouse','Lot Only','Hotel'] },
@@ -2696,19 +2688,27 @@ const WIZARD_STEPS = [
     ]
   },
   {
-    num: 'Step 3 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
+    num: 'Step 2 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
     fields: [
-      { id:'sp-lot',    label:'Lot Area (sqm)',    req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
-      { id:'sp-floor',  label:'Floor Area (sqm)',  req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
+      { id:'sp-lot',    label:'Lot Area (sqm)',     req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
+      { id:'sp-floor',  label:'Floor Area (sqm)',   req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
       { id:'sp-amount', label:'Asking Price (PHP)', req:true,  type:'number', ph:'e.g. 5500000', prefix:'₱' },
     ]
   },
   {
-    num: 'Step 4 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
+    num: 'Step 3 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
     fields: [
-      { id:'sp-key',       label:'Key Features',         req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
-      { id:'sp-thumbnail', label:'Main Photo (Drive link)', req:false, type:'url',   ph:'https://drive.google.com/file/d/...' },
-      { id:'sp-photos',    label:'Photo Album or Folder',  req:false, type:'text',  ph:'Google Drive folder link or album name' },
+      { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
+      { id:'sp-thumbnail', label:'Main Photo (Drive link)',  req:false, type:'url',     ph:'https://drive.google.com/file/d/...' },
+      { id:'sp-photos',    label:'Photo Album or Folder',   req:false, type:'text',    ph:'Google Drive folder link or album name' },
+    ]
+  },
+  {
+    num: 'Step 4 of 4', title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
+    fields: [
+      { id:'sp-name',  label:'Full Name',     req:true,  type:'text',  ph:'Juan dela Cruz' },
+      { id:'sp-phone', label:'Mobile Number', req:true,  type:'tel',   ph:'+63 9XX XXX XXXX' },
+      { id:'sp-email', label:'Email Address', req:false, type:'email', ph:'juan@email.com' },
     ]
   }
 ];
