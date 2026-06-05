@@ -728,40 +728,66 @@ a{text-decoration:none;color:inherit}
 }
 
 /* ══════════════════════════════════════════════════
-   SUBMIT PROPERTY PAGE
+   SUBMIT PROPERTY — WIZARD
 ══════════════════════════════════════════════════ */
-.submit-page{max-width:860px;margin:0 auto;padding:56px 40px 100px}
-.submit-header{margin-bottom:40px;padding-bottom:32px;border-bottom:1px solid var(--border)}
-.submit-header h1{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:8px}
-.submit-header p{font-size:14px;color:var(--ink3);line-height:1.7}
-.submit-form-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:36px;box-shadow:var(--sh)}
-.submit-section{margin-bottom:36px;padding-bottom:36px;border-bottom:1px solid var(--border)}
-.submit-section:last-of-type{margin-bottom:0;padding-bottom:0;border-bottom:none}
-.submit-section-title{font-size:11px;font-weight:800;color:var(--green-d);text-transform:uppercase;letter-spacing:.12em;margin-bottom:20px;display:flex;align-items:center;gap:8px}
-.submit-section-title::before{content:'';display:block;width:16px;height:2px;background:var(--green)}
-.submit-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.submit-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-.submit-field{display:flex;flex-direction:column;gap:6px}
-.submit-field.full{grid-column:1/-1}
-.submit-field label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
-.submit-field label span{color:var(--green-d);margin-left:2px}
-.submit-field input,.submit-field select,.submit-field textarea{font-family:'Manrope',sans-serif;font-size:13.5px;font-weight:500;color:var(--ink);background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:11px 14px;outline:none;transition:border-color .15s;width:100%}
-.submit-field input:focus,.submit-field select:focus,.submit-field textarea:focus{border-color:var(--green);background:#fff}
-.submit-field textarea{resize:vertical;min-height:90px}
-.submit-field .hint{font-size:11px;color:var(--ink3);margin-top:3px;line-height:1.5}
-.submit-field .input-prefix{position:relative}
-.submit-field .input-prefix input{padding-left:32px}
-.submit-field .input-prefix::before{content:'₱';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--ink3);font-weight:600;pointer-events:none}
-.submit-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:28px;flex-wrap:wrap}
-.submit-footer-note{font-size:12px;color:var(--ink3);line-height:1.5;flex:1}
-.submit-footer-note strong{color:var(--ink)}
-.submit-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
-.submit-btn:hover{background:var(--green-d);transform:translateY(-1px);box-shadow:0 6px 20px rgba(27,58,45,.25)}
-.submit-btn svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5}
-@media(max-width:768px){
-  .submit-page{padding:36px 20px 80px}
-  .submit-grid,.submit-grid-3{grid-template-columns:1fr}
-  .submit-form-card{padding:24px}
+.wizard-wrap{min-height:100vh;background:var(--bg);padding:48px 24px 100px;display:flex;flex-direction:column;align-items:center}
+.wizard-brand{display:flex;align-items:center;gap:8px;margin-bottom:40px;cursor:pointer}
+.wizard-brand svg{width:26px;height:26px}
+.wizard-brand-name{font-size:13px;font-weight:800;color:var(--ink);letter-spacing:.06em;text-transform:uppercase}
+.wizard-card{background:#fff;border-radius:var(--rl);box-shadow:var(--shl);width:100%;max-width:560px;overflow:hidden}
+/* progress */
+.wizard-progress{height:4px;background:var(--border);position:relative}
+.wizard-progress-bar{height:100%;background:var(--green);transition:width .4s ease;border-radius:0 99px 99px 0}
+/* step header */
+.wizard-step-hdr{padding:36px 36px 0}
+.wizard-step-num{font-size:10px;font-weight:800;color:var(--green-d);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+.wizard-step-title{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:6px}
+.wizard-step-sub{font-size:13.5px;color:var(--ink3);line-height:1.6}
+/* fields */
+.wizard-fields{padding:28px 36px 8px;display:flex;flex-direction:column;gap:18px}
+.wf{display:flex;flex-direction:column;gap:6px}
+.wf label{font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em}
+.wf label em{color:var(--green-d);font-style:normal;margin-left:2px}
+.wf input,.wf select,.wf textarea{font-family:'Manrope',sans-serif;font-size:15px;font-weight:500;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:13px 16px;outline:none;transition:all .15s;width:100%}
+.wf input:focus,.wf select:focus,.wf textarea:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(27,58,45,.08)}
+.wf textarea{resize:none;height:100px}
+.wf .hint{font-size:11px;color:var(--ink3);margin-top:2px}
+.wf-prefix{position:relative}
+.wf-prefix input{padding-left:28px}
+.wf-prefix::before{content:'₱';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none}
+/* nav */
+.wizard-nav{padding:24px 36px 32px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wizard-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink3);background:none;border:none;cursor:pointer;transition:color .15s;padding:0}
+.wizard-back:hover{color:var(--ink)}
+.wizard-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5}
+.wizard-next{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s;margin-left:auto}
+.wizard-next:hover{background:var(--green-d);box-shadow:0 6px 20px rgba(27,58,45,.25)}
+.wizard-next svg{width:15px;height:15px;stroke:#fff;fill:none;stroke-width:2.5}
+.wizard-next.finish{background:var(--green)}
+/* dots */
+.wizard-dots{display:flex;gap:6px;margin:0 auto}
+.wizard-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .25s}
+.wizard-dot.done{background:var(--green-m)}
+.wizard-dot.active{background:var(--green);width:20px;border-radius:99px}
+/* review */
+.wizard-review{padding:28px 36px 8px}
+.wizard-review-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px}
+.wizard-review-row:last-child{border-bottom:none}
+.wizard-review-label{color:var(--ink3);font-weight:600;flex-shrink:0;width:130px}
+.wizard-review-value{color:var(--ink);font-weight:600;text-align:right;word-break:break-all}
+/* success */
+.wizard-success{padding:48px 36px;text-align:center}
+.wizard-success-icon{width:64px;height:64px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.wizard-success-icon svg{width:28px;height:28px;stroke:var(--green-d);fill:none;stroke-width:2}
+.wizard-success h2{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:8px}
+.wizard-success p{font-size:14px;color:var(--ink3);line-height:1.7}
+@media(max-width:600px){
+  .wizard-wrap{padding:32px 16px 80px}
+  .wizard-step-hdr{padding:28px 24px 0}
+  .wizard-fields{padding:20px 24px 8px}
+  .wizard-nav{padding:20px 24px 28px}
+  .wizard-review{padding:20px 24px 8px}
+  .wizard-success{padding:36px 24px}
 }
 
 /* ══════════════════════════════════════════════════
@@ -1852,141 +1878,16 @@ Ideal Property</div>
      SUBMIT PROPERTY PAGE
 ══════════════════════════════════════════════════ -->
 <div class="page" id="page-submit">
-  <div class="submit-page">
-    <div class="submit-header">
-      <div style="font-size:10px;font-weight:800;color:var(--green-d);letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="display:block;width:18px;height:1.5px;background:var(--green)"></span>List With Us</div>
-      <h1>Submit Your Property Listing</h1>
-      <p>Partner with Broker France to sell or lease your property. We connect you with qualified buyers and tenants across Southern Luzon and Metro Manila. Fill in the details below and we'll reach out within 24 hours.</p>
-      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-top:20px;padding-top:20px;border-top:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Free listing</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>PRC-licensed broker</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Wide buyer network</div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)"><span style="width:20px;height:20px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:var(--green-d)">✓</span>Reply within 24 hours</div>
-      </div>
+  <div class="wizard-wrap">
+    <!-- Brand -->
+    <div class="wizard-brand" onclick="showPage('home')">
+      <svg viewBox="0 0 80 80" fill="none"><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1B3A2D"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#2A6044"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#2A6044"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1B3A2D"/></svg>
+      <span class="wizard-brand-name">Broker France</span>
     </div>
-    <div class="submit-form-card">
-
-      <!-- Contact Info -->
-      <div class="submit-section">
-        <div class="submit-section-title">Your Contact Details</div>
-        <div class="submit-grid">
-          <div class="submit-field">
-            <label>Full Name <span>*</span></label>
-            <input type="text" id="sp-name" placeholder="Juan dela Cruz">
-          </div>
-          <div class="submit-field">
-            <label>Mobile Number <span>*</span></label>
-            <input type="tel" id="sp-phone" placeholder="+63 9XX XXX XXXX">
-          </div>
-          <div class="submit-field">
-            <label>Email Address</label>
-            <input type="email" id="sp-email" placeholder="juan@email.com">
-          </div>
-          <div class="submit-field">
-            <label>Relationship to Property</label>
-            <select id="sp-relation">
-              <option>Owner</option>
-              <option>Co-owner</option>
-              <option>Authorized representative</option>
-              <option>Broker / Agent</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- Property Info -->
-      <div class="submit-section">
-        <div class="submit-section-title">Property Details</div>
-        <div class="submit-grid">
-          <div class="submit-field">
-            <label>Deal Type <span>*</span></label>
-            <select id="sp-deal">
-              <option value="For Sale">For Sale</option>
-              <option value="For Lease">For Lease</option>
-              <option value="For Sale, For Lease">For Sale &amp; For Lease</option>
-            </select>
-          </div>
-          <div class="submit-field">
-            <label>Property Type <span>*</span></label>
-            <select id="sp-type">
-              <option value="Residential H&L">Residential House &amp; Lot</option>
-              <option value="Condominium">Condominium</option>
-              <option value="Commercial">Commercial</option>
-              <option value="Commercial Lot">Commercial Lot</option>
-              <option value="Commercial Bldg">Commercial Building</option>
-              <option value="Farm">Farm / Agricultural</option>
-              <option value="Beach">Beach / Resort</option>
-              <option value="Warehouse">Warehouse</option>
-              <option value="Lot Only">Lot Only</option>
-              <option value="Hotel">Hotel</option>
-            </select>
-          </div>
-          <div class="submit-field full">
-            <label>Location / Address <span>*</span></label>
-            <input type="text" id="sp-location" placeholder="e.g. Nuvali, Sta. Rosa, Laguna">
-          </div>
-        </div>
-      </div>
-
-      <!-- Size & Price -->
-      <div class="submit-section">
-        <div class="submit-section-title">Size &amp; Pricing</div>
-        <div class="submit-grid-3">
-          <div class="submit-field">
-            <label>Lot Area (sqm)</label>
-            <input type="number" id="sp-lot" placeholder="e.g. 150">
-            <span class="hint">Leave blank if not applicable</span>
-          </div>
-          <div class="submit-field">
-            <label>Floor Area (sqm)</label>
-            <input type="number" id="sp-floor" placeholder="e.g. 120">
-            <span class="hint">Leave blank if not applicable</span>
-          </div>
-          <div class="submit-field">
-            <label>Asking Price (PHP) <span>*</span></label>
-            <div class="input-prefix">
-              <input type="number" id="sp-amount" placeholder="e.g. 5500000">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Key Details -->
-      <div class="submit-section">
-        <div class="submit-section-title">Key Features &amp; Description</div>
-        <div class="submit-field full">
-          <label>Key Details</label>
-          <textarea id="sp-key" placeholder="e.g. 3 Bedrooms | 2 Bathrooms | With Garage | Corner Lot | Clean Title&#10;&#10;Separate features with a pipe | character or new line."></textarea>
-          <span class="hint">Separate features with | (pipe). E.g. 3 Bedrooms | 2 Bathrooms | Corner Lot</span>
-        </div>
-      </div>
-
-      <!-- Photos -->
-      <div class="submit-section">
-        <div class="submit-section-title">Photos</div>
-        <div class="submit-grid">
-          <div class="submit-field">
-            <label>Thumbnail / Main Photo (Google Drive link)</label>
-            <input type="url" id="sp-thumbnail" placeholder="https://drive.google.com/file/d/...">
-            <span class="hint">Share the Google Drive link for the main property photo</span>
-          </div>
-          <div class="submit-field">
-            <label>Photo Album / Folder Name or Link</label>
-            <input type="text" id="sp-photos" placeholder="Google Drive folder link or album name">
-            <span class="hint">Paste a Google Drive folder link or describe where photos are</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Submit -->
-      <div class="submit-footer">
-        <p class="submit-footer-note">🔒 Your information is <strong>private and confidential</strong>. We will contact you within 24 hours to verify the listing before publishing.</p>
-        <button class="submit-btn" onclick="submitProperty(this)">
-          <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
-          Submit Listing
-        </button>
-      </div>
-
+    <!-- Card -->
+    <div class="wizard-card">
+      <div class="wizard-progress"><div class="wizard-progress-bar" id="wProgressBar" style="width:25%"></div></div>
+      <div id="wizardContent"></div>
     </div>
   </div>
 </div>
@@ -2654,6 +2555,7 @@ function showPage(name) {
   document.getElementById('page-' + name).classList.add('active');
   window.scrollTo(0, 0);
   if (name === 'developers') renderDevelopers();
+  if (name === 'submit') initWizard();
   const nm = { home:'nl-home', listings:'nl-listings', buyer:'nl-buyer', about:'nl-about', developers:'nl-developers', submit:'nl-submit' };
   document.querySelectorAll('.nl').forEach(l => l.classList.remove('on'));
   if (nm[name]) document.getElementById(nm[name]).classList.add('on');
@@ -2772,82 +2674,191 @@ async function submitForm(btn) {
   }
 }
 
-// ── SUBMIT PROPERTY ───────────────────────────────────
-async function submitProperty(btn) {
-  const name      = document.getElementById('sp-name').value.trim();
-  const phone     = document.getElementById('sp-phone').value.trim();
-  const email     = document.getElementById('sp-email').value.trim();
-  const relation  = document.getElementById('sp-relation').value;
-  const deal      = document.getElementById('sp-deal').value;
-  const type      = document.getElementById('sp-type').value;
-  const location  = document.getElementById('sp-location').value.trim();
-  const lot       = document.getElementById('sp-lot').value.trim();
-  const floor     = document.getElementById('sp-floor').value.trim();
-  const amount    = document.getElementById('sp-amount').value.trim();
-  const key       = document.getElementById('sp-key').value.trim();
-  const thumbnail = document.getElementById('sp-thumbnail').value.trim();
-  const photos    = document.getElementById('sp-photos').value.trim();
+// ── PROPERTY SUBMISSION WIZARD ────────────────────────
+// Google Apps Script endpoint — saves to "Submissions" sheet
+const SUBMIT_SHEET_URL = API_URL; // same script, doPost handles saves
 
-  if (!name)     { showToast('Please enter your name'); return; }
-  if (!phone)    { showToast('Please enter your mobile number'); return; }
-  if (!location) { showToast('Please enter the property location'); return; }
-  if (!amount)   { showToast('Please enter the asking price'); return; }
+const WIZARD_STEPS = [
+  {
+    num: 'Step 1 of 4', title: 'Who are you?', sub: 'Tell us a little about yourself so we can reach you.',
+    fields: [
+      { id:'sp-name',  label:'Full Name',           req:true,  type:'text',  ph:'Juan dela Cruz' },
+      { id:'sp-phone', label:'Mobile Number',        req:true,  type:'tel',   ph:'+63 9XX XXX XXXX' },
+      { id:'sp-email', label:'Email Address',        req:false, type:'email', ph:'juan@email.com' },
+    ]
+  },
+  {
+    num: 'Step 2 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
+    fields: [
+      { id:'sp-deal',     label:'Deal Type',     req:true,  type:'select', opts:['For Sale','For Lease','For Sale & For Lease'] },
+      { id:'sp-type',     label:'Property Type', req:true,  type:'select', opts:['Residential H&L','Condominium','Commercial','Commercial Lot','Commercial Bldg','Farm','Beach','Warehouse','Lot Only','Hotel'] },
+      { id:'sp-location', label:'Location',      req:true,  type:'text',   ph:'e.g. Nuvali, Sta. Rosa, Laguna' },
+    ]
+  },
+  {
+    num: 'Step 3 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
+    fields: [
+      { id:'sp-lot',    label:'Lot Area (sqm)',    req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
+      { id:'sp-floor',  label:'Floor Area (sqm)',  req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
+      { id:'sp-amount', label:'Asking Price (PHP)', req:true,  type:'number', ph:'e.g. 5500000', prefix:'₱' },
+    ]
+  },
+  {
+    num: 'Step 4 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
+    fields: [
+      { id:'sp-key',       label:'Key Features',         req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
+      { id:'sp-thumbnail', label:'Main Photo (Drive link)', req:false, type:'url',   ph:'https://drive.google.com/file/d/...' },
+      { id:'sp-photos',    label:'Photo Album or Folder',  req:false, type:'text',  ph:'Google Drive folder link or album name' },
+    ]
+  }
+];
 
+let wStep = 0;
+
+function initWizard() {
+  wStep = 0;
+  renderWizardStep();
+}
+
+function renderWizardStep() {
+  const total = WIZARD_STEPS.length;
+  const pct = ((wStep + 1) / (total + 1)) * 100;
+  document.getElementById('wProgressBar').style.width = pct + '%';
+
+  const s = WIZARD_STEPS[wStep];
+  const fieldsHtml = s.fields.map(f => {
+    let input = '';
+    if (f.type === 'select') {
+      input = `<select id="${f.id}">${f.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
+    } else if (f.type === 'textarea') {
+      input = `<textarea id="${f.id}" placeholder="${f.ph || ''}"></textarea>`;
+    } else {
+      const wrap = f.prefix ? `style="position:relative"` : '';
+      const pre  = f.prefix ? `<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none">${f.prefix}</span>` : '';
+      const pl   = f.prefix ? 'padding-left:30px' : '';
+      input = `<div ${wrap}>${pre}<input type="${f.type}" id="${f.id}" placeholder="${f.ph||''}" style="${pl}"></div>`;
+    }
+    return `<div class="wf">
+      <label>${f.label}${f.req ? '<em> *</em>' : ''}</label>
+      ${input}
+      ${f.hint ? `<span class="hint">${f.hint}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  const dots = WIZARD_STEPS.map((_,i) =>
+    `<div class="wizard-dot ${i < wStep ? 'done' : i === wStep ? 'active' : ''}"></div>`
+  ).join('');
+
+  document.getElementById('wizardContent').innerHTML = `
+    <div class="wizard-step-hdr">
+      <div class="wizard-step-num">${s.num}</div>
+      <div class="wizard-step-title">${s.title}</div>
+      <div class="wizard-step-sub">${s.sub}</div>
+    </div>
+    <div class="wizard-fields">${fieldsHtml}</div>
+    <div class="wizard-nav">
+      ${wStep > 0 ? `<button class="wizard-back" onclick="wizardBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>` : '<span></span>'}
+      <div class="wizard-dots">${dots}</div>
+      <button class="wizard-next" onclick="wizardNext()">
+        ${wStep < total - 1 ? 'Continue <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>' : 'Review <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>'}
+      </button>
+    </div>`;
+
+  // Restore saved values
+  s.fields.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el && wData[f.id]) el.value = wData[f.id];
+  });
+}
+
+const wData = {};
+
+function wizardNext() {
+  const s = WIZARD_STEPS[wStep];
+  for (const f of s.fields) {
+    const el = document.getElementById(f.id);
+    const val = el ? el.value.trim() : '';
+    if (f.req && !val) { showToast(`Please fill in: ${f.label}`); el && el.focus(); return; }
+    if (el) wData[f.id] = val || el.value;
+  }
+  if (wStep < WIZARD_STEPS.length - 1) {
+    wStep++;
+    renderWizardStep();
+  } else {
+    renderWizardReview();
+  }
+}
+
+function wizardBack() {
+  if (wStep > 0) { wStep--; renderWizardStep(); }
+}
+
+function renderWizardReview() {
+  document.getElementById('wProgressBar').style.width = '100%';
+  const rows = [
+    ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
+    ['Deal', wData['sp-deal']], ['Type', wData['sp-type']], ['Location', wData['sp-location']],
+    ['Lot Area', wData['sp-lot'] ? wData['sp-lot'] + ' sqm' : '—'],
+    ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
+    ['Amount', wData['sp-amount'] ? '₱' + Number(wData['sp-amount']).toLocaleString() : '—'],
+    ['Key Details', wData['sp-key'] || '—'],
+    ['Thumbnail', wData['sp-thumbnail'] || '—'],
+    ['Photos', wData['sp-photos'] || '—'],
+  ].map(([l,v]) => `<div class="wizard-review-row"><span class="wizard-review-label">${l}</span><span class="wizard-review-value">${v}</span></div>`).join('');
+
+  document.getElementById('wizardContent').innerHTML = `
+    <div class="wizard-step-hdr">
+      <div class="wizard-step-num">Review</div>
+      <div class="wizard-step-title">Looks good?</div>
+      <div class="wizard-step-sub">Double-check your details before submitting.</div>
+    </div>
+    <div class="wizard-review">${rows}</div>
+    <div class="wizard-nav">
+      <button class="wizard-back" onclick="wStep=${WIZARD_STEPS.length-1};renderWizardStep()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+      <div></div>
+      <button class="wizard-next finish" id="wSubmitBtn" onclick="wizardSubmit(this)">
+        Submit Listing <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>`;
+}
+
+async function wizardSubmit(btn) {
   btn.textContent = 'Submitting…';
   btn.disabled = true;
 
-  const message = `
-PROPERTY SUBMISSION
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-CONTACT
-  Name:       ${name}
-  Phone:      ${phone}
-  Email:      ${email || '—'}
-  Role:       ${relation}
-
-SPREADSHEET DATA
-  id:         (auto-assign)
-  deal:       ${deal}
-  type:       ${type}
-  location:   ${location}
-  lot:        ${lot || '—'}
-  floor:      ${floor || '—'}
-  amount:     ${amount}
-  key:        ${key || '—'}
-  photos:     ${photos || '—'}
-  thumbnail:  ${thumbnail || '—'}
-  `;
-
   try {
-    const res = await fetch('/.netlify/functions/send-email', {
+    // 1. Save to Google Sheet via Apps Script
+    await fetch(API_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'submit', ...wData }),
+    });
+
+    // 2. Also send email notification
+    await fetch('/.netlify/functions/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        name,
-        phone,
-        email,
-        interest: `Property Submission — ${type} in ${location}`,
-        message,
+        name: wData['sp-name'], phone: wData['sp-phone'], email: wData['sp-email'],
+        interest: `New Listing — ${wData['sp-type']} in ${wData['sp-location']}`,
+        message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${wData['sp-amount']}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
       }),
     });
 
-    const data = await res.json();
+    // 3. Show success
+    document.getElementById('wProgressBar').style.width = '100%';
+    document.getElementById('wizardContent').innerHTML = `
+      <div class="wizard-success">
+        <div class="wizard-success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h2>Listing Submitted!</h2>
+        <p>Thank you! We've received your property details and saved them to our records. Broker France will contact you within <strong>24 hours</strong> to verify and publish your listing.</p>
+        <button class="wizard-next" style="margin:24px auto 0;display:flex" onclick="showPage('home')">Back to Home</button>
+      </div>`;
+    Object.keys(wData).forEach(k => delete wData[k]);
 
-    if (res.ok && data.success) {
-      btn.innerHTML = '✓ Submitted!';
-      btn.style.background = 'var(--green-d)';
-      showToast('Listing submitted! We will review and contact you within 24 hours.');
-      ['sp-name','sp-phone','sp-email','sp-location','sp-lot','sp-floor','sp-amount','sp-key','sp-thumbnail','sp-photos'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-      });
-      setTimeout(() => { btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg> Submit Listing'; btn.style.background = ''; btn.disabled = false; }, 5000);
-    } else {
-      throw new Error(data.error || 'Failed');
-    }
   } catch (err) {
-    showToast('Could not submit. Please contact us directly.');
+    showToast('Could not submit. Please try again or contact us directly.');
     btn.textContent = 'Submit Listing';
     btn.disabled = false;
   }
