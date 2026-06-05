@@ -2676,7 +2676,7 @@ async function submitForm(btn) {
 
 // ── PROPERTY SUBMISSION WIZARD ────────────────────────
 // Google Apps Script endpoint — saves to "Submissions" sheet
-const SUBMIT_SHEET_URL = API_URL; // same script, doPost handles saves
+const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyvpcxBC7hpR08A7W4NAn4IxUduVSzy5DT0qTXWOT8mj0ToE1R5-iAQpuD1-9snO80w/exec';
 
 const WIZARD_STEPS = [
   {
@@ -2840,7 +2840,7 @@ async function wizardSubmit(btn) {
 
   try {
     // 1. Save to Google Sheet via Apps Script
-    await fetch(API_URL, {
+    await fetch(SUBMIT_SHEET_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
