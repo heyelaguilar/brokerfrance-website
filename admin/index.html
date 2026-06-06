@@ -435,6 +435,7 @@ function enterApp(user) {
   loadListings();
   loadLikes();
   loadSubmissions();
+  loadTxnsFromSheet();
 }
 
 function logout() {
@@ -585,6 +586,30 @@ const STEPS = [
 let transactions = JSON.parse(localStorage.getItem('bf_transactions') || '[]');
 let currentTxnId = null;
 
+// ── SYNC WITH GOOGLE SHEETS ───────────────────────────
+async function loadTxnsFromSheet() {
+  try {
+    const res  = await fetch(SUBMIT_SHEET_URL + '?action=getTransactions', { redirect:'follow' });
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      transactions = data;
+      localStorage.setItem('bf_transactions', JSON.stringify(transactions));
+    }
+  } catch(e) { /* fall back to localStorage */ }
+  renderTxnList();
+}
+
+async function saveTxnToSheet(txn) {
+  localStorage.setItem('bf_transactions', JSON.stringify(transactions));
+  try {
+    await fetch(SUBMIT_SHEET_URL, {
+      method:'POST', redirect:'follow',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveTransaction', transaction: txn })
+    });
+  } catch(e) { showToast('Saved locally — sheet sync failed'); }
+}
+
 function saveTxns() {
   localStorage.setItem('bf_transactions', JSON.stringify(transactions));
 }
@@ -667,7 +692,7 @@ function updateStatus(i, val) {
   const t = transactions.find(x => x.id === currentTxnId);
   if (!t) return;
   t.steps[i].status = val;
-  saveTxns();
+  saveTxnToSheet(t);
   const step = document.getElementById('cl-step-' + i);
   step.className = `cl-step ${val === 'done' ? 'done' : val === 'inprog' ? 'inprog' : ''} ${step.classList.contains('open') ? 'open' : ''}`;
   const sel = step.querySelector('.cl-status-sel');
@@ -681,7 +706,7 @@ function saveRemarks(i) {
   const t = transactions.find(x => x.id === currentTxnId);
   if (!t) return;
   t.steps[i].remarks = document.getElementById('cl-remarks-' + i).value;
-  saveTxns();
+  saveTxnToSheet(t);
   showToast('Remarks saved');
 }
 
@@ -712,7 +737,7 @@ function createTransaction() {
     steps: STEPS.map(() => ({ status: 'pending', remarks: '' }))
   };
   transactions.push(txn);
-  saveTxns();
+  saveTxnToSheet(txn);
   closeNewTxnModal();
   showToast('Transaction created!');
   openTxnDetail(txn.id);
