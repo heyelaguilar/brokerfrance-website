@@ -2149,6 +2149,9 @@ async function init() {
   }
   renderAll();
   fetchLikes();
+  // open listing from URL param e.g. ?listing=5
+  const urlListing = new URLSearchParams(window.location.search).get('listing');
+  if (urlListing) openDetail(isNaN(urlListing) ? urlListing : Number(urlListing));
 }
 
 function showLoadingState() {
