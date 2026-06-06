@@ -922,16 +922,34 @@ function drawIgCanvas() {
     ctx.fillText('PRC Lic. 020049', W - pad, bot - 28);
   }
 
-  // try to load image — handle Drive URLs + CORS
+  // extract Drive file ID and load via CORS proxy
   const raw = l.thumbnail || '';
-  if (raw) {
-    const src = raw.replace(/\/file\/d\/([^/]+).*/, '/uc?export=view&id=$1')
-                   .replace('open?id=', 'uc?export=view&id=');
+  const driveId = raw.match(/\/d\/([a-zA-Z0-9_-]{10,})/)?.[1]
+               || raw.match(/id=([a-zA-Z0-9_-]{10,})/)?.[1];
+
+  if (driveId) {
+    // try multiple sources in order
+    const sources = [
+      'https://corsproxy.io/?' + encodeURIComponent('https://lh3.googleusercontent.com/d/' + driveId),
+      'https://corsproxy.io/?' + encodeURIComponent('https://drive.google.com/uc?export=view&id=' + driveId),
+      'https://lh3.googleusercontent.com/d/' + driveId,
+    ];
+    let tried = 0;
+    function tryNext() {
+      if (tried >= sources.length) { render(null); return; }
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload  = () => render(img);
+      img.onerror = () => { tried++; tryNext(); };
+      img.src = sources[tried++];
+    }
+    tryNext();
+  } else if (raw) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload  = () => render(img);
     img.onerror = () => render(null);
-    img.src = src;
+    img.src = raw;
   } else {
     render(null);
   }
