@@ -290,11 +290,9 @@ button{font-family:inherit;cursor:pointer}
             <thead>
               <tr>
                 <th>Property</th>
-                <th>Type</th>
                 <th>Deal</th>
                 <th>Price</th>
                 <th>Location</th>
-                <th>Developer</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -467,7 +465,7 @@ function updateStats() {
 
 function renderListingsTable(list) {
   const tbody = document.getElementById('listings-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No listings found.</td></tr>'; return; }
+  if (!list.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="5">No listings found.</td></tr>'; return; }
   tbody.innerHTML = list.map(l => {
     const deal = (l.deal || '').toLowerCase();
     const dealBdg = deal.includes('lease') || deal.includes('rent')
@@ -475,14 +473,11 @@ function renderListingsTable(list) {
       : '<span class="bdg bdg-sale">Sale</span>';
     const exBdg = String(l.exclusive||'').toLowerCase() === 'yes'
       ? ' <span class="bdg bdg-ex">Exclusive</span>' : '';
-    const dev = l.developer || l.Developer || '—';
     return `<tr>
-      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.name||l.title||'Untitled')}</td>
-      <td><span class="bdg bdg-gray">${esc(l.type||'—')}</span></td>
+      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.name||l.title||'Untitled')}</td>
       <td>${dealBdg}${exBdg}</td>
       <td class="tbl-price">${esc(l.price||'—')}</td>
-      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
-      <td style="color:var(--ink3)">${esc(dev)}</td>
+      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
       <td><div class="tbl-actions">
         <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
       </div></td>
@@ -493,7 +488,7 @@ function renderListingsTable(list) {
 function filterListings(q) {
   const term = q.toLowerCase();
   renderListingsTable(allListings.filter(l =>
-    [l.name, l.title, l.type, l.location, l.developer, l.deal, l.price]
+    [l.name, l.title, l.location, l.deal, l.price]
       .some(v => (v||'').toLowerCase().includes(term))
   ));
 }
