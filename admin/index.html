@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Broker France</title>
+<meta name="robots" content="noindex, nofollow">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#F4F6F8;color:#0E1117;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button{font-family:inherit;cursor:pointer}
+
+/* ── TOKENS ── */
+:root{
+  --green:#1C3F2F;--green-d:#2A6044;--green-l:#F0F7F3;
+  --ink:#0E1117;--ink2:#2D3748;--ink3:#4A5568;--ink4:#718096;
+  --border:#D1D9E0;--bg:#F4F6F8;--white:#fff;
+  --r:12px;--rs:8px;
+  --sh:0 1px 3px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.05);
+}
+
+/* ── LOGIN SCREEN ── */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;background:var(--green);
+}
+.login-card{
+  background:#fff;border-radius:20px;padding:48px 44px;
+  max-width:400px;width:90%;text-align:center;
+  box-shadow:0 24px 64px rgba(0,0,0,.2);
+}
+.login-logo{width:48px;height:48px;margin:0 auto 20px}
+.login-card h1{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.login-card p{font-size:14px;color:var(--ink4);margin-bottom:32px;line-height:1.6}
+.btn-google{
+  width:100%;padding:13px 20px;border-radius:var(--rs);
+  background:#fff;color:var(--ink2);
+  border:1.5px solid var(--border);font-size:15px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;
+}
+.btn-google:hover{border-color:#aaa;background:#f9f9f9}
+.btn-google svg{width:20px;height:20px;flex-shrink:0}
+.login-note{font-size:12px;color:var(--ink4);margin-top:20px}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+
+/* sidebar */
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:220px;
+  background:var(--green);padding:24px 0;
+  display:flex;flex-direction:column;z-index:100;
+}
+.sidebar-brand{padding:0 20px 28px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:12px}
+.sidebar-brand span{font-size:16px;font-weight:800;color:#fff;display:block}
+.sidebar-brand small{font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 20px;font-size:14px;font-weight:600;
+  color:rgba(255,255,255,.65);border:none;background:none;
+  width:100%;text-align:left;transition:all .15s;border-left:3px solid transparent;
+}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,.07)}
+.nav-item.active{color:#fff;background:rgba(255,255,255,.12);border-left-color:#fff}
+.nav-item svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+.sidebar-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+.sidebar-user{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:10px;word-break:break-all}
+.btn-logout{width:100%;padding:9px;border-radius:var(--rs);background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:600;border:none;transition:background .15s}
+.btn-logout:hover{background:rgba(255,255,255,.18)}
+
+/* main */
+.main{margin-left:220px;padding:32px;min-height:100vh}
+.page-hdr{margin-bottom:28px}
+.page-hdr h1{font-size:22px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.page-hdr p{font-size:14px;color:var(--ink4)}
+
+/* stat cards */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
+.stat-card{background:#fff;border-radius:var(--r);padding:20px;box-shadow:var(--sh);border:1px solid var(--border)}
+.stat-label{font-size:12px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat-val{font-size:28px;font-weight:800;color:var(--ink);letter-spacing:-.03em}
+.stat-sub{font-size:12px;color:var(--ink4);margin-top:4px}
+
+/* table */
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);border:1px solid var(--border);overflow:hidden}
+.card-hdr{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card-hdr h2{font-size:15px;font-weight:800;color:var(--ink)}
+.card-search{padding:8px 12px;border-radius:var(--rs);border:1.5px solid var(--border);font-family:inherit;font-size:13px;color:var(--ink);outline:none;width:220px;transition:border-color .15s}
+.card-search:focus{border-color:var(--green)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em;padding:11px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg)}
+.tbl td{font-size:13px;color:var(--ink2);padding:13px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafbfc}
+.tbl-price{font-weight:700;color:var(--ink)}
+.bdg{display:inline-block;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.bdg-sale{background:#1C3F2F;color:#fff}
+.bdg-lease{background:#1D4ED8;color:#fff}
+.bdg-ex{background:linear-gradient(135deg,#92700A,#C9960C);color:#fff}
+.bdg-new{background:#D97706;color:#fff}
+.bdg-hot{background:#DC2626;color:#fff}
+.bdg-gray{background:var(--bg);color:var(--ink3);border:1px solid var(--border)}
+.tbl-actions{display:flex;gap:6px}
+.btn-sm{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;border:none;transition:all .15s}
+.btn-danger{background:#FEE2E2;color:#B91C1C}
+.btn-danger:hover{background:#FCA5A5}
+.btn-view{background:var(--green-l);color:var(--green-d)}
+.btn-view:hover{background:#D4EAE0}
+
+/* likes tab */
+.likes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:20px}
+.like-card{border:1px solid var(--border);border-radius:var(--rs);padding:16px;display:flex;align-items:center;gap:14px}
+.like-rank{width:32px;height:32px;border-radius:50%;background:var(--green-l);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:var(--green-d);flex-shrink:0}
+.like-info{flex:1;min-width:0}
+.like-name{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.like-loc{font-size:11px;color:var(--ink4);margin-top:1px}
+.like-count{font-size:20px;font-weight:800;color:var(--ink);display:flex;align-items:center;gap:4px}
+.like-count svg{width:16px;height:16px;fill:#DC2626;stroke:none}
+
+/* empty / loading */
+.empty{padding:48px;text-align:center;color:var(--ink4);font-size:14px}
+.loading-row td{text-align:center;padding:40px;color:var(--ink4);font-size:13px}
+
+/* submissions panel */
+.sub-card{background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:18px;margin-bottom:12px}
+.sub-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px}
+.sub-card-name{font-size:14px;font-weight:700;color:var(--ink)}
+.sub-card-time{font-size:11px;color:var(--ink4)}
+.sub-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sub-field{background:var(--bg);border-radius:6px;padding:8px 10px}
+.sub-field-label{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em}
+.sub-field-val{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;word-break:break-all}
+
+/* toast */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:900px){
+  .sidebar{width:200px}
+  .main{margin-left:200px;padding:20px}
+  .stats-row{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <svg class="login-logo" viewBox="0 0 80 80" fill="none">
+      <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".9"/>
+      <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".9"/>
+      <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".9"/>
+      <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".9"/>
+    </svg>
+    <h1>Broker France Admin</h1>
+    <p>Sign in with your authorized Google account to access the dashboard.</p>
+    <button class="btn-google" id="btn-login">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <p class="login-note">Only authorized accounts can access this dashboard.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <nav class="sidebar">
+    <div class="sidebar-brand">
+      <span>BrokerFrance</span>
+      <small>Admin Dashboard</small>
+    </div>
+    <button class="nav-item active" onclick="showTab('listings')" id="tab-listings">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Listings
+    </button>
+    <button class="nav-item" onclick="showTab('submissions')" id="tab-submissions">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      Submissions
+    </button>
+    <button class="nav-item" onclick="showTab('likes')" id="tab-likes">
+      <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      Likes
+    </button>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user" id="user-email">—</div>
+      <button class="btn-logout" onclick="logout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <main class="main">
+    <!-- LISTINGS TAB -->
+    <div id="pane-listings">
+      <div class="page-hdr">
+        <h1>Listings</h1>
+        <p>All active property listings from the sheet.</p>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Listings</div>
+          <div class="stat-val" id="stat-total">—</div>
+          <div class="stat-sub">across all types</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">For Sale</div>
+          <div class="stat-val" id="stat-sale">—</div>
+          <div class="stat-sub">active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">For Lease</div>
+          <div class="stat-val" id="stat-lease">—</div>
+          <div class="stat-sub">active</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Exclusive</div>
+          <div class="stat-val" id="stat-ex">—</div>
+          <div class="stat-sub">listings</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <h2>All Properties</h2>
+          <input class="card-search" type="text" placeholder="Search listings…" oninput="filterListings(this.value)">
+        </div>
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Type</th>
+                <th>Deal</th>
+                <th>Price</th>
+                <th>Location</th>
+                <th>Developer</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="listings-tbody">
+              <tr class="loading-row"><td colspan="7">Loading listings…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMISSIONS TAB -->
+    <div id="pane-submissions" style="display:none">
+      <div class="page-hdr">
+        <h1>Submissions</h1>
+        <p>Property listing submissions and buyer inquiries.</p>
+      </div>
+      <div class="card" style="padding:20px">
+        <div id="submissions-list"><div class="empty">Loading submissions…</div></div>
+      </div>
+    </div>
+
+    <!-- LIKES TAB -->
+    <div id="pane-likes" style="display:none">
+      <div class="page-hdr">
+        <h1>Likes</h1>
+        <p>Most liked listings by visitors.</p>
+      </div>
+      <div class="card">
+        <div class="card-hdr"><h2>Top Liked Properties</h2></div>
+        <div class="likes-grid" id="likes-grid"><div class="empty">Loading likes…</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API_URL         = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
+const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyvpcxBC7hpR08A7W4NAn4IxUduVSzy5DT0qTXWOT8mj0ToE1R5-iAQpuD1-9snO80w/exec';
+
+let allListings = [];
+let netlifyIdentity;
+
+// ── AUTH ──────────────────────────────────────────────
+window.addEventListener('load', () => {
+  netlifyIdentity = window.netlifyIdentity;
+  netlifyIdentity.init({ locale: 'en' });
+
+  const user = netlifyIdentity.currentUser();
+  if (user) enterApp(user);
+
+  netlifyIdentity.on('login', user => {
+    netlifyIdentity.close();
+    enterApp(user);
+  });
+
+  netlifyIdentity.on('logout', () => {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+  });
+
+  document.getElementById('btn-login').addEventListener('click', () => {
+    netlifyIdentity.open('login');
+  });
+});
+
+function enterApp(user) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-email').textContent = user.email || user.user_metadata?.full_name || '—';
+  loadListings();
+  loadLikes();
+  loadSubmissions();
+}
+
+function logout() {
+  netlifyIdentity.logout();
+}
+
+// ── TABS ──────────────────────────────────────────────
+function showTab(name) {
+  ['listings','submissions','likes'].forEach(t => {
+    document.getElementById('pane-' + t).style.display = t === name ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+}
+
+// ── LISTINGS ──────────────────────────────────────────
+async function loadListings() {
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store', redirect: 'follow' });
+    const data = await res.json();
+    allListings = data || [];
+    updateStats();
+    renderListingsTable(allListings);
+  } catch(e) {
+    document.getElementById('listings-tbody').innerHTML =
+      '<tr class="loading-row"><td colspan="7">Failed to load listings: ' + e.message + '</td></tr>';
+  }
+}
+
+function updateStats() {
+  document.getElementById('stat-total').textContent  = allListings.length;
+  document.getElementById('stat-sale').textContent   = allListings.filter(l => (l.deal||'').toLowerCase().includes('sale')).length;
+  document.getElementById('stat-lease').textContent  = allListings.filter(l => (l.deal||'').toLowerCase().includes('lease') || (l.deal||'').toLowerCase().includes('rent')).length;
+  document.getElementById('stat-ex').textContent     = allListings.filter(l => String(l.exclusive||'').toLowerCase() === 'yes').length;
+}
+
+function renderListingsTable(list) {
+  const tbody = document.getElementById('listings-tbody');
+  if (!list.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No listings found.</td></tr>'; return; }
+  tbody.innerHTML = list.map(l => {
+    const deal = (l.deal || '').toLowerCase();
+    const dealBdg = deal.includes('lease') || deal.includes('rent')
+      ? '<span class="bdg bdg-lease">Lease</span>'
+      : '<span class="bdg bdg-sale">Sale</span>';
+    const exBdg = String(l.exclusive||'').toLowerCase() === 'yes'
+      ? ' <span class="bdg bdg-ex">Exclusive</span>' : '';
+    const dev = l.developer || l.Developer || '—';
+    return `<tr>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.name||l.title||'Untitled')}</td>
+      <td><span class="bdg bdg-gray">${esc(l.type||'—')}</span></td>
+      <td>${dealBdg}${exBdg}</td>
+      <td class="tbl-price">${esc(l.price||'—')}</td>
+      <td style="max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
+      <td style="color:var(--ink3)">${esc(dev)}</td>
+      <td><div class="tbl-actions">
+        <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function filterListings(q) {
+  const term = q.toLowerCase();
+  renderListingsTable(allListings.filter(l =>
+    [l.name, l.title, l.type, l.location, l.developer, l.deal, l.price]
+      .some(v => (v||'').toLowerCase().includes(term))
+  ));
+}
+
+function viewOnSite(id) {
+  window.open('../index.html#listing-' + id, '_blank');
+}
+
+// ── SUBMISSIONS ───────────────────────────────────────
+async function loadSubmissions() {
+  try {
+    const res = await fetch(SUBMIT_SHEET_URL + '?action=getSubmissions', { redirect: 'follow' });
+    const data = await res.json();
+    renderSubmissions(data || []);
+  } catch(e) {
+    document.getElementById('submissions-list').innerHTML =
+      '<div class="empty">Could not load submissions.<br><small>' + e.message + '</small></div>';
+  }
+}
+
+function renderSubmissions(rows) {
+  const el = document.getElementById('submissions-list');
+  if (!rows.length) { el.innerHTML = '<div class="empty">No submissions yet.</div>'; return; }
+  el.innerHTML = rows.slice().reverse().map(r => {
+    const fields = Object.entries(r).filter(([k]) => k !== 'timestamp');
+    return `<div class="sub-card">
+      <div class="sub-card-hdr">
+        <div class="sub-card-name">${esc(r.name || r.contactName || r.email || 'Submission')}</div>
+        <div class="sub-card-time">${esc(r.timestamp || '')}</div>
+      </div>
+      <div class="sub-fields">
+        ${fields.map(([k,v]) => `<div class="sub-field">
+          <div class="sub-field-label">${esc(k)}</div>
+          <div class="sub-field-val">${esc(String(v||'—'))}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── LIKES ─────────────────────────────────────────────
+async function loadLikes() {
+  try {
+    const res = await fetch(SUBMIT_SHEET_URL + '?action=getLikes', { redirect: 'follow' });
+    const counts = await res.json();
+    renderLikes(counts || {});
+  } catch(e) {
+    document.getElementById('likes-grid').innerHTML = '<div class="empty">Could not load likes.</div>';
+  }
+}
+
+function renderLikes(counts) {
+  const el = document.getElementById('likes-grid');
+  const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).filter(([,v])=>v>0);
+  if (!sorted.length) { el.innerHTML = '<div class="empty">No likes yet.</div>'; return; }
+  el.innerHTML = sorted.map(([id, count], i) => {
+    const listing = allListings.find(l => String(l.id) === String(id));
+    const name = listing ? (listing.name || listing.title || id) : id;
+    const loc  = listing ? (listing.location || '') : '';
+    return `<div class="like-card">
+      <div class="like-rank">${i+1}</div>
+      <div class="like-info">
+        <div class="like-name" title="${esc(name)}">${esc(name)}</div>
+        <div class="like-loc">${esc(loc)}</div>
+      </div>
+      <div class="like-count">
+        ${count}
+        <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── UTILS ─────────────────────────────────────────────
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
