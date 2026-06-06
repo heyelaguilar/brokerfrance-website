@@ -2116,7 +2116,7 @@ async function init() {
       const rawDeal  = get('deal');
       const deal     = normaliseDeal(rawDeal) || 'sale'; // default to sale if empty
       const loc      = get('location') || '—';
-      const rawPrice = get('price');
+      const rawPrice = get('price') || get('amount');
       const price    = formatPrice(rawPrice) || 'Price on Request';
       const type     = normaliseType(get('type') || 'property');
       const kd       = get('key_details');

@@ -476,7 +476,7 @@ function renderListingsTable(list) {
     return `<tr>
       <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.name||l.title||'Untitled')}</td>
       <td>${dealBdg}${exBdg}</td>
-      <td class="tbl-price">${esc(l.price||'—')}</td>
+      <td class="tbl-price">${esc(l.price||l.amount||'—')}</td>
       <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
       <td><div class="tbl-actions">
         <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
