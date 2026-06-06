@@ -150,6 +150,22 @@ button{font-family:inherit;cursor:pointer}
 .btn-new-txn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;transition:background .15s}
 .btn-new-txn:hover{background:var(--green-d)}
 
+/* report */
+.rpt-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-bottom:12px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px}
+.rpt-card-left{flex:1;min-width:0}
+.rpt-card-name{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px}
+.rpt-card-loc{font-size:13px;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.rpt-card-specs{font-size:12px;color:var(--ink4)}
+.rpt-card-price{font-size:20px;font-weight:800;color:var(--green);white-space:nowrap;text-align:right}
+.rpt-card-deal{font-size:11px;font-weight:700;margin-top:4px;text-align:right}
+
+@media print {
+  body * { visibility: hidden }
+  #print-area, #print-area * { visibility: visible }
+  #print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px }
+  .no-print { display: none !important }
+}
+
 /* ig post */
 .btn-ig{background:#F0F7F3;color:#2A6044;font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;transition:all .15s}
 .btn-ig:hover{background:#D4EAE0}
@@ -262,6 +278,10 @@ button{font-family:inherit;cursor:pointer}
     <button class="nav-item" onclick="showTab('transactions')" id="tab-transactions">
       <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
       Transactions
+    </button>
+    <button class="nav-item" onclick="showTab('reports')" id="tab-reports">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Reports
     </button>
     <div class="sidebar-bottom">
       <div class="sidebar-user" id="user-email">—</div>
@@ -382,6 +402,52 @@ button{font-family:inherit;cursor:pointer}
         <div class="card-hdr"><h2>Top Liked Properties</h2></div>
         <div class="likes-grid" id="likes-grid"><div class="empty">Loading likes…</div></div>
       </div>
+    </div>
+
+    <!-- REPORTS TAB -->
+    <div id="pane-reports" style="display:none">
+      <div class="page-hdr">
+        <h1>Generate Report</h1>
+        <p>Filter listings and download as PDF.</p>
+      </div>
+      <div class="card" style="padding:28px;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px">
+          <div class="mfgrp">
+            <label>Deal Type</label>
+            <select id="rpt-deal">
+              <option value="">All</option>
+              <option value="sale">For Sale</option>
+              <option value="lease">For Lease</option>
+            </select>
+          </div>
+          <div class="mfgrp">
+            <label>Property Type</label>
+            <select id="rpt-type">
+              <option value="">All Types</option>
+              <option value="residential">Residential</option>
+              <option value="condominium">Condominium</option>
+              <option value="commercial">Commercial</option>
+              <option value="farm">Farm / Agricultural</option>
+              <option value="lot">Lot Only</option>
+              <option value="warehouse">Warehouse</option>
+            </select>
+          </div>
+          <div class="mfgrp">
+            <label>Max Price (e.g. 30M, 5000000)</label>
+            <input type="text" id="rpt-maxprice" placeholder="e.g. 30M or 30000000">
+          </div>
+          <div class="mfgrp">
+            <label>Location keyword</label>
+            <input type="text" id="rpt-loc" placeholder="e.g. Sta Rosa, Nuvali">
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <button class="btn-create" style="padding:10px 24px" onclick="generateReport()">Generate Report</button>
+          <button id="rpt-pdf-btn" style="display:none;padding:10px 24px;border-radius:var(--rs);background:#fff;color:var(--ink2);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer" onclick="downloadReportPDF()">⬇ Download PDF</button>
+          <span id="rpt-count" style="font-size:13px;color:var(--ink4)"></span>
+        </div>
+      </div>
+      <div id="rpt-results"></div>
     </div>
   </main>
 </div>
@@ -651,7 +717,7 @@ function saveTxns() {
 }
 
 function showTab(name) {
-  ['listings','submissions','likes','transactions'].forEach(t => {
+  ['listings','submissions','likes','transactions','reports'].forEach(t => {
     document.getElementById('pane-' + t).style.display = t === name ? 'block' : 'none';
     document.getElementById('tab-' + t).classList.toggle('active', t === name);
   });
@@ -777,6 +843,99 @@ function createTransaction() {
   closeNewTxnModal();
   showToast('Transaction created!');
   openTxnDetail(txn.id);
+}
+
+// ── REPORTS ───────────────────────────────────────────
+function parseMaxPrice(str) {
+  if (!str) return Infinity;
+  str = str.trim().toUpperCase();
+  const mult = str.endsWith('M') ? 1000000 : str.endsWith('K') ? 1000 : 1;
+  return parseFloat(str.replace(/[MK]/g,'')) * mult;
+}
+
+function formatPeso(raw) {
+  const n = Number(String(raw||'').replace(/[^0-9.]/g,''));
+  return n ? '₱' + n.toLocaleString('en-PH') : '—';
+}
+
+function generateReport() {
+  const deal     = document.getElementById('rpt-deal').value.toLowerCase();
+  const type     = document.getElementById('rpt-type').value.toLowerCase();
+  const maxPrice = parseMaxPrice(document.getElementById('rpt-maxprice').value);
+  const locKw    = document.getElementById('rpt-loc').value.toLowerCase();
+
+  const results = allListings.filter(l => {
+    const lDeal  = (l.deal||'').toLowerCase();
+    const lType  = (l.type||'').toLowerCase();
+    const lLoc   = (l.location||'').toLowerCase();
+    const lPrice = Number(String(l.price||l.amount||'0').replace(/[^0-9.]/g,''));
+
+    if (deal && !lDeal.includes(deal)) return false;
+    if (type && !lType.includes(type)) return false;
+    if (lPrice > maxPrice) return false;
+    if (locKw && !lLoc.includes(locKw)) return false;
+    return true;
+  });
+
+  const count = document.getElementById('rpt-count');
+  const pdfBtn = document.getElementById('rpt-pdf-btn');
+  const el = document.getElementById('rpt-results');
+
+  if (!results.length) {
+    count.textContent = 'No listings found.';
+    pdfBtn.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+
+  count.textContent = results.length + ' listing' + (results.length > 1 ? 's' : '') + ' found';
+  pdfBtn.style.display = 'inline-block';
+
+  // build filter summary
+  const filterParts = [];
+  if (deal)    filterParts.push(deal === 'sale' ? 'For Sale' : 'For Lease');
+  if (type)    filterParts.push(type.charAt(0).toUpperCase() + type.slice(1));
+  if (maxPrice < Infinity) filterParts.push('Up to ' + formatPeso(maxPrice));
+  if (locKw)   filterParts.push('Near "' + locKw + '"');
+
+  el.innerHTML = `<div id="print-area">
+    <div style="margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1C3F2F">
+      <div style="font-size:20px;font-weight:800;color:#1C3F2F;margin-bottom:4px">Broker France — Property Listings</div>
+      <div style="font-size:13px;color:#718096">
+        ${filterParts.length ? filterParts.join(' · ') : 'All Listings'} &nbsp;·&nbsp; ${results.length} properties &nbsp;·&nbsp; Generated ${new Date().toLocaleDateString('en-PH',{year:'numeric',month:'long',day:'numeric'})}
+      </div>
+    </div>
+    ${results.map((l, i) => {
+      const price = formatPeso(l.price || l.amount);
+      const deal2 = (l.deal||'').toLowerCase();
+      const isLease = deal2.includes('lease') || deal2.includes('rent');
+      const dealColor = isLease ? '#1D4ED8' : '#1C3F2F';
+      const dealLbl  = isLease ? 'For Lease' : 'For Sale';
+      const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
+      const floor = l.floor ? l.floor + ' sqm floor' : '';
+      const specs = [l.type, lot, floor].filter(Boolean).join('  ·  ');
+      return `<div class="rpt-card">
+        <div style="font-size:13px;font-weight:700;color:#718096;min-width:28px;padding-top:2px">${i+1}.</div>
+        <div class="rpt-card-left">
+          <div class="rpt-card-name">${esc(l.name||l.key||'Untitled')}</div>
+          <div class="rpt-card-loc">📍 ${esc(l.location||'—')}</div>
+          ${specs ? `<div class="rpt-card-specs">${esc(specs)}</div>` : ''}
+        </div>
+        <div>
+          <div class="rpt-card-price">${esc(price)}</div>
+          <div class="rpt-card-deal" style="color:${dealColor}">${dealLbl}</div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="margin-top:24px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#718096;display:flex;justify-content:space-between">
+      <span>May Francia Rivares-Gonzales · PRC Licensed Broker 020049</span>
+      <span>francebrokerage.com · 09778290053</span>
+    </div>
+  </div>`;
+}
+
+function downloadReportPDF() {
+  window.print();
 }
 
 // ── IG POST GENERATOR ─────────────────────────────────
