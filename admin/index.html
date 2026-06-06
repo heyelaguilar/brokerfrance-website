@@ -817,107 +817,119 @@ function drawIgCanvas() {
   const ctx = canvas.getContext('2d');
 
   function render(img) {
-    // ── BACKGROUND ──
+
+    // ── CARD LAYOUT ──
+    // image fills top portion, white panel below
+    const imgH  = igMode === 'story' ? Math.round(H * 0.58) : Math.round(H * 0.56);
+    const panH  = H - imgH;
+    const pad2  = 60;
+
+    // draw image (cover-crop to top section)
     if (img) {
-      // cover-fit image
-      const scale = Math.max(W / img.width, H / img.height);
-      const sw    = img.width  * scale;
-      const sh    = img.height * scale;
-      ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
-      // gradient overlay
-      const grad = ctx.createLinearGradient(0, 0, 0, H);
-      grad.addColorStop(0,    'rgba(0,0,0,0.25)');
-      grad.addColorStop(0.40, 'rgba(0,0,0,0.10)');
-      grad.addColorStop(1,    'rgba(0,0,0,0.88)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, W, H);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, W, imgH);
+      ctx.clip();
+      const scale = Math.max(W / img.width, imgH / img.height);
+      const sw = img.width * scale, sh = img.height * scale;
+      ctx.drawImage(img, (W-sw)/2, (imgH-sh)/2, sw, sh);
+      ctx.restore();
     } else {
       ctx.fillStyle = '#1C3F2F';
-      ctx.fillRect(0, 0, W, H);
-      const rg = ctx.createRadialGradient(W*.75, H*.15, 0, W*.75, H*.15, W*.9);
-      rg.addColorStop(0, 'rgba(45,96,68,.55)');
-      rg.addColorStop(1, 'transparent');
-      ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+      ctx.fillRect(0, 0, W, imgH);
     }
 
-    const pad  = 80;
-    const bot  = H - 60;
+    // badges over image (top-left)
+    let bx = pad2;
+    const badgeH = 56, badgeR = 28;
+    ctx.font = '700 26px Arial, sans-serif';
     const deal = (l.deal||'').toLowerCase();
-    const isLease = deal.includes('lease') || deal.includes('rent');
-    const isEx    = String(l.exclusive||'').toLowerCase() === 'yes';
-
-    // ── BADGES (top left) ──
-    let bx = pad;
-    const badgeH = 60, badgeR = 30;
-    // For Sale / Lease
-    const dealLabel = isLease ? 'For Lease' : 'For Sale';
-    ctx.font = '700 28px Arial, sans-serif';
-    const dealW = ctx.measureText(dealLabel).width + 48;
-    ctx.fillStyle = isLease ? '#1D4ED8' : '#1C5C3A';
-    igRoundRect(ctx, bx, pad, dealW, badgeH, badgeR);
+    const isLease2 = deal.includes('lease') || deal.includes('rent');
+    const isEx2    = String(l.exclusive||'').toLowerCase() === 'yes';
+    const dealLbl  = isLease2 ? 'For Lease' : 'For Sale';
+    const dealW2   = ctx.measureText(dealLbl).width + 44;
+    ctx.fillStyle = isLease2 ? '#1D4ED8' : '#1C3F2F';
+    igRoundRect(ctx, bx, pad2, dealW2, badgeH, badgeR);
     ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-    ctx.fillText(dealLabel, bx + 24, pad + 41);
-    bx += dealW + 14;
-    // Exclusive
-    if (isEx) {
-      const exLabel = '✦ Exclusive';
-      const exW = ctx.measureText(exLabel).width + 48;
-      const grd = ctx.createLinearGradient(bx, 0, bx + exW, 0);
-      grd.addColorStop(0,'#92700A'); grd.addColorStop(1,'#C9960C');
-      ctx.fillStyle = grd;
-      igRoundRect(ctx, bx, pad, exW, badgeH, badgeR);
+    ctx.fillText(dealLbl, bx+22, pad2+38); bx += dealW2 + 12;
+    if (isEx2) {
+      const exLbl = '✦ Exclusive';
+      const exW2  = ctx.measureText(exLbl).width + 44;
+      const eg = ctx.createLinearGradient(bx,0,bx+exW2,0);
+      eg.addColorStop(0,'#92700A'); eg.addColorStop(1,'#C9960C');
+      ctx.fillStyle = eg;
+      igRoundRect(ctx, bx, pad2, exW2, badgeH, badgeR);
       ctx.fillStyle = '#fff';
-      ctx.fillText(exLabel, bx + 24, pad + 41);
+      ctx.fillText(exLbl, bx+22, pad2+38);
     }
 
-    // ── PROPERTY DETAILS (bottom block) ──
+    // white panel
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, imgH, W, panH);
+
+    // green top accent bar
+    ctx.fillStyle = '#1C3F2F';
+    ctx.fillRect(0, imgH, W, 8);
+
+    // property details inside white panel
     const rawAmt = l.price || l.amount || '';
     const price  = rawAmt
       ? '₱' + Number(String(rawAmt).replace(/[^0-9.]/g,'')).toLocaleString('en-PH')
       : 'Price on Request';
     const name  = l.name  || l.key   || l.title || '';
     const loc   = l.location || '';
-    const type  = l.type  || '';
     const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
     const floor = l.floor ? l.floor + ' sqm floor' : '';
+    const specs = [lot, floor].filter(Boolean).join('  ·  ');
+    const fs    = igMode === 'story';
+
+    let ty = imgH + 8 + (fs ? 80 : 72);
+
+    // property name — hero text
+    ctx.font = `800 ${fs?70:64}px Arial, sans-serif`;
+    ctx.fillStyle = '#0E1117';
+    ctx.textAlign = 'left';
+    ctx.fillText(igTruncate(ctx, name, W - pad2*2), pad2, ty);
+    ty += fs ? 74 : 68;
 
     // price
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `800 ${igMode==='story'?88:84}px Arial, sans-serif`;
-    ctx.fillText(igTruncate(ctx, price, W - pad*2), pad, bot - 280);
-
-    // name
-    ctx.font = `700 ${igMode==='story'?46:42}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.fillText(igTruncate(ctx, name, W - pad*2), pad, bot - 210);
-
-    // specs row
-    const specs = [type, lot, floor].filter(Boolean).join('  ·  ');
-    if (specs) {
-      ctx.font = `400 ${igMode==='story'?34:30}px Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.75)';
-      ctx.fillText(specs, pad, bot - 158);
-    }
+    ctx.font = `700 ${fs?48:44}px Arial, sans-serif`;
+    ctx.fillStyle = '#1C3F2F';
+    ctx.fillText(igTruncate(ctx, price, W - pad2*2), pad2, ty);
+    ty += fs ? 52 : 46;
 
     // location
-    ctx.font = `400 ${igMode==='story'?34:30}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('📍 ' + igTruncate(ctx, loc, W - pad*2), pad, bot - 108);
+    ctx.font = `400 ${fs?32:28}px Arial, sans-serif`;
+    ctx.fillStyle = '#4A5568';
+    ctx.fillText('📍 ' + igTruncate(ctx, loc, W - pad2*2), pad2, ty);
+    ty += fs ? 44 : 40;
 
-    // divider
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fillRect(pad, bot - 72, W - pad*2, 1.5);
+    // specs
+    if (specs) {
+      ctx.font = `400 ${fs?28:24}px Arial, sans-serif`;
+      ctx.fillStyle = '#718096';
+      ctx.fillText(igTruncate(ctx, specs, W - pad2*2), pad2, ty);
+    }
 
-    // branding — two lines
+    // footer divider
+    const fY = H - (fs ? 110 : 100);
+    ctx.fillStyle = '#E2E8F0';
+    ctx.fillRect(pad2, fY, W - pad2*2, 1.5);
+
+    // left: broker name + PRC
+    ctx.font = `700 ${fs?26:24}px Arial, sans-serif`;
+    ctx.fillStyle = '#0E1117';
     ctx.textAlign = 'left';
-    ctx.font = `700 30px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.fillText('May Francia Rivares-Gonzales', pad, bot - 46);
+    ctx.fillText('May Francia Rivares-Gonzales', pad2, fY + (fs?34:30));
+    ctx.font = `400 ${fs?22:20}px Arial, sans-serif`;
+    ctx.fillStyle = '#718096';
+    ctx.fillText('PRC Lic. 020049', pad2, fY + (fs?60:54));
 
-    ctx.font = `400 24px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText('PRC Lic. 020049  ·  francebrokerage.com', pad, bot - 14);
+    // right: website
+    ctx.font = `400 ${fs?22:20}px Arial, sans-serif`;
+    ctx.fillStyle = '#718096';
+    ctx.textAlign = 'right';
+    ctx.fillText('francebrokerage.com', W - pad2, fY + (fs?48:44));
   }
 
   // extract Drive file ID and load via CORS proxy
