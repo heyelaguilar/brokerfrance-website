@@ -871,7 +871,10 @@ function drawIgCanvas() {
     }
 
     // ── PROPERTY DETAILS (bottom block) ──
-    const price = l.price || l.amount || 'Price on Request';
+    const rawAmt = l.price || l.amount || '';
+    const price  = rawAmt
+      ? '₱' + Number(String(rawAmt).replace(/[^0-9.]/g,'')).toLocaleString('en-PH')
+      : 'Price on Request';
     const name  = l.name  || l.key   || l.title || '';
     const loc   = l.location || '';
     const type  = l.type  || '';
@@ -906,20 +909,15 @@ function drawIgCanvas() {
     ctx.fillStyle = 'rgba(255,255,255,0.18)';
     ctx.fillRect(pad, bot - 72, W - pad*2, 1.5);
 
-    // branding
-    ctx.font = `700 30px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    // branding — two lines
     ctx.textAlign = 'left';
-    ctx.fillText('Broker France', pad, bot - 28);
-
-    ctx.font = `400 26px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('francebrokerage.com', pad + 240, bot - 28);
+    ctx.font = `700 30px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillText('May Francia Rivares-Gonzales', pad, bot - 46);
 
     ctx.font = `400 24px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.textAlign = 'right';
-    ctx.fillText('PRC Lic. 020049', W - pad, bot - 28);
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText('PRC Lic. 020049  ·  francebrokerage.com', pad, bot - 14);
   }
 
   // extract Drive file ID and load via CORS proxy
