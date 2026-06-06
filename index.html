@@ -2150,8 +2150,10 @@ async function init() {
   renderAll();
   fetchLikes();
   // open listing from URL param e.g. ?listing=5
-  const urlListing = new URLSearchParams(window.location.search).get('listing');
-  if (urlListing) openDetail(isNaN(urlListing) ? urlListing : Number(urlListing));
+  // support /listing/ID and ?listing=ID
+  const pathMatch = window.location.pathname.match(/\/listing\/(.+)/);
+  const urlId = pathMatch ? pathMatch[1] : new URLSearchParams(window.location.search).get('listing');
+  if (urlId) openDetail(String(urlId));
 }
 
 function showLoadingState() {
