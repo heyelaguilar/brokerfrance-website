@@ -663,23 +663,6 @@ a{text-decoration:none;color:inherit}
 ══════════════════════════════════════════════════ */
 .sync-bar{background:var(--green-l);border-bottom:1px solid var(--green-m);padding:9px 24px;text-align:center;font-size:12px;font-weight:700;color:var(--green-d);display:none}
 .sync-bar.show{display:block}
-/* ── IG POST MODAL ── */
-.ig-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px}
-.ig-modal{background:#fff;border-radius:20px;padding:28px;max-width:520px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25)}
-.ig-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.ig-modal-hdr h3{font-size:17px;font-weight:800;color:var(--ink)}
-.ig-modal-close{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink3);cursor:pointer}
-.ig-canvas-wrap{border-radius:12px;overflow:hidden;margin-bottom:16px;background:#000;aspect-ratio:1;display:flex;align-items:center;justify-content:center}
-.ig-canvas-wrap canvas{width:100%;height:100%;display:block}
-.ig-actions{display:flex;gap:10px}
-.btn-ig-dl{flex:1;padding:12px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s}
-.btn-ig-dl:hover{background:var(--green-d)}
-.btn-ig-dl svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2.5}
-.btn-ig-story{padding:12px 18px;border-radius:var(--rs);background:var(--bg);color:var(--ink2);font-size:14px;font-weight:600;border:1px solid var(--border);cursor:pointer;transition:all .15s}
-.btn-ig-story:hover{border-color:var(--ink3)}
-.btn-ig-post{display:flex;align-items:center;gap:7px;padding:10px 16px;border-radius:var(--rs);background:var(--bg);color:var(--ink2);font-size:13px;font-weight:600;border:1px solid var(--border);cursor:pointer;transition:all .15s}
-.btn-ig-post:hover{border-color:var(--green-d);color:var(--green-d)}
-.btn-ig-post svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
 
 .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-size:13px;font-weight:700;padding:11px 24px;border-radius:99px;z-index:999;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap}
 .toast.show{opacity:1}
@@ -1504,11 +1487,6 @@ Ideal Property</div>
             </a>
           </div>
           <div class="dsc-divider"></div>
-          <button class="btn-ig-post" onclick="openIgModal()">
-            <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-            Create Instagram Post
-          </button>
-          <div class="dsc-divider"></div>
           <div class="broker-mini">
             <div class="broker-mini-av">F</div>
             <div>
@@ -1956,23 +1934,6 @@ Ideal Property</div>
 </div>
 
 <!-- ── TOAST ── -->
-<!-- IG POST MODAL -->
-<div class="ig-modal-bg" id="ig-modal" style="display:none" onclick="if(event.target===this)closeIgModal()">
-  <div class="ig-modal">
-    <div class="ig-modal-hdr">
-      <h3>Instagram Post</h3>
-      <button class="ig-modal-close" onclick="closeIgModal()">✕</button>
-    </div>
-    <div class="ig-canvas-wrap"><canvas id="ig-canvas" width="1080" height="1080"></canvas></div>
-    <div class="ig-actions">
-      <button class="btn-ig-dl" onclick="downloadIgPost('square')">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download 1:1
-      </button>
-      <button class="btn-ig-story" onclick="downloadIgPost('story')">Story 9:16</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -2374,10 +2335,12 @@ function renderCard(l) {
 
 // ── DETAIL PAGE ───────────────────────────────────────
 function openDetail(id) {
-  const l = listings.find(x => x.id === id);
+  const l = listings.find(x => String(x.id) === String(id));
   if (!l) return;
   currentListing = l;
   previousPage = document.querySelector('.page.active').id.replace('page-', '');
+  // update URL so listing is shareable/bookmarkable
+  history.pushState({listingId: l.id}, '', '/listing/' + l.id);
 
   const cols = TYPE_COLORS[l.type] || '2a2a2a,555';
   const photos = getPhotos(l.photos);
@@ -2455,7 +2418,10 @@ function galleryNav(dir) {
   if (pill) pill.textContent = `${galleryIndex + 1} / ${galleryPhotos.length}`;
 }
 
-function goBack() { showPage(previousPage || 'listings'); }
+function goBack() {
+  history.pushState({}, '', '/');
+  showPage(previousPage || 'listings');
+}
 
 // ── DEVELOPERS ────────────────────────────────────────
 function renderDevelopers() {
@@ -3058,164 +3024,6 @@ document.addEventListener('keydown', e => {
       (e.ctrlKey && e.shiftKey && ['i','I','j','J','c','C'].includes(e.key)) ||
       e.key === 'F12') e.preventDefault();
 });
-// \u2500\u2500 IG POST GENERATOR \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
-function openIgModal() {
-  const l = currentListing;
-  if (!l) return;
-  document.getElementById('ig-modal').style.display = 'flex';
-  drawIgPost(l, 1080, 1080);
-}
-
-function closeIgModal() {
-  document.getElementById('ig-modal').style.display = 'none';
-}
-
-function drawIgPost(l, w, h) {
-  const canvas = document.getElementById('ig-canvas');
-  canvas.width = w; canvas.height = h;
-  const ctx = canvas.getContext('2d');
-
-  const photoUrl = l.thumbnail || '';
-
-  function render(img) {
-    // background
-    if (img) {
-      ctx.drawImage(img, 0, 0, w, h);
-      // dark gradient overlay
-      const grad = ctx.createLinearGradient(0, 0, 0, h);
-      grad.addColorStop(0, 'rgba(0,0,0,0.15)');
-      grad.addColorStop(0.45, 'rgba(0,0,0,0.1)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.82)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, w, h);
-    } else {
-      // solid green bg if no photo
-      ctx.fillStyle = '#1C3F2F';
-      ctx.fillRect(0, 0, w, h);
-      const grad2 = ctx.createRadialGradient(w*.7, h*.2, 0, w*.7, h*.2, w*.8);
-      grad2.addColorStop(0, 'rgba(45,96,68,0.6)');
-      grad2.addColorStop(1, 'transparent');
-      ctx.fillStyle = grad2;
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    const pad = 72;
-
-    // deal badge
-    const deal = (l.deal||'').toLowerCase();
-    const isLease = deal.includes('lease') || deal.includes('rent');
-    const isEx = String(l.exclusive||'').toLowerCase() === 'yes';
-    ctx.fillStyle = isLease ? '#1D4ED8' : '#1C3F2F';
-    roundRect(ctx, pad, pad, isLease ? 160 : 150, 54, 27);
-    ctx.fillStyle = '#fff';
-    ctx.font = `700 26px Manrope, sans-serif`;
-    ctx.textAlign = 'left';
-    ctx.fillText(isLease ? 'For Lease' : 'For Sale', pad + 22, pad + 36);
-    if (isEx) {
-      const grd = ctx.createLinearGradient(pad+170, 0, pad+330, 0);
-      grd.addColorStop(0,'#92700A'); grd.addColorStop(1,'#C9960C');
-      ctx.fillStyle = grd;
-      roundRect(ctx, pad + 170, pad, 180, 54, 27);
-      ctx.fillStyle = '#fff';
-      ctx.fillText('Exclusive', pad + 192, pad + 36);
-    }
-
-    // price
-    ctx.textAlign = 'left';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `800 ${w === 1080 ? 80 : 60}px Manrope, sans-serif`;
-    ctx.fillText(l.price || 'Price on Request', pad, h - 240);
-
-    // name
-    ctx.font = `600 ${w === 1080 ? 42 : 34}px Manrope, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    const name = l.name || l.key || '';
-    ctx.fillText(truncate(ctx, name, w - pad*2), pad, h - 170);
-
-    // location
-    ctx.font = `500 ${w === 1080 ? 34 : 28}px Manrope, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.fillText('\ud83d\udccd ' + (l.location || ''), pad, h - 118);
-
-    // bottom bar
-    ctx.fillStyle = 'rgba(255,255,255,0.12)';
-    ctx.fillRect(pad, h - 82, w - pad*2, 1);
-
-    // branding
-    ctx.font = `700 28px Manrope, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.textAlign = 'left';
-    ctx.fillText('Broker France', pad, h - 44);
-    ctx.font = `400 24px Manrope, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-    ctx.fillText('francebrokerage.com', pad + 230, h - 44);
-
-    // watermark corner
-    ctx.font = `600 22px Manrope, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-    ctx.textAlign = 'right';
-    ctx.fillText('PRC Lic. 020049', w - pad, h - 44);
-  }
-
-  if (photoUrl) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload  = () => render(img);
-    img.onerror = () => render(null);
-    img.src = photoUrl.includes('drive.google.com')
-      ? photoUrl.replace(/\/file\/d\/(.+?)\/.*/, '/uc?export=view&id=$1')
-      : photoUrl;
-  } else {
-    render(null);
-  }
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.lineTo(x+w-r, y);
-  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-  ctx.lineTo(x+w, y+h-r);
-  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-  ctx.lineTo(x+r, y+h);
-  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-  ctx.lineTo(x, y+r);
-  ctx.quadraticCurveTo(x, y, x+r, y);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function truncate(ctx, text, maxW) {
-  if (ctx.measureText(text).width <= maxW) return text;
-  while (text.length > 0 && ctx.measureText(text + '\u2026').width > maxW) text = text.slice(0, -1);
-  return text + '\u2026';
-}
-
-function downloadIgPost(mode) {
-  const l = currentListing;
-  if (!l) return;
-  const canvas = document.getElementById('ig-canvas');
-  if (mode === 'story') {
-    // redraw at 1080x1920
-    canvas.width = 1080; canvas.height = 1920;
-    drawIgPost(l, 1080, 1920);
-    setTimeout(() => triggerDownload(canvas, l, 'story'), 300);
-  } else {
-    triggerDownload(canvas, l, 'square');
-  }
-}
-
-function triggerDownload(canvas, l, type) {
-  const a = document.createElement('a');
-  a.download = 'broker-france-' + (l.id||'listing') + '-' + type + '.png';
-  a.href = canvas.toDataURL('image/png');
-  a.click();
-  // reset back to square after story download
-  if (type === 'story') {
-    canvas.width = 1080; canvas.height = 1080;
-    drawIgPost(l, 1080, 1080);
-  }
-}
 
 console.log('%c\u26a0 Stop!', 'color:#DC2626;font-size:40px;font-weight:900');
 console.log('%cThis site contains proprietary listing data owned by Broker France.\nUnauthorized scraping or redistribution is prohibited.', 'color:#0F1117;font-size:14px');

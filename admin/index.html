@@ -150,6 +150,24 @@ button{font-family:inherit;cursor:pointer}
 .btn-new-txn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;transition:background .15s}
 .btn-new-txn:hover{background:var(--green-d)}
 
+/* ig post */
+.btn-ig{background:#F0F7F3;color:#2A6044;font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;border:none;cursor:pointer;transition:all .15s}
+.btn-ig:hover{background:#D4EAE0}
+.ig-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px}
+.ig-modal{background:#fff;border-radius:20px;padding:28px;max-width:560px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto}
+.ig-modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ig-modal-hdr h3{font-size:17px;font-weight:800;color:var(--ink)}
+.ig-modal-close{width:32px;height:32px;border-radius:50%;background:var(--bg);border:none;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink3);cursor:pointer}
+.ig-tabs{display:flex;gap:8px;margin-bottom:16px}
+.ig-tab{padding:7px 16px;border-radius:99px;font-size:13px;font-weight:600;border:1.5px solid var(--border);background:#fff;color:var(--ink3);cursor:pointer;transition:all .15s}
+.ig-tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+.ig-canvas-wrap{border-radius:12px;overflow:hidden;margin-bottom:16px;background:#111;display:flex;align-items:center;justify-content:center}
+.ig-canvas-wrap canvas{width:100%;height:auto;display:block}
+.ig-dl-btn{width:100%;padding:13px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:15px;font-weight:700;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s}
+.ig-dl-btn:hover{background:var(--green-d)}
+.ig-dl-btn svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.5}
+.ig-note{font-size:12px;color:var(--ink4);text-align:center;margin-top:10px}
+
 /* transaction detail */
 .txn-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:24px}
 .btn-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;padding:0;cursor:pointer;transition:color .15s}
@@ -394,6 +412,28 @@ button{font-family:inherit;cursor:pointer}
   </div>
 </div>
 
+<!-- IG POST MODAL -->
+<div class="ig-modal-bg" id="ig-modal-bg" style="display:none" onclick="if(event.target===this)closeIgModal()">
+  <div class="ig-modal">
+    <div class="ig-modal-hdr">
+      <h3>📸 Create Instagram Post</h3>
+      <button class="ig-modal-close" onclick="closeIgModal()">✕</button>
+    </div>
+    <div class="ig-tabs">
+      <button class="ig-tab on" onclick="switchIgTab('square',this)">Feed 1:1</button>
+      <button class="ig-tab" onclick="switchIgTab('story',this)">Story 9:16</button>
+    </div>
+    <div class="ig-canvas-wrap" id="ig-canvas-wrap">
+      <canvas id="ig-canvas"></canvas>
+    </div>
+    <button class="ig-dl-btn" onclick="downloadIgPost()">
+      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download PNG
+    </button>
+    <p class="ig-note">1080×1080 for Feed · 1080×1920 for Story</p>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -480,6 +520,7 @@ function renderListingsTable(list) {
       <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
       <td><div class="tbl-actions">
         <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
+        <button class="btn-ig" onclick="openIgModal('${esc(l.id||'')}')">📸 Post</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -736,6 +777,194 @@ function createTransaction() {
   closeNewTxnModal();
   showToast('Transaction created!');
   openTxnDetail(txn.id);
+}
+
+// ── IG POST GENERATOR ─────────────────────────────────
+let igListing   = null;
+let igMode      = 'square'; // 'square' | 'story'
+
+function openIgModal(id) {
+  igListing = allListings.find(l => String(l.id) === String(id));
+  if (!igListing) { showToast('Listing not found'); return; }
+  igMode = 'square';
+  document.querySelectorAll('.ig-tab').forEach((t,i) => t.classList.toggle('on', i===0));
+  document.getElementById('ig-modal-bg').style.display = 'flex';
+  drawIgCanvas();
+}
+
+function closeIgModal() {
+  document.getElementById('ig-modal-bg').style.display = 'none';
+}
+
+function switchIgTab(mode, btn) {
+  igMode = mode;
+  document.querySelectorAll('.ig-tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  drawIgCanvas();
+}
+
+function drawIgCanvas() {
+  const l   = igListing;
+  const W   = 1080;
+  const H   = igMode === 'story' ? 1920 : 1080;
+  const canvas = document.getElementById('ig-canvas');
+  canvas.width  = W;
+  canvas.height = H;
+  // scale preview so it fits in modal
+  canvas.style.width  = '100%';
+  canvas.style.height = 'auto';
+
+  const ctx = canvas.getContext('2d');
+
+  function render(img) {
+    // ── BACKGROUND ──
+    if (img) {
+      // cover-fit image
+      const scale = Math.max(W / img.width, H / img.height);
+      const sw    = img.width  * scale;
+      const sh    = img.height * scale;
+      ctx.drawImage(img, (W - sw) / 2, (H - sh) / 2, sw, sh);
+      // gradient overlay
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0,    'rgba(0,0,0,0.25)');
+      grad.addColorStop(0.40, 'rgba(0,0,0,0.10)');
+      grad.addColorStop(1,    'rgba(0,0,0,0.88)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      ctx.fillStyle = '#1C3F2F';
+      ctx.fillRect(0, 0, W, H);
+      const rg = ctx.createRadialGradient(W*.75, H*.15, 0, W*.75, H*.15, W*.9);
+      rg.addColorStop(0, 'rgba(45,96,68,.55)');
+      rg.addColorStop(1, 'transparent');
+      ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+    }
+
+    const pad  = 80;
+    const bot  = H - 60;
+    const deal = (l.deal||'').toLowerCase();
+    const isLease = deal.includes('lease') || deal.includes('rent');
+    const isEx    = String(l.exclusive||'').toLowerCase() === 'yes';
+
+    // ── BADGES (top left) ──
+    let bx = pad;
+    const badgeH = 60, badgeR = 30;
+    // For Sale / Lease
+    const dealLabel = isLease ? 'For Lease' : 'For Sale';
+    ctx.font = '700 28px Arial, sans-serif';
+    const dealW = ctx.measureText(dealLabel).width + 48;
+    ctx.fillStyle = isLease ? '#1D4ED8' : '#1C5C3A';
+    igRoundRect(ctx, bx, pad, dealW, badgeH, badgeR);
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+    ctx.fillText(dealLabel, bx + 24, pad + 41);
+    bx += dealW + 14;
+    // Exclusive
+    if (isEx) {
+      const exLabel = '✦ Exclusive';
+      const exW = ctx.measureText(exLabel).width + 48;
+      const grd = ctx.createLinearGradient(bx, 0, bx + exW, 0);
+      grd.addColorStop(0,'#92700A'); grd.addColorStop(1,'#C9960C');
+      ctx.fillStyle = grd;
+      igRoundRect(ctx, bx, pad, exW, badgeH, badgeR);
+      ctx.fillStyle = '#fff';
+      ctx.fillText(exLabel, bx + 24, pad + 41);
+    }
+
+    // ── PROPERTY DETAILS (bottom block) ──
+    const price = l.price || l.amount || 'Price on Request';
+    const name  = l.name  || l.key   || l.title || '';
+    const loc   = l.location || '';
+    const type  = l.type  || '';
+    const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
+    const floor = l.floor ? l.floor + ' sqm floor' : '';
+
+    // price
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `800 ${igMode==='story'?88:84}px Arial, sans-serif`;
+    ctx.fillText(igTruncate(ctx, price, W - pad*2), pad, bot - 280);
+
+    // name
+    ctx.font = `700 ${igMode==='story'?46:42}px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillText(igTruncate(ctx, name, W - pad*2), pad, bot - 210);
+
+    // specs row
+    const specs = [type, lot, floor].filter(Boolean).join('  ·  ');
+    if (specs) {
+      ctx.font = `400 ${igMode==='story'?34:30}px Arial, sans-serif`;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(specs, pad, bot - 158);
+    }
+
+    // location
+    ctx.font = `400 ${igMode==='story'?34:30}px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.fillText('📍 ' + igTruncate(ctx, loc, W - pad*2), pad, bot - 108);
+
+    // divider
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(pad, bot - 72, W - pad*2, 1.5);
+
+    // branding
+    ctx.font = `700 30px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.textAlign = 'left';
+    ctx.fillText('Broker France', pad, bot - 28);
+
+    ctx.font = `400 26px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText('francebrokerage.com', pad + 240, bot - 28);
+
+    ctx.font = `400 24px Arial, sans-serif`;
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.textAlign = 'right';
+    ctx.fillText('PRC Lic. 020049', W - pad, bot - 28);
+  }
+
+  // try to load image — handle Drive URLs + CORS
+  const raw = l.thumbnail || '';
+  if (raw) {
+    const src = raw.replace(/\/file\/d\/([^/]+).*/, '/uc?export=view&id=$1')
+                   .replace('open?id=', 'uc?export=view&id=');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => render(img);
+    img.onerror = () => render(null);
+    img.src = src;
+  } else {
+    render(null);
+  }
+}
+
+function igRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath(); ctx.fill();
+}
+
+function igTruncate(ctx, text, maxW) {
+  if (!text) return '';
+  if (ctx.measureText(text).width <= maxW) return text;
+  while (text.length > 0 && ctx.measureText(text+'…').width > maxW) text = text.slice(0,-1);
+  return text + '…';
+}
+
+function downloadIgPost() {
+  if (!igListing) return;
+  const canvas = document.getElementById('ig-canvas');
+  const a = document.createElement('a');
+  a.download = `broker-france-${igListing.id||'listing'}-${igMode}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+  showToast('Downloaded!');
 }
 
 // ── UTILS ─────────────────────────────────────────────
