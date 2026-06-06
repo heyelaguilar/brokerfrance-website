@@ -420,7 +420,7 @@ button{font-family:inherit;cursor:pointer}
       <button class="ig-modal-close" onclick="closeIgModal()">✕</button>
     </div>
     <div class="ig-tabs">
-      <button class="ig-tab on" onclick="switchIgTab('square',this)">Feed 1:1</button>
+      <button class="ig-tab on" onclick="switchIgTab('square',this)">Feed 4:5</button>
       <button class="ig-tab" onclick="switchIgTab('story',this)">Story 9:16</button>
     </div>
     <div class="ig-canvas-wrap" id="ig-canvas-wrap">
@@ -806,7 +806,7 @@ function switchIgTab(mode, btn) {
 function drawIgCanvas() {
   const l   = igListing;
   const W   = 1080;
-  const H   = igMode === 'story' ? 1920 : 1080;
+  const H   = igMode === 'story' ? 1920 : 1350; // 4:5 portrait
   const canvas = document.getElementById('ig-canvas');
   canvas.width  = W;
   canvas.height = H;
@@ -817,102 +817,217 @@ function drawIgCanvas() {
   const ctx = canvas.getContext('2d');
 
   function render(img) {
-    const pad = 72;
-    const fs  = igMode === 'story';
-    const bot = H - 60;
+    const PAD  = 48;
+    const GAP  = 14;
+    const R    = 20; // corner radius
 
-    // ── BACKGROUND (full image, cover-fit) ──
-    if (img) {
-      const scale = Math.max(W / img.width, H / img.height);
-      const sw = img.width * scale, sh = img.height * scale;
-      ctx.drawImage(img, (W-sw)/2, (H-sh)/2, sw, sh);
-    } else {
-      ctx.fillStyle = '#1C3F2F';
-      ctx.fillRect(0, 0, W, H);
-    }
-    // dark gradient overlay (bottom heavy)
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0,    'rgba(0,0,0,0.05)');
-    grad.addColorStop(0.50, 'rgba(0,0,0,0.05)');
-    grad.addColorStop(1,    'rgba(0,0,0,0.88)');
-    ctx.fillStyle = grad;
+    // ── COLORS ──
+    const C = {
+      bg:      '#F4F6F8',
+      white:   '#FFFFFF',
+      green:   '#1C3F2F',
+      greenL:  '#EAF4EE',
+      ink:     '#0E1117',
+      ink2:    '#2D3748',
+      ink3:    '#4A5568',
+      ink4:    '#718096',
+      border:  '#E2E8F0',
+      price:   '#1C3F2F',
+    };
+
+    // ── BACKGROUND ──
+    ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, W, H);
 
-    // ── TOP LEFT — deal badge ──
+    // ── MAIN PHOTO ──
+    const photoX = PAD, photoY = PAD;
+    const photoW = W - PAD*2, photoH = 480;
+    ctx.save();
+    igClip(ctx, photoX, photoY, photoW, photoH, R);
+    if (img) {
+      const s = Math.max(photoW/img.width, photoH/img.height);
+      ctx.drawImage(img, photoX+(photoW-img.width*s)/2, photoY+(photoH-img.height*s)/2, img.width*s, img.height*s);
+    } else {
+      ctx.fillStyle = C.green; ctx.fillRect(photoX, photoY, photoW, photoH);
+    }
+    ctx.restore();
+    // subtle shadow under main photo
+    ctx.save();
+    ctx.shadowColor='rgba(0,0,0,0.12)'; ctx.shadowBlur=20; ctx.shadowOffsetY=4;
+    ctx.strokeStyle='rgba(0,0,0,0)'; ctx.lineWidth=0;
+    igRoundRect(ctx, photoX, photoY, photoW, photoH, R); ctx.stroke();
+    ctx.restore();
+
+    // badges over main photo
     const deal    = (l.deal||'').toLowerCase();
     const isLease = deal.includes('lease') || deal.includes('rent');
     const isEx    = String(l.exclusive||'').toLowerCase() === 'yes';
-    ctx.font = `700 ${fs?28:26}px Arial, sans-serif`;
-    let bx = pad;
-    const dealLbl = isLease ? 'For Lease' : 'For Sale';
-    const dealW   = ctx.measureText(dealLbl).width + 44;
-    ctx.fillStyle = isLease ? '#1D4ED8' : '#1C3F2F';
-    igRoundRect(ctx, bx, pad, dealW, 56, 28);
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-    ctx.fillText(dealLbl, bx+22, pad+39); bx += dealW + 12;
+    ctx.font = '700 24px Arial, sans-serif';
+    let bx = photoX + 20, by = photoY + 20;
+    const drawBadge = (label, fill) => {
+      const tw = ctx.measureText(label).width;
+      const bw = tw + 36, bh = 48;
+      ctx.fillStyle = fill;
+      igRoundRect(ctx, bx, by, bw, bh, 24); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
+      ctx.fillText(label, bx+18, by+33); bx += bw + 10;
+    };
+    drawBadge(isLease ? 'For rent' : 'For sale', C.green);
     if (isEx) {
-      const exLbl = '✦ Exclusive';
-      const exW   = ctx.measureText(exLbl).width + 44;
-      const eg    = ctx.createLinearGradient(bx,0,bx+exW,0);
+      const eg = ctx.createLinearGradient(bx,0,bx+200,0);
       eg.addColorStop(0,'#92700A'); eg.addColorStop(1,'#C9960C');
-      ctx.fillStyle = eg;
-      igRoundRect(ctx, bx, pad, exW, 56, 28);
-      ctx.fillStyle = '#fff';
-      ctx.fillText(exLbl, bx+22, pad+39);
+      drawBadge('Exclusive', eg);
+    }
+    // ref ID top right
+    if (l.id) {
+      ctx.font = '600 22px Arial, sans-serif';
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      const refTxt = 'Ref: ' + l.id;
+      const rtw = ctx.measureText(refTxt).width + 28;
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      igRoundRect(ctx, photoX+photoW-rtw-16, photoY+16, rtw, 42, 8); ctx.fill();
+      ctx.fillStyle = C.ink2; ctx.textAlign = 'right';
+      ctx.fillText(refTxt, photoX+photoW-16-4, photoY+16+29);
     }
 
-    // ── TOP RIGHT — website ──
-    ctx.font = `500 ${fs?26:24}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    ctx.textAlign = 'right';
-    ctx.fillText('francebrokerage.com', W - pad, pad + 38);
+    // ── 3 SMALL PHOTOS ──
+    const smY = photoY + photoH + GAP;
+    const smH = 190;
+    const smW = (photoW - GAP*2) / 3;
+    for (let i = 0; i < 3; i++) {
+      const sx = photoX + i*(smW+GAP);
+      ctx.save();
+      igClip(ctx, sx, smY, smW, smH, 14);
+      if (img) {
+        // offset each small photo slightly for variety
+        const offsets = [0, 0.2, 0.5];
+        const s = Math.max(smW/img.width, smH/img.height);
+        const iw = img.width*s, ih = img.height*s;
+        ctx.drawImage(img, sx+(smW-iw)/2, smY+(smH-ih)/2 - ih*offsets[i]*0.1, iw, ih);
+      } else {
+        ctx.fillStyle = C.green; ctx.fillRect(sx, smY, smW, smH);
+      }
+      ctx.restore();
+    }
 
-    // ── CONTENT (bottom, layered upward) ──
+    // ── WHITE DETAILS PANEL ──
+    const detY = smY + smH + GAP;
+    const detH = 160;
+    ctx.fillStyle = C.white;
+    igRoundRect(ctx, PAD, detY, W-PAD*2, detH, R); ctx.fill();
+
     const rawAmt = l.price || l.amount || '';
     const price  = rawAmt
       ? '₱' + Number(String(rawAmt).replace(/[^0-9.]/g,'')).toLocaleString('en-PH')
       : 'Price on Request';
+    const name  = l.name || l.key || l.title || '';
     const loc   = l.location || '';
-    const type  = l.type  || '';
-    const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
-    const floor = l.floor ? l.floor + ' sqm floor' : '';
-    const specs = [type, lot, floor].filter(Boolean).join('  ·  ');
 
-    // line 3 — specs (type · lot · floor)
-    if (specs) {
-      ctx.font = `400 ${fs?32:28}px Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.textAlign = 'left';
-      ctx.fillText(igTruncate(ctx, specs, W - pad*2), pad, bot - 152);
+    // property name (left)
+    ctx.font = '800 42px Arial, sans-serif';
+    ctx.fillStyle = C.ink; ctx.textAlign = 'left';
+    ctx.fillText(igTruncate(ctx, name, W - PAD*2 - 280), PAD+24, detY+56);
+
+    // location (left, below name)
+    ctx.font = '400 28px Arial, sans-serif';
+    ctx.fillStyle = C.ink3;
+    // pin icon substitute
+    ctx.fillText('📍 ' + igTruncate(ctx, loc, W - PAD*2 - 100), PAD+24, detY+104);
+
+    // price pill (right)
+    ctx.font = '700 36px Arial, sans-serif';
+    const pw = ctx.measureText(price).width + 48;
+    ctx.fillStyle = C.greenL;
+    igRoundRect(ctx, W-PAD-pw-4, detY+30, pw, 66, 12); ctx.fill();
+    ctx.fillStyle = C.price; ctx.textAlign = 'right';
+    ctx.fillText(price, W-PAD-4-20, detY+75);
+
+    // ── SPECS BOXES ──
+    const lot   = l.lot   ? String(l.lot)   : '';
+    const floor = l.floor ? String(l.floor) : '';
+    const beds  = l.bedrooms || l.beds || '';
+    const baths = l.bathrooms || l.baths || '';
+    const rent  = rawAmt && isLease
+      ? '₱' + Number(String(rawAmt).replace(/[^0-9.]/g,'')).toLocaleString('en-PH')
+      : '';
+
+    const specItems = [
+      lot   ? {val: lot+' sqm',  lbl:'Lot Area'}      : null,
+      beds  ? {val: beds,         lbl:'Bedrooms'}      : null,
+      baths ? {val: baths,        lbl:'Bathrooms'}     : null,
+      rent  ? {val: rent,         lbl:'monthly rent'}  : (floor ? {val:floor+' sqm', lbl:'Floor Area'} : null),
+    ].filter(Boolean);
+
+    const spY = detY + detH + GAP;
+    const spH = 110;
+    if (specItems.length) {
+      const spW = (W - PAD*2 - GAP*(specItems.length-1)) / specItems.length;
+      specItems.forEach((sp, i) => {
+        const sx = PAD + i*(spW+GAP);
+        ctx.fillStyle = C.white;
+        igRoundRect(ctx, sx, spY, spW, spH, 14); ctx.fill();
+        ctx.font = '800 34px Arial, sans-serif';
+        ctx.fillStyle = C.ink; ctx.textAlign = 'center';
+        ctx.fillText(sp.val, sx+spW/2, spY+46);
+        ctx.font = '400 24px Arial, sans-serif';
+        ctx.fillStyle = C.ink4;
+        ctx.fillText(sp.lbl, sx+spW/2, spY+80);
+      });
     }
 
-    // line 2 — location (same size/style as name was)
-    ctx.font = `700 ${fs?52:48}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.textAlign = 'left';
-    ctx.fillText(igTruncate(ctx, loc, W - pad*2), pad, bot - 224);
-
-    // line 1 — price (big hero)
-    ctx.font = `800 ${fs?90:84}px Arial, sans-serif`;
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.fillText(igTruncate(ctx, price, W - pad*2), pad, bot - 300);
+    // ── DESCRIPTION BOX ──
+    const desc  = l.remarks || l.description || l.key || '';
+    const dscY  = spY + spH + GAP;
+    const dscH  = 140;
+    ctx.fillStyle = C.white;
+    igRoundRect(ctx, PAD, dscY, W-PAD*2, dscH, R); ctx.fill();
+    if (desc) {
+      ctx.font = '400 26px Arial, sans-serif';
+      ctx.fillStyle = C.ink3; ctx.textAlign = 'left';
+      // word-wrap to ~2 lines
+      igWrapText(ctx, desc, PAD+28, dscY+44, W-PAD*2-56, 38, 3);
+    }
 
     // ── FOOTER ──
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillRect(pad, bot - 108, W - pad*2, 1.5);
+    const ftY = dscY + dscH + GAP;
+    const ftH = H - ftY - PAD;
+    ctx.fillStyle = C.white;
+    igRoundRect(ctx, PAD, ftY, W-PAD*2, ftH, R); ctx.fill();
 
-    // left: broker name
-    ctx.font = `700 ${fs?30:27}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.textAlign = 'left';
-    ctx.fillText('May Francia Rivares-Gonzales', pad, bot - 65);
+    // QR code image (left)
+    const qrSize = ftH - 32;
+    const qrX = PAD + 20, qrY2 = ftY + 16;
+    const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' +
+                  encodeURIComponent('https://francebrokerage.com/listing/' + (l.id||''));
+    const qrImg = new Image();
+    qrImg.crossOrigin = 'anonymous';
+    qrImg.onload = () => {
+      ctx.save();
+      igClip(ctx, qrX, qrY2, qrSize, qrSize, 8);
+      ctx.drawImage(qrImg, qrX, qrY2, qrSize, qrSize);
+      ctx.restore();
+    };
+    qrImg.src = qrUrl;
 
-    // right: PRC
-    ctx.font = `400 ${fs?26:23}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.textAlign = 'right';
-    ctx.fillText('PRC Lic. 020049', W - pad, bot - 65);
+    // broker details (center)
+    const bdX = PAD + qrSize + 48;
+    ctx.font = '800 34px Arial, sans-serif';
+    ctx.fillStyle = C.ink; ctx.textAlign = 'left';
+    ctx.fillText('May Francia Rivares-Gonzales', bdX, ftY + 52);
+
+    ctx.font = '400 24px Arial, sans-serif';
+    ctx.fillStyle = C.ink3;
+    ctx.fillText('PRC Licensed Real Estate Broker 020049', bdX, ftY + 88);
+    ctx.fillText('rebfrancergonzales@gmail.com', bdX, ftY + 120);
+    ctx.fillText('09778290053', bdX, ftY + 152);
+
+    // Brookland logo text (right)
+    ctx.font = '800 22px Arial, sans-serif';
+    ctx.fillStyle = C.green; ctx.textAlign = 'right';
+    ctx.fillText('BROOKLAND', W-PAD-28, ftY+ftH-44);
+    ctx.font = '400 18px Arial, sans-serif';
+    ctx.fillStyle = C.ink4;
+    ctx.fillText('VENTURES INCORPORATED', W-PAD-28, ftY+ftH-20);
   }
 
   // extract Drive file ID and load via CORS proxy
@@ -946,6 +1061,33 @@ function drawIgCanvas() {
   } else {
     render(null);
   }
+}
+
+function igClip(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath(); ctx.clip();
+}
+
+function igWrapText(ctx, text, x, y, maxW, lineH, maxLines) {
+  const words = text.split(' ');
+  let line = '', lines = 0;
+  for (let i = 0; i < words.length; i++) {
+    const test = line + (line ? ' ' : '') + words[i];
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y + lines*lineH);
+      line = words[i]; lines++;
+      if (lines >= maxLines) { ctx.fillText(line + '…', x, y + lines*lineH); return; }
+    } else { line = test; }
+  }
+  if (line) ctx.fillText(line, x, y + lines*lineH);
 }
 
 function igRoundRect(ctx, x, y, w, h, r) {
