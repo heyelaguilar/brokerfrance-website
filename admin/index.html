@@ -135,6 +135,61 @@ button{font-family:inherit;cursor:pointer}
 .sub-field-label{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em}
 .sub-field-val{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;word-break:break-all}
 
+/* transactions */
+.txn-list{display:flex;flex-direction:column;gap:12px;padding:20px}
+.txn-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:all .15s}
+.txn-card:hover{box-shadow:var(--sh);border-color:#b0bec5}
+.txn-progress-ring{flex-shrink:0}
+.txn-info{flex:1;min-width:0}
+.txn-property{font-size:14px;font-weight:800;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.txn-parties{font-size:12px;color:var(--ink4);margin-bottom:8px}
+.txn-bar-wrap{height:5px;background:var(--border);border-radius:99px;overflow:hidden}
+.txn-bar{height:100%;background:var(--green);border-radius:99px;transition:width .3s}
+.txn-steps-label{font-size:11px;color:var(--ink4);margin-top:4px}
+.txn-date{font-size:11px;color:var(--ink4);flex-shrink:0;text-align:right}
+.btn-new-txn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none;transition:background .15s}
+.btn-new-txn:hover{background:var(--green-d)}
+
+/* transaction detail */
+.txn-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.btn-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;padding:0;cursor:pointer;transition:color .15s}
+.btn-back:hover{color:var(--ink)}
+.btn-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5}
+.txn-detail-title{font-size:20px;font-weight:800;color:var(--ink)}
+.txn-detail-sub{font-size:13px;color:var(--ink4);margin-top:2px}
+.checklist{display:flex;flex-direction:column;gap:10px;padding:20px}
+.cl-step{border:1px solid var(--border);border-radius:var(--rs);overflow:hidden;transition:border-color .15s}
+.cl-step.done{border-color:#86efac;background:#f0fdf4}
+.cl-step.inprog{border-color:#fde68a;background:#fffbeb}
+.cl-step-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.cl-num{width:26px;height:26px;border-radius:50%;background:var(--bg);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--ink4);flex-shrink:0;transition:all .15s}
+.cl-step.done .cl-num{background:#16a34a;border-color:#16a34a;color:#fff}
+.cl-step.inprog .cl-num{background:#d97706;border-color:#d97706;color:#fff}
+.cl-label{flex:1;font-size:14px;font-weight:600;color:var(--ink)}
+.cl-status-sel{padding:4px 10px;border-radius:99px;font-size:11px;font-weight:700;border:none;cursor:pointer;outline:none;font-family:inherit}
+.cl-status-pending{background:var(--bg);color:var(--ink4)}
+.cl-status-inprog{background:#FEF9C3;color:#92400E}
+.cl-status-done{background:#DCFCE7;color:#166534}
+.cl-body{padding:0 16px 14px 54px;display:none}
+.cl-step.open .cl-body{display:block}
+.cl-remarks{width:100%;font-family:inherit;font-size:13px;color:var(--ink2);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 12px;resize:none;height:72px;outline:none;transition:border-color .15s;margin-top:2px}
+.cl-remarks:focus{border-color:var(--green);background:#fff}
+.cl-remarks-label{font-size:11px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em}
+.cl-save-btn{margin-top:8px;padding:6px 14px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:12px;font-weight:700;border:none;cursor:pointer}
+
+/* new transaction modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center}
+.modal{background:#fff;border-radius:var(--r);padding:32px;width:90%;max-width:480px;box-shadow:0 24px 64px rgba(0,0,0,.2)}
+.modal h2{font-size:18px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.modal p{font-size:13px;color:var(--ink4);margin-bottom:24px}
+.mfgrp{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+.mfgrp label{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em}
+.mfgrp input,.mfgrp select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:10px 13px;outline:none;transition:border-color .15s;width:100%}
+.mfgrp input:focus,.mfgrp select:focus{border-color:var(--green);background:#fff}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+.btn-cancel{padding:9px 18px;border-radius:var(--rs);background:var(--bg);color:var(--ink3);font-size:13px;font-weight:600;border:1px solid var(--border)}
+.btn-create{padding:9px 18px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:13px;font-weight:700;border:none}
+
 /* toast */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
@@ -185,6 +240,10 @@ button{font-family:inherit;cursor:pointer}
     <button class="nav-item" onclick="showTab('likes')" id="tab-likes">
       <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
       Likes
+    </button>
+    <button class="nav-item" onclick="showTab('transactions')" id="tab-transactions">
+      <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Transactions
     </button>
     <div class="sidebar-bottom">
       <div class="sidebar-user" id="user-email">—</div>
@@ -258,6 +317,45 @@ button{font-family:inherit;cursor:pointer}
       </div>
     </div>
 
+    <!-- TRANSACTIONS TAB -->
+    <div id="pane-transactions" style="display:none">
+      <div id="txn-list-view">
+        <div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h1>Transactions</h1>
+            <p>Track each deal through all 12 documentation steps.</p>
+          </div>
+          <button class="btn-new-txn" onclick="openNewTxnModal()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Transaction
+          </button>
+        </div>
+        <div class="card">
+          <div class="txn-list" id="txn-list"><div class="empty">No transactions yet. Click "New Transaction" to start.</div></div>
+        </div>
+      </div>
+
+      <div id="txn-detail-view" style="display:none">
+        <div class="txn-detail-hdr">
+          <button class="btn-back" onclick="closeTxnDetail()">
+            <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <div>
+            <div class="txn-detail-title" id="txn-detail-title">—</div>
+            <div class="txn-detail-sub" id="txn-detail-sub">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr">
+            <h2>Documentation Checklist</h2>
+            <span id="txn-detail-progress" style="font-size:13px;color:var(--ink4);font-weight:600"></span>
+          </div>
+          <div class="checklist" id="checklist-body"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- LIKES TAB -->
     <div id="pane-likes" style="display:none">
       <div class="page-hdr">
@@ -270,6 +368,32 @@ button{font-family:inherit;cursor:pointer}
       </div>
     </div>
   </main>
+</div>
+
+<!-- NEW TRANSACTION MODAL -->
+<div class="modal-bg" id="new-txn-modal" style="display:none" onclick="if(event.target===this)closeNewTxnModal()">
+  <div class="modal">
+    <h2>New Transaction</h2>
+    <p>Fill in the details to start tracking this deal.</p>
+    <div class="mfgrp">
+      <label>Property / Listing</label>
+      <select id="txn-listing">
+        <option value="">Select a listing…</option>
+      </select>
+    </div>
+    <div class="mfgrp">
+      <label>Seller Name</label>
+      <input type="text" id="txn-seller" placeholder="Full name of seller">
+    </div>
+    <div class="mfgrp">
+      <label>Buyer Name</label>
+      <input type="text" id="txn-buyer" placeholder="Full name of buyer">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNewTxnModal()">Cancel</button>
+      <button class="btn-create" onclick="createTransaction()">Create Transaction</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -317,13 +441,7 @@ function logout() {
   netlifyIdentity.logout();
 }
 
-// ── TABS ──────────────────────────────────────────────
-function showTab(name) {
-  ['listings','submissions','likes'].forEach(t => {
-    document.getElementById('pane-' + t).style.display = t === name ? 'block' : 'none';
-    document.getElementById('tab-' + t).classList.toggle('active', t === name);
-  });
-}
+// ── TABS (defined in transactions section below) ──────
 
 // ── LISTINGS ──────────────────────────────────────────
 async function loadListings() {
@@ -446,6 +564,158 @@ function renderLikes(counts) {
       </div>
     </div>`;
   }).join('');
+}
+
+// ── TRANSACTIONS ──────────────────────────────────────
+const STEPS = [
+  'Secure ATS for the seller',
+  'Draft LOI for the buyer',
+  'Draft Contract to Sell (seller to buyer)',
+  'Collect ID with signature and TIN',
+  'Secure title, Tax Dec, RPT and Tax Clearance',
+  'DOAS',
+  'Acknowledgement Receipt',
+  'SPA for transfer of title',
+  'Payment of CGT and DST for ECAR',
+  'Submit property sale to RD for new title and cancellation of old',
+  'To municipal for the transfer of Tax Dec',
+  'Secure transmittal documents'
+];
+
+let transactions = JSON.parse(localStorage.getItem('bf_transactions') || '[]');
+let currentTxnId = null;
+
+function saveTxns() {
+  localStorage.setItem('bf_transactions', JSON.stringify(transactions));
+}
+
+function showTab(name) {
+  ['listings','submissions','likes','transactions'].forEach(t => {
+    document.getElementById('pane-' + t).style.display = t === name ? 'block' : 'none';
+    document.getElementById('tab-' + t).classList.toggle('active', t === name);
+  });
+  if (name === 'transactions') renderTxnList();
+}
+
+function renderTxnList() {
+  const el = document.getElementById('txn-list');
+  if (!transactions.length) {
+    el.innerHTML = '<div class="empty">No transactions yet. Click "New Transaction" to start.</div>';
+    return;
+  }
+  el.innerHTML = transactions.slice().reverse().map(t => {
+    const done = t.steps.filter(s => s.status === 'done').length;
+    const pct  = Math.round((done / STEPS.length) * 100);
+    return `<div class="txn-card" onclick="openTxnDetail('${t.id}')">
+      <div class="txn-info">
+        <div class="txn-property">${esc(t.property)}</div>
+        <div class="txn-parties">Seller: ${esc(t.seller)} &nbsp;·&nbsp; Buyer: ${esc(t.buyer)}</div>
+        <div class="txn-bar-wrap"><div class="txn-bar" style="width:${pct}%"></div></div>
+        <div class="txn-steps-label">${done} of ${STEPS.length} steps completed</div>
+      </div>
+      <div class="txn-date">${esc(t.date)}</div>
+    </div>`;
+  }).join('');
+}
+
+function openTxnDetail(id) {
+  currentTxnId = id;
+  const t = transactions.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('txn-list-view').style.display = 'none';
+  document.getElementById('txn-detail-view').style.display = 'block';
+  document.getElementById('txn-detail-title').textContent = t.property;
+  document.getElementById('txn-detail-sub').textContent = `Seller: ${t.seller}  ·  Buyer: ${t.buyer}  ·  Started: ${t.date}`;
+  renderChecklist(t);
+}
+
+function closeTxnDetail() {
+  currentTxnId = null;
+  document.getElementById('txn-detail-view').style.display = 'none';
+  document.getElementById('txn-list-view').style.display = 'block';
+  renderTxnList();
+}
+
+function renderChecklist(t) {
+  const done = t.steps.filter(s => s.status === 'done').length;
+  document.getElementById('txn-detail-progress').textContent = `${done} / ${STEPS.length} completed`;
+  document.getElementById('checklist-body').innerHTML = t.steps.map((s, i) => `
+    <div class="cl-step ${s.status === 'done' ? 'done' : s.status === 'inprog' ? 'inprog' : ''}" id="cl-step-${i}">
+      <div class="cl-step-hdr" onclick="toggleStep(${i})">
+        <div class="cl-num">${i + 1}</div>
+        <div class="cl-label">${esc(STEPS[i])}</div>
+        <select class="cl-status-sel cl-status-${s.status}" onclick="event.stopPropagation()" onchange="updateStatus(${i}, this.value)">
+          <option value="pending" ${s.status==='pending'?'selected':''}>Pending</option>
+          <option value="inprog"  ${s.status==='inprog' ?'selected':''}>In Progress</option>
+          <option value="done"    ${s.status==='done'   ?'selected':''}>Done</option>
+        </select>
+      </div>
+      <div class="cl-body">
+        <div class="cl-remarks-label">Remarks</div>
+        <textarea class="cl-remarks" id="cl-remarks-${i}" placeholder="Add notes, dates, or follow-ups…">${esc(s.remarks||'')}</textarea>
+        <button class="cl-save-btn" onclick="saveRemarks(${i})">Save Remarks</button>
+      </div>
+    </div>`).join('');
+}
+
+function toggleStep(i) {
+  const step = document.getElementById('cl-step-' + i);
+  step.classList.toggle('open');
+}
+
+function updateStatus(i, val) {
+  const t = transactions.find(x => x.id === currentTxnId);
+  if (!t) return;
+  t.steps[i].status = val;
+  saveTxns();
+  const step = document.getElementById('cl-step-' + i);
+  step.className = `cl-step ${val === 'done' ? 'done' : val === 'inprog' ? 'inprog' : ''} ${step.classList.contains('open') ? 'open' : ''}`;
+  const sel = step.querySelector('.cl-status-sel');
+  sel.className = `cl-status-sel cl-status-${val}`;
+  const done = t.steps.filter(s => s.status === 'done').length;
+  document.getElementById('txn-detail-progress').textContent = `${done} / ${STEPS.length} completed`;
+  showToast('Status updated');
+}
+
+function saveRemarks(i) {
+  const t = transactions.find(x => x.id === currentTxnId);
+  if (!t) return;
+  t.steps[i].remarks = document.getElementById('cl-remarks-' + i).value;
+  saveTxns();
+  showToast('Remarks saved');
+}
+
+function openNewTxnModal() {
+  const sel = document.getElementById('txn-listing');
+  sel.innerHTML = '<option value="">Select a listing…</option>' +
+    allListings.map(l => `<option value="${esc(l.name||l.title||l.id)}">${esc(l.name||l.title||'Untitled')} — ${esc(l.location||'')}</option>`).join('');
+  document.getElementById('txn-seller').value = '';
+  document.getElementById('txn-buyer').value  = '';
+  document.getElementById('new-txn-modal').style.display = 'flex';
+}
+
+function closeNewTxnModal() {
+  document.getElementById('new-txn-modal').style.display = 'none';
+}
+
+function createTransaction() {
+  const property = document.getElementById('txn-listing').value;
+  const seller   = document.getElementById('txn-seller').value.trim();
+  const buyer    = document.getElementById('txn-buyer').value.trim();
+  if (!property) { showToast('Please select a listing'); return; }
+  if (!seller)   { showToast('Please enter seller name'); return; }
+  if (!buyer)    { showToast('Please enter buyer name'); return; }
+  const txn = {
+    id: 'txn_' + Date.now(),
+    property, seller, buyer,
+    date: new Date().toLocaleDateString('en-PH', {year:'numeric',month:'short',day:'numeric'}),
+    steps: STEPS.map(() => ({ status: 'pending', remarks: '' }))
+  };
+  transactions.push(txn);
+  saveTxns();
+  closeNewTxnModal();
+  showToast('Transaction created!');
+  openTxnDetail(txn.id);
 }
 
 // ── UTILS ─────────────────────────────────────────────
