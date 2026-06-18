@@ -783,6 +783,15 @@ a{text-decoration:none;color:inherit}
 .wf input:focus,.wf select:focus,.wf textarea:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(27,58,45,.08)}
 .wf textarea{resize:none;height:110px}
 .wf .hint{font-size:13px;color:var(--ink3);margin-top:2px}
+.wf-check{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;user-select:none}
+.wf-check:hover{border-color:var(--green-m);background:#EEF7F2}
+.wf-check input[type=checkbox]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.wf-check-box{width:26px;height:26px;border-radius:7px;border:2px solid var(--border);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.wf-check:hover .wf-check-box{border-color:var(--green)}
+.wf-check.checked .wf-check-box{background:var(--green);border-color:var(--green)}
+.wf-check.checked .wf-check-box::after{content:'';display:block;width:7px;height:12px;border:2.5px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+.wf-check.checked{border-color:var(--green);background:#EEF7F2}
+.wf-check-text{font-size:15px;font-weight:600;color:var(--ink)}
 .wf-prefix{position:relative}
 .wf-prefix input{padding-left:28px}
 .wf-prefix::before{content:'₱';position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none}
@@ -2883,9 +2892,10 @@ function renderWizardStep() {
     } else if (f.type === 'textarea') {
       input = `<textarea id="${f.id}" placeholder="${f.ph || ''}"></textarea>`;
     } else if (f.type === 'checkbox') {
-      return `<div class="wf" style="flex-direction:row;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer" onclick="document.getElementById('${f.id}').click()">
-        <input type="checkbox" id="${f.id}" style="width:18px;height:18px;accent-color:var(--green);flex-shrink:0;cursor:pointer">
-        <label for="${f.id}" style="font-size:14px;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:0;cursor:pointer">${f.text}</label>
+      return `<div class="wf-check" id="${f.id}-wrap" onclick="toggleCheck('${f.id}')">
+        <input type="checkbox" id="${f.id}">
+        <div class="wf-check-box"></div>
+        <span class="wf-check-text">${f.text}</span>
       </div>`;
     } else if (f.formatter === 'currency') {
       input = `<div style="position:relative">
@@ -2929,12 +2939,22 @@ function renderWizardStep() {
   s.fields.forEach(f => {
     const el = document.getElementById(f.id);
     if (!el) return;
-    if (f.type === 'checkbox') { el.checked = wData[f.id] === 'Yes'; }
+    if (f.type === 'checkbox') {
+      el.checked = wData[f.id] === 'Yes';
+      document.getElementById(f.id + '-wrap').classList.toggle('checked', el.checked);
+    }
     else if (wData[f.id]) el.value = wData[f.id];
   });
 }
 
 const wData = {};
+
+function toggleCheck(id) {
+  const inp  = document.getElementById(id);
+  const wrap = document.getElementById(id + '-wrap');
+  inp.checked = !inp.checked;
+  wrap.classList.toggle('checked', inp.checked);
+}
 
 function wizardNext() {
   const s = WIZARD_STEPS[wStep];
