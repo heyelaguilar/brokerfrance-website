@@ -414,6 +414,15 @@ a{text-decoration:none;color:inherit}
 .btn-share{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink3);border:1.5px solid var(--border);background:#fff;padding:8px 16px;border-radius:var(--rs);transition:all .15s}
 .btn-share:hover{border-color:var(--green);color:var(--green-d)}
 .btn-share svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
+.share-wrap{position:relative;display:inline-block}
+.share-drop{position:absolute;top:calc(100% + 8px);right:0;background:#fff;border:1.5px solid var(--border);border-radius:var(--r);box-shadow:0 8px 28px rgba(0,0,0,.13);min-width:210px;z-index:600;overflow:hidden;display:none}
+.share-drop.open{display:block}
+.share-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;font-weight:600;color:var(--ink2);border:none;background:none;width:100%;text-align:left;cursor:pointer;transition:background .1s;font-family:inherit}
+.share-drop-item:hover{background:var(--bg)}
+.share-drop-item svg{width:18px;height:18px;flex-shrink:0}
+.share-drop-divider{height:1px;background:var(--border);margin:4px 0}
+.lcard-coming{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.38);pointer-events:none}
+.lcard-coming span{background:rgba(0,0,0,.65);color:#fff;font-size:10px;font-weight:700;padding:4px 12px;border-radius:99px;letter-spacing:.08em;text-transform:uppercase}
 
 /* gallery */
 .detail-gallery{margin:24px 0;border-radius:var(--rl);overflow:hidden;height:480px;background:var(--bg);position:relative}
@@ -1470,10 +1479,31 @@ Ideal Property</div>
         <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Listings
       </button>
-      <button class="btn-share" onclick="shareListing()">
-        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Share
-      </button>
+      <div class="share-wrap">
+        <button class="btn-share" onclick="toggleShareDrop(event)">
+          <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+        <div class="share-drop" id="share-drop">
+          <button class="share-drop-item" onclick="shareAction('copy')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copy Link
+          </button>
+          <div class="share-drop-divider"></div>
+          <button class="share-drop-item" onclick="shareAction('whatsapp')">
+            <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            WhatsApp
+          </button>
+          <button class="share-drop-item" onclick="shareAction('viber')">
+            <svg viewBox="0 0 24 24" fill="#7360F2"><path d="M12 2C6.48 2 2 6.14 2 11.25c0 2.92 1.54 5.52 3.94 7.23V22l3.47-1.91c.85.23 1.75.36 2.59.36 5.52 0 10-4.14 10-9.25S17.52 2 12 2zm4.64 13.5c-.21.6-.74 1.06-1.35 1.21-.34.09-.63.13-.9.13-.45 0-.87-.09-1.24-.26-.76-.35-1.47-.84-2.1-1.47-.63-.63-1.12-1.34-1.47-2.1-.17-.37-.26-.79-.26-1.24 0-.27.04-.56.13-.9.15-.61.61-1.14 1.21-1.35.28-.1.55-.1.79 0 .19.08.35.22.45.4l.77 1.28c.12.19.15.42.09.63-.06.21-.19.39-.37.5l-.31.19c-.11.07-.17.2-.13.32.18.56.54 1.08 1.02 1.56.48.48 1 .84 1.56 1.02.12.04.25-.02.32-.13l.19-.31c.11-.18.29-.31.5-.37.21-.06.44-.03.63.09l1.28.77c.18.1.32.26.4.45.1.24.1.51 0 .79z"/></svg>
+            Viber
+          </button>
+          <button class="share-drop-item" onclick="shareAction('messenger')">
+            <svg viewBox="0 0 24 24" fill="#0099FF"><path d="M12 2C6.477 2 2 6.14 2 11.25c0 2.92 1.54 5.52 3.94 7.23V22l3.47-1.91c.85.23 1.75.36 2.59.36 5.52 0 10-4.14 10-9.25S17.52 2 12 2z"/><path fill="#fff" d="M13.5 8.5l-3.5 3.75L7.5 10l-2 2L9 14.5l2.5-2.5 2.5 2 2.5-6z"/></svg>
+            Messenger
+          </button>
+        </div>
+      </div>
     </div>
     <div class="detail-gallery" id="detailGallery"></div>
     <div class="detail-badges" id="detailBadges"></div>
@@ -2272,6 +2302,8 @@ function renderCard(l) {
     </div>`
   ).join('');
 
+  const comingBadge = !thumb ? '<div class="lcard-coming"><span>Not Yet Published</span></div>' : '';
+
   return `<div class="lcard" onclick="openDetail('${esc(l.id)}')">
     <div class="lcard-img" style="${!thumb ? 'background:linear-gradient(135deg,#'+cols+')' : ''}">
       ${imgHtml}
@@ -2280,6 +2312,7 @@ function renderCard(l) {
         <span>${cap(l.type)}</span>
       </div>
       <div class="lcard-badges">${dealBadges(l.deal, l.exclusive)}</div>
+      ${comingBadge}
       <div class="lcard-like-wrap">
         <button class="lcard-save${isLiked?' saved':''}" onclick="toggleLike(event,'${esc(l.id)}')" title="${isLiked?'Unlike':'Like'}">
           <svg viewBox="0 0 24 24" fill="${isLiked?'#DC2626':'none'}" stroke="${isLiked?'#DC2626':'#374151'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
@@ -2390,22 +2423,38 @@ function goBack() {
   showPage(previousPage || 'listings');
 }
 
-function shareListing() {
+function toggleShareDrop(e) {
+  e.stopPropagation();
+  document.getElementById('share-drop').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  const d = document.getElementById('share-drop');
+  if (d) d.classList.remove('open');
+});
+
+function shareAction(platform) {
   const l = currentListing;
   if (!l) return;
-  const url = window.location.origin + '/listing/' + l.id;
-  const title = l.location + ' — ' + l.price;
-  const text  = l.location + ' · ' + l.price + ' · francebrokerage.com';
-  if (navigator.share) {
-    navigator.share({ title, text, url }).catch(() => {});
-  } else {
-    navigator.clipboard.writeText(url).then(() => showToast('Link copied to clipboard!')).catch(() => {
-      const inp = document.createElement('input');
-      inp.value = url; document.body.appendChild(inp);
-      inp.select(); document.execCommand('copy');
-      document.body.removeChild(inp);
-      showToast('Link copied to clipboard!');
-    });
+  const url  = window.location.origin + '/listing/' + l.id;
+  const text = l.location + ' — ' + l.price + ' | Broker France';
+  document.getElementById('share-drop').classList.remove('open');
+
+  if (platform === 'copy') {
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('Link copied!'))
+      .catch(() => {
+        const inp = document.createElement('input');
+        inp.value = url; document.body.appendChild(inp);
+        inp.select(); document.execCommand('copy');
+        document.body.removeChild(inp);
+        showToast('Link copied!');
+      });
+  } else if (platform === 'whatsapp') {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank');
+  } else if (platform === 'viber') {
+    window.open('viber://forward?text=' + encodeURIComponent(text + '\n' + url), '_blank');
+  } else if (platform === 'messenger') {
+    window.open('fb-messenger://share?link=' + encodeURIComponent(url), '_blank');
   }
 }
 
@@ -2516,6 +2565,9 @@ function applyFilters() {
   // Sort
   if (currentSort === 'asc')  data.sort((a, b) => parseFloat(a.rawPrice) - parseFloat(b.rawPrice));
   if (currentSort === 'desc') data.sort((a, b) => parseFloat(b.rawPrice) - parseFloat(a.rawPrice));
+
+  // Listings without a photo are "not yet published" — push to end
+  data = [...data.filter(l => l.thumbnail), ...data.filter(l => !l.thumbnail)];
 
   document.getElementById('resCount').textContent = data.length + ' propert' + (data.length === 1 ? 'y' : 'ies') + ' found';
   const grid = document.getElementById('allGrid');
