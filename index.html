@@ -81,6 +81,11 @@ a{text-decoration:none;color:inherit}
 .nav-actions{display:flex;gap:8px;align-items:center}
 .btn-ghost{padding:8px 18px;border-radius:var(--rs);font-size:13px;font-weight:600;color:#3E4754;border:1px solid #EAEDF2;background:transparent;transition:all .15s}
 .btn-ghost:hover{border-color:#8C95A4;color:var(--ink)}
+.nav-search-wrap{position:relative;display:flex;align-items:center}
+.nav-search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;stroke:#8C95A4;fill:none;stroke-width:2;pointer-events:none}
+.nav-search{font-family:'Manrope',sans-serif;font-size:13px;font-weight:500;color:var(--ink);background:#F4F6F8;border:1.5px solid #EAEDF2;border-radius:var(--rs);padding:8px 14px 8px 33px;width:200px;outline:none;transition:all .2s}
+.nav-search:focus{border-color:var(--green);background:#fff;width:240px}
+.nav-search::placeholder{color:#8C95A4}
 .btn-cta{padding:9px 20px;border-radius:var(--rs);font-size:13px;font-weight:700;color:#fff;border:none;background:var(--green);transition:background .15s}
 .btn-cta:hover{background:var(--green-d)}
 .btn-cta:hover{background:var(--green-d)}
@@ -916,6 +921,7 @@ a{text-decoration:none;color:inherit}
   .nav{padding:0 16px;height:62px}
   .nav-links{display:none}
   .nav-actions .btn-ghost{display:none}
+  .nav-search-wrap{display:none}
   .nav-tagline{font-size:8px;letter-spacing:.08em}
   .nav-name{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px}
   .btn-cta{width:38px;height:38px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center}
@@ -995,7 +1001,10 @@ a{text-decoration:none;color:inherit}
   </div>
 
   <div class="nav-actions">
-    <button class="btn-ghost" onclick="showPage('about')">About</button>
+    <div class="nav-search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="nav-search" type="text" placeholder="Search properties…" oninput="navSearch(this.value)" onkeydown="if(event.key==='Enter')navSearch(this.value,true)">
+    </div>
     <button class="btn-cta" onclick="showPage('contact')">
       <svg class="btn-cta-icon" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" style="display:none;width:18px;height:18px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       <span class="btn-cta-text">Talk to the Broker</span>
@@ -2489,6 +2498,14 @@ function inquireDeveloperProject(devName, projectName) {
 }
 
 // ── FILTERS ───────────────────────────────────────────
+function navSearch(val, go) {
+  currentSearch = val;
+  const listingInput = document.getElementById('listingSearch');
+  if (listingInput) listingInput.value = val;
+  showPage('listings');
+  applyFilters();
+}
+
 function applyFilters() {
   let data = [...listings];
 
