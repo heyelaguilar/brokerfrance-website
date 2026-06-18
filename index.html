@@ -2302,8 +2302,6 @@ function renderCard(l) {
     </div>`
   ).join('');
 
-  const comingBadge = !thumb ? '<div class="lcard-coming"><span>Not Yet Published</span></div>' : '';
-
   return `<div class="lcard" onclick="openDetail('${esc(l.id)}')">
     <div class="lcard-img" style="${!thumb ? 'background:linear-gradient(135deg,#'+cols+')' : ''}">
       ${imgHtml}
@@ -2312,7 +2310,6 @@ function renderCard(l) {
         <span>${cap(l.type)}</span>
       </div>
       <div class="lcard-badges">${dealBadges(l.deal, l.exclusive)}</div>
-      ${comingBadge}
       <div class="lcard-like-wrap">
         <button class="lcard-save${isLiked?' saved':''}" onclick="toggleLike(event,'${esc(l.id)}')" title="${isLiked?'Unlike':'Like'}">
           <svg viewBox="0 0 24 24" fill="${isLiked?'#DC2626':'none'}" stroke="${isLiked?'#DC2626':'#374151'}" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
@@ -2566,8 +2563,8 @@ function applyFilters() {
   if (currentSort === 'asc')  data.sort((a, b) => parseFloat(a.rawPrice) - parseFloat(b.rawPrice));
   if (currentSort === 'desc') data.sort((a, b) => parseFloat(b.rawPrice) - parseFloat(a.rawPrice));
 
-  // Listings without a photo are "not yet published" — push to end
-  data = [...data.filter(l => l.thumbnail), ...data.filter(l => !l.thumbnail)];
+  // Listings without a photo are not yet published — hide them
+  data = data.filter(l => l.thumbnail);
 
   document.getElementById('resCount').textContent = data.length + ' propert' + (data.length === 1 ? 'y' : 'ies') + ' found';
   const grid = document.getElementById('allGrid');
