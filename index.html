@@ -2449,9 +2449,23 @@ function shareAction(platform) {
   } else if (platform === 'whatsapp') {
     window.open('https://wa.me/?text=' + encodeURIComponent(text + '\n' + url), '_blank');
   } else if (platform === 'viber') {
-    window.open('viber://forward?text=' + encodeURIComponent(text + '\n' + url), '_blank');
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'viber://forward?text=' + encodeURIComponent(text + '\n' + url);
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+      window.open('https://www.viber.com/en/', '_blank');
+      showToast('Link copied! Paste it in Viber.');
+    }
   } else if (platform === 'messenger') {
-    window.open('fb-messenger://share?link=' + encodeURIComponent(url), '_blank');
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) {
+      window.location.href = 'fb-messenger://share?link=' + encodeURIComponent(url);
+    } else {
+      navigator.clipboard.writeText(url).catch(() => {});
+      window.open('https://www.messenger.com/', '_blank');
+      showToast('Link copied! Paste it in Messenger.');
+    }
   }
 }
 
@@ -2672,8 +2686,9 @@ function showPage(name) {
   document.querySelectorAll('.mni').forEach(i => i.classList.remove('on'));
   if (mn[name]) document.getElementById(mn[name]).classList.add('on');
   if (name === 'listings') applyFilters();
-  // Update URL
-  const urlMap = { home:'/', listings:'/listings', contact:'/contact', buyer:'/buyer', match:'/match', submit:'/submit', developers:'/developers' };
+  // Update URL — 'detail' and 'match' manage their own URLs, skip here
+  if (name === 'detail' || name === 'match') return;
+  const urlMap = { home:'/', listings:'/listings', contact:'/contact', buyer:'/buyer', submit:'/submit', developers:'/developers' };
   const url = urlMap[name] || '/';
   if (window.location.pathname !== url) history.pushState({ page: name }, '', url);
 }
