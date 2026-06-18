@@ -566,7 +566,7 @@ function updateStats() {
   document.getElementById('stat-total').textContent  = allListings.length;
   document.getElementById('stat-sale').textContent   = allListings.filter(l => (l.deal||'').toLowerCase().includes('sale')).length;
   document.getElementById('stat-lease').textContent  = allListings.filter(l => (l.deal||'').toLowerCase().includes('lease') || (l.deal||'').toLowerCase().includes('rent')).length;
-  document.getElementById('stat-ex').textContent     = allListings.filter(l => String(l.exclusive||'').toLowerCase() === 'yes').length;
+  document.getElementById('stat-ex').textContent     = allListings.filter(l => String(l.exclusive||'').toUpperCase() === 'TRUE').length;
 }
 
 function renderListingsTable(list) {
@@ -577,10 +577,10 @@ function renderListingsTable(list) {
     const dealBdg = deal.includes('lease') || deal.includes('rent')
       ? '<span class="bdg bdg-lease">Lease</span>'
       : '<span class="bdg bdg-sale">Sale</span>';
-    const exBdg = String(l.exclusive||'').toLowerCase() === 'yes'
+    const exBdg = String(l.exclusive||'').toUpperCase() === 'TRUE'
       ? ' <span class="bdg bdg-ex">Exclusive</span>' : '';
     return `<tr>
-      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.name||l.title||'Untitled')}</td>
+      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--ink)">${esc(l.location||'—')}</td>
       <td>${dealBdg}${exBdg}</td>
       <td class="tbl-price">${esc(l.price||l.amount||'—')}</td>
       <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
@@ -595,7 +595,7 @@ function renderListingsTable(list) {
 function filterListings(q) {
   const term = q.toLowerCase();
   renderListingsTable(allListings.filter(l =>
-    [l.name, l.title, l.location, l.deal, l.price]
+    [l.location, l.deal, l.price, l.type, l.key_details]
       .some(v => (v||'').toLowerCase().includes(term))
   ));
 }
@@ -815,7 +815,7 @@ function saveRemarks(i) {
 function openNewTxnModal() {
   const sel = document.getElementById('txn-listing');
   sel.innerHTML = '<option value="">Select a listing…</option>' +
-    allListings.map(l => `<option value="${esc(l.name||l.title||l.id)}">${esc(l.name||l.title||'Untitled')} — ${esc(l.location||'')}</option>`).join('');
+    allListings.map(l => `<option value="${esc(l.location||l.id)}">${esc(l.location||'—')} (${esc(l.type||'')})</option>`).join('');
   document.getElementById('txn-seller').value = '';
   document.getElementById('txn-buyer').value  = '';
   document.getElementById('new-txn-modal').style.display = 'flex';
@@ -917,7 +917,7 @@ function generateReport() {
       return `<div class="rpt-card">
         <div style="font-size:13px;font-weight:700;color:#718096;min-width:28px;padding-top:2px">${i+1}.</div>
         <div class="rpt-card-left">
-          <div class="rpt-card-name">${esc(l.name||l.key||'Untitled')}</div>
+          <div class="rpt-card-name">${esc(l.location||'—')}</div>
           <div class="rpt-card-loc">📍 ${esc(l.location||'—')}</div>
           ${specs ? `<div class="rpt-card-specs">${esc(specs)}</div>` : ''}
         </div>
@@ -997,7 +997,7 @@ function drawIgCanvas() {
     // ── TOP LEFT — deal badge ──
     const deal    = (l.deal||'').toLowerCase();
     const isLease = deal.includes('lease') || deal.includes('rent');
-    const isEx    = String(l.exclusive||'').toLowerCase() === 'yes';
+    const isEx    = String(l.exclusive||'').toUpperCase() === 'TRUE';
     ctx.font = `700 ${fs?28:26}px Arial, sans-serif`;
     let bx = pad;
     const dealLbl = isLease ? 'For Lease' : 'For Sale';
@@ -1029,8 +1029,8 @@ function drawIgCanvas() {
       : 'Price on Request';
     const loc   = l.location || '';
     const type  = l.type  || '';
-    const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
-    const floor = l.floor ? l.floor + ' sqm floor' : '';
+    const lot   = l.lot_area   ? l.lot_area + ' sqm lot'   : '';
+    const floor = l.floor_area ? l.floor_area + ' sqm floor' : '';
     const specs = [type, lot, floor].filter(Boolean).join('  ·  ');
 
     // line 3 — specs
