@@ -408,8 +408,12 @@ a{text-decoration:none;color:inherit}
    DETAIL PAGE
 ══════════════════════════════════════════════════ */
 .detail-wrap{max-width:1200px;margin:0 auto;padding:0 48px 100px}
-.detail-back{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;padding:28px 0 0;transition:color .15s;letter-spacing:.01em}
+.detail-nav-row{display:flex;align-items:center;justify-content:space-between;padding-top:28px}
+.detail-back{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink3);border:none;background:none;padding:0;transition:color .15s;letter-spacing:.01em}
 .detail-back:hover{color:var(--ink)}.detail-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.5}
+.btn-share{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--ink3);border:1.5px solid var(--border);background:#fff;padding:8px 16px;border-radius:var(--rs);transition:all .15s}
+.btn-share:hover{border-color:var(--green);color:var(--green-d)}
+.btn-share svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2}
 
 /* gallery */
 .detail-gallery{margin:24px 0;border-radius:var(--rl);overflow:hidden;height:480px;background:var(--bg);position:relative}
@@ -1461,10 +1465,16 @@ Ideal Property</div>
 ══════════════════════════════════════════════════ -->
 <div class="page" id="page-detail">
   <div class="detail-wrap">
-    <button class="detail-back" onclick="goBack()">
-      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-      Back to Listings
-    </button>
+    <div class="detail-nav-row">
+      <button class="detail-back" onclick="goBack()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Listings
+      </button>
+      <button class="btn-share" onclick="shareListing()">
+        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share
+      </button>
+    </div>
     <div class="detail-gallery" id="detailGallery"></div>
     <div class="detail-badges" id="detailBadges"></div>
     <div class="detail-body">
@@ -2430,6 +2440,25 @@ function galleryNav(dir) {
 function goBack() {
   history.pushState({}, '', '/');
   showPage(previousPage || 'listings');
+}
+
+function shareListing() {
+  const l = currentListing;
+  if (!l) return;
+  const url = window.location.origin + '/listing/' + l.id;
+  const title = l.location + ' — ' + l.price;
+  const text  = l.location + ' · ' + l.price + ' · francebrokerage.com';
+  if (navigator.share) {
+    navigator.share({ title, text, url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => showToast('Link copied to clipboard!')).catch(() => {
+      const inp = document.createElement('input');
+      inp.value = url; document.body.appendChild(inp);
+      inp.select(); document.execCommand('copy');
+      document.body.removeChild(inp);
+      showToast('Link copied to clipboard!');
+    });
+  }
 }
 
 // ── DEVELOPERS ────────────────────────────────────────
