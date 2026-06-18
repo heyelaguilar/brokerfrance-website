@@ -783,7 +783,7 @@ a{text-decoration:none;color:inherit}
 .wf input:focus,.wf select:focus,.wf textarea:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(27,58,45,.08)}
 .wf textarea{resize:none;height:110px}
 .wf .hint{font-size:13px;color:var(--ink3);margin-top:2px}
-.wf-check{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;user-select:none}
+.wf-check{position:relative;display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;user-select:none}
 .wf-check:hover{border-color:var(--green-m);background:#EEF7F2}
 .wf-check input[type=checkbox]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
 .wf-check-box{width:26px;height:26px;border-radius:7px;border:2px solid var(--border);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
@@ -1935,7 +1935,7 @@ Ideal Property</div>
     <button class="mni" id="mn-listings" onclick="showPage('listings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Listings</button>
     <button class="mni" id="mn-buyer" onclick="showPage('buyer')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Find</button>
     <button class="mni" id="mn-contact" onclick="showPage('contact')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Contact</button>
-    <button class="mni" id="mn-about" onclick="showPage('about')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>About</button>
+    <button class="mni" id="mn-about" onclick="showPage('contact')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 10-16 0"/></svg>About</button>
   </div>
 </div>
 
@@ -2707,6 +2707,46 @@ window.addEventListener('popstate', e => {
   if (e.state && e.state.page) showPage(e.state.page);
 });
 
+// ── WIZARD DATA — must live before resolveRoute so direct /submit loads work ──
+const WIZARD_STEPS = [
+  {
+    num: 'Step 1 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
+    fields: [
+      { id:'sp-deal',     label:'Deal Type',     req:true,  type:'select', opts:['For Sale','For Lease','For Sale & For Lease'] },
+      { id:'sp-type',     label:'Property Type', req:true,  type:'select', opts:['Residential H&L','Condominium','Commercial','Commercial Lot','Commercial Bldg','Farm','Beach','Warehouse','Lot Only','Hotel'] },
+      { id:'sp-location', label:'Location',      req:true,  type:'text',   ph:'e.g. Nuvali, Sta. Rosa, Laguna' },
+    ]
+  },
+  {
+    num: 'Step 2 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
+    fields: [
+      { id:'sp-lot',    label:'Lot Area (sqm)',     req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
+      { id:'sp-floor',  label:'Floor Area (sqm)',   req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
+      { id:'sp-amount', label:'Asking Price (PHP)', req:true,  type:'text', ph:'e.g. 5,500,000 or 5.5M', prefix:'₱', formatter:'currency' },
+    ]
+  },
+  {
+    num: 'Step 3 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
+    fields: [
+      { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
+      { id:'sp-thumbnail', label:'Main Photo (Drive link)',  req:false, type:'url',     ph:'https://drive.google.com/file/d/...' },
+      { id:'sp-photos',    label:'Photo Album or Folder',   req:false, type:'text',    ph:'Google Drive folder link or album name' },
+    ]
+  },
+  {
+    num: 'Step 4 of 4', title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
+    fields: [
+      { id:'sp-name',     label:'Full Name',     req:true,  type:'text',   ph:'Juan dela Cruz' },
+      { id:'sp-phone',    label:'Mobile Number', req:true,  type:'tel',    ph:'+63 9XX XXX XXXX' },
+      { id:'sp-email',    label:'Email Address', req:false, type:'email',  ph:'juan@email.com' },
+      { id:'sp-role',     label:'I am the',      req:true,  type:'select', opts:['Owner','Broker','Sales Person','Authorized Representative'] },
+      { id:'sp-tct',      label:'',              req:false, type:'checkbox', text:'Property has a Transfer Certificate of Title (TCT)' },
+    ]
+  }
+];
+let wStep = 0;
+const wData = {};
+
 // On load: resolve path to page
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
@@ -2811,45 +2851,6 @@ async function submitForm(btn) {
 // Google Apps Script endpoint — saves to "Submissions" sheet
 const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
 
-const WIZARD_STEPS = [
-  {
-    num: 'Step 1 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
-    fields: [
-      { id:'sp-deal',     label:'Deal Type',     req:true,  type:'select', opts:['For Sale','For Lease','For Sale & For Lease'] },
-      { id:'sp-type',     label:'Property Type', req:true,  type:'select', opts:['Residential H&L','Condominium','Commercial','Commercial Lot','Commercial Bldg','Farm','Beach','Warehouse','Lot Only','Hotel'] },
-      { id:'sp-location', label:'Location',      req:true,  type:'text',   ph:'e.g. Nuvali, Sta. Rosa, Laguna' },
-    ]
-  },
-  {
-    num: 'Step 2 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
-    fields: [
-      { id:'sp-lot',    label:'Lot Area (sqm)',     req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
-      { id:'sp-floor',  label:'Floor Area (sqm)',   req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
-      { id:'sp-amount', label:'Asking Price (PHP)', req:true,  type:'text', ph:'e.g. 5,500,000 or 5.5M', prefix:'₱', formatter:'currency' },
-    ]
-  },
-  {
-    num: 'Step 3 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
-    fields: [
-      { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
-      { id:'sp-thumbnail', label:'Main Photo (Drive link)',  req:false, type:'url',     ph:'https://drive.google.com/file/d/...' },
-      { id:'sp-photos',    label:'Photo Album or Folder',   req:false, type:'text',    ph:'Google Drive folder link or album name' },
-    ]
-  },
-  {
-    num: 'Step 4 of 4', title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
-    fields: [
-      { id:'sp-name',     label:'Full Name',     req:true,  type:'text',   ph:'Juan dela Cruz' },
-      { id:'sp-phone',    label:'Mobile Number', req:true,  type:'tel',    ph:'+63 9XX XXX XXXX' },
-      { id:'sp-email',    label:'Email Address', req:false, type:'email',  ph:'juan@email.com' },
-      { id:'sp-role',     label:'I am the',      req:true,  type:'select', opts:['Owner','Broker','Sales Person','Authorized Representative'] },
-      { id:'sp-tct',      label:'',              req:false, type:'checkbox', text:'Property has a Transfer Certificate of Title (TCT)' },
-    ]
-  }
-];
-
-let wStep = 0;
-
 function parseCurrencyInput(raw) {
   if (!raw) return NaN;
   const s = raw.replace(/[₱,\s]/g, '').toUpperCase();
@@ -2946,8 +2947,6 @@ function renderWizardStep() {
     else if (wData[f.id]) el.value = wData[f.id];
   });
 }
-
-const wData = {};
 
 function toggleCheck(id) {
   const inp  = document.getElementById(id);
