@@ -8,14 +8,22 @@ async function callScript(payload) {
     body,
     redirect: 'manual',
   });
+  console.log('r1 status:', r1.status, 'location:', r1.headers.get('location'));
   const redirectUrl = r1.headers.get('location');
-  if (!redirectUrl) return await r1.json();
+  if (!redirectUrl) {
+    const text = await r1.text();
+    console.log('r1 body (no redirect):', text.substring(0, 300));
+    return JSON.parse(text);
+  }
   const r2 = await fetch(redirectUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
     body,
   });
-  return await r2.json();
+  console.log('r2 status:', r2.status);
+  const text = await r2.text();
+  console.log('r2 body:', text.substring(0, 300));
+  return JSON.parse(text);
 }
 
 exports.handler = async (event) => {
