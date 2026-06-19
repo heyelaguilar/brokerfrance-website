@@ -2902,7 +2902,7 @@ async function uploadMultiImagesToDrive(id) {
     } catch(err) { console.warn('Photo upload failed:', err); }
   }
   setStatus(urls.length ? `✓ ${urls.length} photo${urls.length > 1 ? 's' : ''} uploaded` : 'Upload failed');
-  return urls.length ? folderName : '';
+  return urls.length ? `https://console.cloudinary.com/console/media_library/folders/${folderName}` : '';
 }
 
 // ── IMAGE UPLOAD ──────────────────────────────────────
