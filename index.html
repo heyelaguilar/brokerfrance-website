@@ -2730,7 +2730,7 @@ const WIZARD_STEPS = [
     fields: [
       { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
       { id:'sp-thumbnail', label:'Main Photo (Upload)',      req:false, type:'file' },
-      { id:'sp-photos',    label:'Photo Album or Folder',   req:false, type:'text',    ph:'Google Drive folder link or album name' },
+      { id:'sp-photos',    label:'Additional Photos',        req:false, type:'multi-file' },
     ]
   },
   {
@@ -2846,6 +2846,61 @@ async function submitForm(btn) {
     btn.textContent = 'Send Inquiry';
     btn.disabled = false;
   }
+}
+
+// ── MULTI IMAGE UPLOAD ────────────────────────────────
+function handleMultiFileDrop(e, id) {
+  e.preventDefault();
+  document.getElementById(id + '-wrap').style.borderColor = '';
+  processMultiFiles(Array.from(e.dataTransfer.files), id);
+}
+
+function handleMultiFileSelect(input, id) {
+  processMultiFiles(Array.from(input.files), id);
+}
+
+function processMultiFiles(files, id) {
+  const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
+  if (!valid.length) { showToast('Please select image files under 5MB each'); return; }
+  if (valid.length > 10) { showToast('Max 10 photos allowed'); return; }
+  wFiles[id] = valid;
+  const previews = document.getElementById(id + '-previews');
+  if (previews) {
+    previews.innerHTML = '';
+    valid.forEach(f => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.cssText = 'width:72px;height:72px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border)';
+        previews.appendChild(img);
+      };
+      reader.readAsDataURL(f);
+    });
+  }
+  const status = document.getElementById(id + '-status');
+  if (status) status.textContent = `${valid.length} photo${valid.length > 1 ? 's' : ''} selected`;
+}
+
+async function uploadMultiImagesToDrive(id) {
+  const files = wFiles[id];
+  if (!files || !files.length) return '';
+  const setStatus = (msg) => { const el = document.getElementById(id + '-status'); if (el) el.textContent = msg; };
+  setStatus('Uploading photos…');
+  const urls = [];
+  for (let i = 0; i < files.length; i++) {
+    setStatus(`Uploading photo ${i + 1} of ${files.length}…`);
+    const formData = new FormData();
+    formData.append('file', files[i]);
+    formData.append('upload_preset', 'francebrokerage');
+    try {
+      const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.secure_url) urls.push(data.secure_url);
+    } catch(err) { console.warn('Photo upload failed:', err); }
+  }
+  setStatus(urls.length ? `✓ ${urls.length} photo${urls.length > 1 ? 's' : ''} uploaded` : 'Upload failed');
+  return urls.join(' | ');
 }
 
 // ── IMAGE UPLOAD ──────────────────────────────────────
@@ -2964,6 +3019,17 @@ function renderWizardStep() {
         </div>
         <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
       </div>`;
+    } else if (f.type === 'multi-file') {
+      return `<div class="wf">
+        <label>${f.label}</label>
+        <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleMultiFileDrop(event,'${f.id}')">
+          <input type="file" id="${f.id}-input" accept="image/*" multiple style="display:none" onchange="handleMultiFileSelect(this,'${f.id}')">
+          <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div style="color:var(--ink3);font-size:14px;font-weight:600">Tap to select photos<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB each — up to 10 photos</span></div>
+        </div>
+        <div id="${f.id}-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+        <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+      </div>`;
     } else if (f.type === 'checkbox') {
       return `<div class="wf-check" id="${f.id}-wrap" onclick="toggleCheck('${f.id}')">
         <input type="checkbox" id="${f.id}">
@@ -3033,7 +3099,7 @@ function wizardNext() {
     const el = document.getElementById(f.id);
     if (!el) continue;
     if (f.type === 'checkbox') { wData[f.id] = el.checked ? 'Yes' : 'No'; continue; }
-    if (f.type === 'file') continue; // uploaded at submit time
+    if (f.type === 'file' || f.type === 'multi-file') continue; // uploaded at submit time
     if (f.formatter === 'currency') {
       const num = parseCurrencyInput(el.value);
       if (f.req && (isNaN(num) || num <= 0)) { showToast('Please enter a valid asking price'); el.focus(); return; }
@@ -3091,12 +3157,18 @@ async function wizardSubmit(btn) {
   btn.disabled = true;
 
   try {
-    // 0. Upload thumbnail image to Google Drive if one was selected
+    // 0. Upload thumbnail + additional photos to Cloudinary
     try {
       const thumbnailUrl = await uploadImageToDrive('sp-thumbnail');
       if (thumbnailUrl) wData['sp-thumbnail'] = thumbnailUrl;
     } catch (imgErr) {
-      console.warn('Image upload failed (non-fatal):', imgErr);
+      console.warn('Thumbnail upload failed (non-fatal):', imgErr);
+    }
+    try {
+      const photosUrl = await uploadMultiImagesToDrive('sp-photos');
+      if (photosUrl) wData['sp-photos'] = photosUrl;
+    } catch (imgErr) {
+      console.warn('Photos upload failed (non-fatal):', imgErr);
     }
 
     // 1. Save to Google Sheet via Apps Script
