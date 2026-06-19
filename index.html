@@ -2888,11 +2888,13 @@ async function uploadMultiImagesToDrive(id) {
   const setStatus = (msg) => { const el = document.getElementById(id + '-status'); if (el) el.textContent = msg; };
   setStatus('Uploading photos…');
   const urls = [];
+  const folderName = 'brokerfrance/' + (wData['sp-name'] || 'submission').replace(/\s+/g, '-').toLowerCase() + '-' + Date.now();
   for (let i = 0; i < files.length; i++) {
     setStatus(`Uploading photo ${i + 1} of ${files.length}…`);
     const formData = new FormData();
     formData.append('file', files[i]);
     formData.append('upload_preset', 'francebrokerage');
+    formData.append('folder', folderName);
     try {
       const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload', { method: 'POST', body: formData });
       const data = await res.json();
