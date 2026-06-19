@@ -3019,12 +3019,18 @@ async function wizardSubmit(btn) {
 
   try {
     // 1. Save to Google Sheet via Apps Script
-    await fetch(SUBMIT_SHEET_URL, {
+    const params = new URLSearchParams();
+    Object.entries(wData).forEach(([k, v]) => params.append(k, v || ''));
+    params.append('timestamp', new Date().toLocaleString('en-PH'));
+
+    const sheetRes = await fetch(SUBMIT_SHEET_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'submit', ...wData }),
+      body: params,
     });
+    const sheetData = await sheetRes.json();
+    if (!sheetData.result || sheetData.result !== 'success') {
+      throw new Error(sheetData.error || 'Sheet save failed');
+    }
 
     // 2. Also send email notification
     await fetch('/.netlify/functions/send-email', {
@@ -3049,6 +3055,7 @@ async function wizardSubmit(btn) {
     Object.keys(wData).forEach(k => delete wData[k]);
 
   } catch (err) {
+    console.error('Submission error:', err);
     showToast('Could not submit. Please try again or contact us directly.');
     btn.textContent = 'Submit Listing';
     btn.disabled = false;
