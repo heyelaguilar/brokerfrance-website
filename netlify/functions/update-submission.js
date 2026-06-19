@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvcbk90-XX0NeoIyZg150xcvh0-F2ldKFDq8xMgLaV0Q0Pn0H8XEKl7dkaSyhuyQ0/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxkV-FR10oa7bqQLDQxg1aKNh_XtydRqfN9tXOw9IetH1BAiILjKPXfql61aDACXTVcEw/exec';
 
 async function callScript(payload) {
   const body = JSON.stringify(payload);
