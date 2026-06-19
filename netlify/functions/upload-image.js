@@ -40,6 +40,8 @@ exports.handler = async (event) => {
     });
 
     const text = await r2.text();
+    console.log('Apps Script response status:', r2.status);
+    console.log('Apps Script response body:', text.substring(0, 500));
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: text };
 
   } catch (err) {
