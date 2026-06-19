@@ -2729,7 +2729,7 @@ const WIZARD_STEPS = [
     num: 'Step 3 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
     fields: [
       { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
-      { id:'sp-thumbnail', label:'Main Photo (Drive link)',  req:false, type:'url',     ph:'https://drive.google.com/file/d/...' },
+      { id:'sp-thumbnail', label:'Main Photo (Upload)',      req:false, type:'file' },
       { id:'sp-photos',    label:'Photo Album or Folder',   req:false, type:'text',    ph:'Google Drive folder link or album name' },
     ]
   },
@@ -2847,6 +2847,66 @@ async function submitForm(btn) {
   }
 }
 
+// ── IMAGE UPLOAD ──────────────────────────────────────
+function handleFileDrop(e, id) {
+  e.preventDefault();
+  document.getElementById(id + '-wrap').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) processImageFile(file, id);
+}
+
+function handleFileSelect(input, id) {
+  const file = input.files[0];
+  if (file) processImageFile(file, id);
+}
+
+function processImageFile(file, id) {
+  if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const img = document.getElementById(id + '-img');
+    img.src = e.target.result;
+    document.getElementById(id + '-preview').style.display = 'block';
+    document.getElementById(id + '-label').innerHTML = `<span style="color:var(--green-d);font-weight:700">${file.name}</span><br><span style="font-size:12px;color:var(--ink4)">Tap to change</span>`;
+    document.getElementById(id + '-status').textContent = 'Ready to upload';
+    document.getElementById(id + '-wrap')._file = file;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadImageToDrive(id) {
+  const wrap = document.getElementById(id + '-wrap');
+  const file = wrap ? wrap._file : null;
+  if (!file) return '';
+  const status = document.getElementById(id + '-status');
+  status.textContent = 'Uploading…';
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = async function(e) {
+      const base64 = e.target.result.split(',')[1];
+      try {
+        const res = await fetch(SUBMIT_SHEET_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify({ action: 'uploadImage', data: base64, mimeType: file.type, filename: file.name }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          status.textContent = '✓ Uploaded';
+          resolve(data.url);
+        } else {
+          status.textContent = 'Upload failed';
+          resolve('');
+        }
+      } catch(err) {
+        status.textContent = 'Upload failed';
+        resolve('');
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 // ── PROPERTY SUBMISSION WIZARD ────────────────────────
 // Google Apps Script endpoint — saves to "Submissions" sheet
 const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxvcbk90-XX0NeoIyZg150xcvh0-F2ldKFDq8xMgLaV0Q0Pn0H8XEKl7dkaSyhuyQ0/exec';
@@ -2892,6 +2952,19 @@ function renderWizardStep() {
       input = `<select id="${f.id}">${f.opts.map(o=>`<option value="${o}">${o}</option>`).join('')}</select>`;
     } else if (f.type === 'textarea') {
       input = `<textarea id="${f.id}" placeholder="${f.ph || ''}"></textarea>`;
+    } else if (f.type === 'file') {
+      return `<div class="wf">
+        <label>${f.label}</label>
+        <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:24px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleFileDrop(event,'${f.id}')">
+          <input type="file" id="${f.id}-input" accept="image/*" style="display:none" onchange="handleFileSelect(this,'${f.id}')">
+          <div id="${f.id}-preview" style="display:none;margin-bottom:12px"><img id="${f.id}-img" style="max-height:140px;border-radius:8px;object-fit:cover"></div>
+          <div id="${f.id}-label" style="color:var(--ink3);font-size:14px;font-weight:600">
+            <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Tap to upload or drag & drop<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB</span>
+          </div>
+        </div>
+        <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+      </div>`;
     } else if (f.type === 'checkbox') {
       return `<div class="wf-check" id="${f.id}-wrap" onclick="toggleCheck('${f.id}')">
         <input type="checkbox" id="${f.id}">
@@ -2961,6 +3034,7 @@ function wizardNext() {
     const el = document.getElementById(f.id);
     if (!el) continue;
     if (f.type === 'checkbox') { wData[f.id] = el.checked ? 'Yes' : 'No'; continue; }
+    if (f.type === 'file') continue; // uploaded at submit time
     if (f.formatter === 'currency') {
       const num = parseCurrencyInput(el.value);
       if (f.req && (isNaN(num) || num <= 0)) { showToast('Please enter a valid asking price'); el.focus(); return; }
@@ -3018,6 +3092,10 @@ async function wizardSubmit(btn) {
   btn.disabled = true;
 
   try {
+    // 0. Upload thumbnail image to Google Drive if one was selected
+    const thumbnailUrl = await uploadImageToDrive('sp-thumbnail');
+    if (thumbnailUrl) wData['sp-thumbnail'] = thumbnailUrl;
+
     // 1. Save to Google Sheet via Apps Script
     // text/plain avoids CORS preflight; Apps Script reads e.postData.contents as JSON
     await fetch(SUBMIT_SHEET_URL, {
