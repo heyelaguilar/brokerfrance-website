@@ -126,14 +126,34 @@ button{font-family:inherit;cursor:pointer}
 .loading-row td{text-align:center;padding:40px;color:var(--ink4);font-size:13px}
 
 /* submissions panel */
-.sub-card{background:#fff;border:1px solid var(--border);border-radius:var(--rs);padding:18px;margin-bottom:12px}
-.sub-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:12px}
-.sub-card-name{font-size:14px;font-weight:700;color:var(--ink)}
+.sub-card{background:#fff;border:1.5px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;transition:border-color .15s}
+.sub-card:hover{border-color:#b0bec5}
+.sub-card-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:14px}
+.sub-card-name{font-size:15px;font-weight:800;color:var(--ink)}
 .sub-card-time{font-size:11px;color:var(--ink4)}
-.sub-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sub-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
 .sub-field{background:var(--bg);border-radius:6px;padding:8px 10px}
 .sub-field-label{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em}
 .sub-field-val{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;word-break:break-all}
+.sub-thumb{width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:14px;border:1px solid var(--border)}
+.sub-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px}
+.sub-status{margin-right:auto}
+.bdg-pending{background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB}
+.bdg-contacted{background:#FEF9C3;color:#854D0E}
+.bdg-verified{background:#DBEAFE;color:#1E40AF}
+.bdg-approved{background:#DCFCE7;color:#166534}
+.btn-action{padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+.btn-contacted{background:#FEF9C3;color:#92400E}
+.btn-contacted:hover{background:#FDE68A}
+.btn-verified{background:#DBEAFE;color:#1E3A8A}
+.btn-verified:hover{background:#BFDBFE}
+.btn-approve{background:var(--green);color:#fff}
+.btn-approve:hover{background:var(--green-d)}
+.btn-approve:disabled{background:#9CA3AF;cursor:not-allowed}
+.sub-filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.sub-filter{padding:6px 14px;border-radius:99px;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:#fff;color:var(--ink3);cursor:pointer;transition:all .15s}
+.sub-filter.on{background:var(--green);color:#fff;border-color:var(--green)}
+.sub-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 
 /* transactions */
 .txn-list{display:flex;flex-direction:column;gap:12px;padding:20px}
@@ -344,13 +364,24 @@ button{font-family:inherit;cursor:pointer}
 
     <!-- SUBMISSIONS TAB -->
     <div id="pane-submissions" style="display:none">
-      <div class="page-hdr">
-        <h1>Submissions</h1>
-        <p>Property listing submissions and buyer inquiries.</p>
+      <div class="page-hdr" style="display:flex;align-items:center;justify-content:space-between">
+        <div><h1>Submissions</h1><p>Review, verify, and approve property listings.</p></div>
+        <button class="btn-new-txn" onclick="loadSubmissions()">↻ Refresh</button>
       </div>
-      <div class="card" style="padding:20px">
-        <div id="submissions-list"><div class="empty">Loading submissions…</div></div>
+      <div class="sub-stats">
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" id="sub-stat-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val" id="sub-stat-pending">—</div></div>
+        <div class="stat-card"><div class="stat-label">Verified</div><div class="stat-val" id="sub-stat-verified">—</div></div>
+        <div class="stat-card"><div class="stat-label">Approved</div><div class="stat-val" id="sub-stat-approved">—</div></div>
       </div>
+      <div class="sub-filter-row">
+        <button class="sub-filter on" onclick="filterSubs('all',this)">All</button>
+        <button class="sub-filter" onclick="filterSubs('Pending',this)">Pending</button>
+        <button class="sub-filter" onclick="filterSubs('Contacted',this)">Contacted</button>
+        <button class="sub-filter" onclick="filterSubs('Verified',this)">Verified</button>
+        <button class="sub-filter" onclick="filterSubs('Approved',this)">Approved</button>
+      </div>
+      <div id="submissions-list"><div class="empty">Loading submissions…</div></div>
     </div>
 
     <!-- TRANSACTIONS TAB -->
@@ -504,7 +535,7 @@ button{font-family:inherit;cursor:pointer}
 
 <script>
 const API_URL          = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
-const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbylOSJlbxIVtqlZ4yS5_rRUmUgYV1gHaURYYLcIyWKAk3UatacW_hTXqzm8UmYCAEMb/exec';
+const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxvcbk90-XX0NeoIyZg150xcvh0-F2ldKFDq8xMgLaV0Q0Pn0H8XEKl7dkaSyhuyQ0/exec';
 
 let allListings = [];
 let netlifyIdentity;
@@ -605,35 +636,125 @@ function viewOnSite(id) {
 }
 
 // ── SUBMISSIONS ───────────────────────────────────────
+let allSubmissions = [];
+let subFilter = 'all';
+
 async function loadSubmissions() {
+  document.getElementById('submissions-list').innerHTML = '<div class="empty">Loading submissions…</div>';
   try {
     const res = await fetch(SUBMIT_SHEET_URL + '?action=getSubmissions', { redirect: 'follow' });
     const data = await res.json();
-    renderSubmissions(data || []);
+    allSubmissions = (data || []).reverse();
+    renderSubmissions();
   } catch(e) {
     document.getElementById('submissions-list').innerHTML =
       '<div class="empty">Could not load submissions.<br><small>' + e.message + '</small></div>';
   }
 }
 
-function renderSubmissions(rows) {
+function filterSubs(filter, btn) {
+  subFilter = filter;
+  document.querySelectorAll('.sub-filter').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderSubmissions();
+}
+
+function statusBadge(status) {
+  const s = (status || 'Pending').trim();
+  const map = { Pending:'bdg-pending', Contacted:'bdg-contacted', Verified:'bdg-verified', Approved:'bdg-approved' };
+  return `<span class="bdg ${map[s]||'bdg-pending'}">${s}</span>`;
+}
+
+function renderSubmissions() {
   const el = document.getElementById('submissions-list');
-  if (!rows.length) { el.innerHTML = '<div class="empty">No submissions yet.</div>'; return; }
-  el.innerHTML = rows.slice().reverse().map(r => {
-    const fields = Object.entries(r).filter(([k]) => k !== 'timestamp');
-    return `<div class="sub-card">
+  const rows = subFilter === 'all' ? allSubmissions : allSubmissions.filter(r => (r.Status||r.status||'Pending') === subFilter);
+
+  // stats
+  document.getElementById('sub-stat-total').textContent = allSubmissions.length;
+  document.getElementById('sub-stat-pending').textContent = allSubmissions.filter(r => !r.Status || r.Status === 'Pending').length;
+  document.getElementById('sub-stat-verified').textContent = allSubmissions.filter(r => r.Status === 'Verified').length;
+  document.getElementById('sub-stat-approved').textContent = allSubmissions.filter(r => r.Status === 'Approved').length;
+
+  if (!rows.length) { el.innerHTML = '<div class="empty">No submissions found.</div>'; return; }
+
+  el.innerHTML = rows.map((r, i) => {
+    const status = r.Status || r.status || 'Pending';
+    const name = r.Name || r.name || '—';
+    const thumb = r.Thumbnail || r.thumbnail || '';
+    const photos = r.Photos || r.photos || '';
+    const rowIndex = allSubmissions.indexOf(r);
+    return `<div class="sub-card" id="sub-card-${rowIndex}">
       <div class="sub-card-hdr">
-        <div class="sub-card-name">${esc(r.name || r.contactName || r.email || 'Submission')}</div>
-        <div class="sub-card-time">${esc(r.timestamp || '')}</div>
+        <div>
+          <div class="sub-card-name">${esc(name)}</div>
+          <div class="sub-card-time">${esc(r.Timestamp || r.timestamp || '')}</div>
+        </div>
+        ${statusBadge(status)}
       </div>
+      ${thumb ? `<img class="sub-thumb" src="${esc(thumb)}" onerror="this.style.display='none'">` : ''}
       <div class="sub-fields">
-        ${fields.map(([k,v]) => `<div class="sub-field">
-          <div class="sub-field-label">${esc(k)}</div>
-          <div class="sub-field-val">${esc(String(v||'—'))}</div>
-        </div>`).join('')}
+        <div class="sub-field"><div class="sub-field-label">Deal</div><div class="sub-field-val">${esc(r.Deal||r.deal||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Type</div><div class="sub-field-val">${esc(r.Type||r.type||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Location</div><div class="sub-field-val">${esc(r.Location||r.location||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Price</div><div class="sub-field-val">${esc(r.Amount||r.amount||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Lot (sqm)</div><div class="sub-field-val">${esc(r['Lot (sqm)']||r.lot||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Floor (sqm)</div><div class="sub-field-val">${esc(r['Floor (sqm)']||r.floor||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Role</div><div class="sub-field-val">${esc(r.Role||r.role||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Phone</div><div class="sub-field-val">${esc(r.Phone||r.phone||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Email</div><div class="sub-field-val">${esc(r.Email||r.email||'—')}</div></div>
+        ${r['Key Details']||r.key ? `<div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Key Details</div><div class="sub-field-val">${esc(r['Key Details']||r.key)}</div></div>` : ''}
+        ${photos ? `<div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Photos</div><div class="sub-field-val"><a href="${esc(photos)}" target="_blank" style="color:var(--green-d);font-weight:700">View Photo Folder ↗</a></div></div>` : ''}
+      </div>
+      <div class="sub-actions">
+        <div class="sub-status">${statusBadge(status)}</div>
+        ${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Mark Contacted</button>` : ''}
+        ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Mark Verified</button>` : ''}
+        ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve & Publish</button>` : '<span style="font-size:13px;font-weight:700;color:#166534">✓ Published on Website</span>'}
       </div>
     </div>`;
   }).join('');
+}
+
+async function updateSubStatus(index, newStatus) {
+  const r = allSubmissions[index];
+  if (!r) return;
+  const card = document.getElementById('sub-card-' + index);
+  if (card) card.style.opacity = '0.5';
+  try {
+    await fetch('/.netlify/functions/update-submission', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateStatus', timestamp: r.Timestamp || r.timestamp, status: newStatus }),
+    });
+    r.Status = newStatus;
+    renderSubmissions();
+    showToast(`Marked as ${newStatus}`);
+  } catch(e) {
+    showToast('Failed to update status');
+    if (card) card.style.opacity = '1';
+  }
+}
+
+async function approveSubmission(index, btn) {
+  const r = allSubmissions[index];
+  if (!r) return;
+  if (!confirm(`Approve and publish "${r.Name || r.name}'s" listing to the website?`)) return;
+  btn.textContent = 'Publishing…';
+  btn.disabled = true;
+  try {
+    await fetch('/.netlify/functions/update-submission', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approveSubmission', timestamp: r.Timestamp || r.timestamp }),
+    });
+    r.Status = 'Approved';
+    renderSubmissions();
+    showToast('✓ Listing approved and published!');
+  } catch(e) {
+    showToast('Failed to approve listing');
+    btn.textContent = '🚀 Approve & Publish';
+    btn.disabled = false;
+  }
 }
 
 // ── LIKES ─────────────────────────────────────────────
