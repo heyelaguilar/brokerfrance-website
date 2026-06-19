@@ -3214,7 +3214,19 @@ async function wizardSubmit(btn) {
       body: JSON.stringify(wData),
     });
 
-    // 2. Send email notification (non-fatal — sheet save already done)
+    // 2. Send confirmation email to submitter (non-fatal)
+    try {
+      await fetch('/.netlify/functions/confirm-submission', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: wData['sp-name'], email: wData['sp-email'], phone: wData['sp-phone'],
+          type: wData['sp-type'], location: wData['sp-location'], deal: wData['sp-deal'],
+        }),
+      });
+    } catch (err) { console.warn('Confirmation email failed (non-fatal):', err); }
+
+    // 3. Send internal notification email (non-fatal)
     try {
       await fetch('/.netlify/functions/send-email', {
         method: 'POST',
