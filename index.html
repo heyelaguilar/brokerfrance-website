@@ -3018,19 +3018,16 @@ async function wizardSubmit(btn) {
   btn.disabled = true;
 
   try {
-    // 1. Save to Google Sheet via Apps Script
+    // 1. Save to Google Sheet via Apps Script (no-cors to avoid CORS block)
     const params = new URLSearchParams();
     Object.entries(wData).forEach(([k, v]) => params.append(k, v || ''));
     params.append('timestamp', new Date().toLocaleString('en-PH'));
 
-    const sheetRes = await fetch(SUBMIT_SHEET_URL, {
+    await fetch(SUBMIT_SHEET_URL, {
       method: 'POST',
+      mode: 'no-cors',
       body: params,
     });
-    const sheetData = await sheetRes.json();
-    if (!sheetData.result || sheetData.result !== 'success') {
-      throw new Error(sheetData.error || 'Sheet save failed');
-    }
 
     // 2. Also send email notification
     await fetch('/.netlify/functions/send-email', {
