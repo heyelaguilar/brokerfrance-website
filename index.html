@@ -3093,8 +3093,12 @@ async function wizardSubmit(btn) {
 
   try {
     // 0. Upload thumbnail image to Google Drive if one was selected
-    const thumbnailUrl = await uploadImageToDrive('sp-thumbnail');
-    if (thumbnailUrl) wData['sp-thumbnail'] = thumbnailUrl;
+    try {
+      const thumbnailUrl = await uploadImageToDrive('sp-thumbnail');
+      if (thumbnailUrl) wData['sp-thumbnail'] = thumbnailUrl;
+    } catch (imgErr) {
+      console.warn('Image upload failed (non-fatal):', imgErr);
+    }
 
     // 1. Save to Google Sheet via Apps Script
     // text/plain avoids CORS preflight; Apps Script reads e.postData.contents as JSON
