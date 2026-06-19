@@ -3027,16 +3027,20 @@ async function wizardSubmit(btn) {
       body: JSON.stringify(wData),
     });
 
-    // 2. Also send email notification
-    await fetch('/.netlify/functions/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: wData['sp-name'], phone: wData['sp-phone'], email: wData['sp-email'],
-        interest: `New Listing — ${wData['sp-type']} in ${wData['sp-location']}`,
-        message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${wData['sp-amount']}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
-      }),
-    });
+    // 2. Send email notification (non-fatal — sheet save already done)
+    try {
+      await fetch('/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: wData['sp-name'], phone: wData['sp-phone'], email: wData['sp-email'],
+          interest: `New Listing — ${wData['sp-type']} in ${wData['sp-location']}`,
+          message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${wData['sp-amount']}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
+        }),
+      });
+    } catch (emailErr) {
+      console.warn('Email notification failed (non-fatal):', emailErr);
+    }
 
     // 3. Show success
     document.getElementById('wProgressBar').style.width = '100%';
