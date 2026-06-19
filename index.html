@@ -2883,32 +2883,28 @@ async function uploadImageToDrive(id) {
   if (!file) return '';
   const setStatus = (msg) => { const el = document.getElementById(id + '-status'); if (el) el.textContent = msg; };
   setStatus('Uploading…');
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-      const base64 = e.target.result.split(',')[1];
-      try {
-        const res = await fetch('/.netlify/functions/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: base64, mimeType: file.type, filename: file.name }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setStatus('✓ Uploaded');
-          resolve(data.url);
-        } else {
-          setStatus('Upload failed');
-          resolve('');
-        }
-      } catch(err) {
-        setStatus('Upload failed');
-        resolve('');
-      }
-    };
-    reader.readAsDataURL(file);
-  });
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'francebrokerage');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.secure_url) {
+      setStatus('✓ Uploaded');
+      return data.secure_url;
+    } else {
+      setStatus('Upload failed');
+      return '';
+    }
+  } catch(err) {
+    setStatus('Upload failed');
+    return '';
+  }
 }
+
 
 // ── PROPERTY SUBMISSION WIZARD ────────────────────────
 // Google Apps Script endpoint — saves to "Submissions" sheet
