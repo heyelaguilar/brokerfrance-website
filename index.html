@@ -2746,6 +2746,7 @@ const WIZARD_STEPS = [
 ];
 let wStep = 0;
 const wData = {};
+const wFiles = {};
 
 // On load: resolve path to page
 (function resolveRoute() {
@@ -2869,14 +2870,13 @@ function processImageFile(file, id) {
     document.getElementById(id + '-preview').style.display = 'block';
     document.getElementById(id + '-label').innerHTML = `<span style="color:var(--green-d);font-weight:700">${file.name}</span><br><span style="font-size:12px;color:var(--ink4)">Tap to change</span>`;
     document.getElementById(id + '-status').textContent = 'Ready to upload';
-    document.getElementById(id + '-wrap')._file = file;
+    wFiles[id] = file;
   };
   reader.readAsDataURL(file);
 }
 
 async function uploadImageToDrive(id) {
-  const wrap = document.getElementById(id + '-wrap');
-  const file = wrap ? wrap._file : null;
+  const file = wFiles[id] || null;
   if (!file) return '';
   const status = document.getElementById(id + '-status');
   status.textContent = 'Uploading…';
@@ -3130,6 +3130,7 @@ async function wizardSubmit(btn) {
         <button class="wizard-next" style="margin:24px auto 0;display:flex" onclick="showPage('home')">Back to Home</button>
       </div>`;
     Object.keys(wData).forEach(k => delete wData[k]);
+    Object.keys(wFiles).forEach(k => delete wFiles[k]);
 
   } catch (err) {
     console.error('Submission error:', err);
