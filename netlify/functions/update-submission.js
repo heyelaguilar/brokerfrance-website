@@ -24,9 +24,10 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Invalid JSON' }; }
   try {
     const result = await callScript(body);
+    console.log('Apps Script result:', JSON.stringify(result));
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(result) };
   } catch (err) {
-    console.error('update-submission error:', err);
+    console.error('update-submission error:', err.message);
     return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
 };
