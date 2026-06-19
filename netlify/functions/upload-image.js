@@ -9,22 +9,41 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body); }
   catch { return { statusCode: 400, body: 'Invalid JSON' }; }
 
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({
-      action: 'uploadImage',
-      data: body.data,
-      mimeType: body.mimeType,
-      filename: body.filename,
-    }),
-    redirect: 'follow',
+  const payload = JSON.stringify({
+    action: 'uploadImage',
+    data: body.data,
+    mimeType: body.mimeType,
+    filename: body.filename,
   });
 
-  const text = await res.text();
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: text,
-  };
+  try {
+    // Step 1: hit the script URL without following redirect
+    const r1 = await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: payload,
+      redirect: 'manual',
+    });
+
+    // Step 2: Apps Script always 302-redirects — re-POST to the real URL
+    const redirectUrl = r1.headers.get('location');
+    if (!redirectUrl) {
+      // No redirect — response is already here
+      const text = await r1.text();
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: text };
+    }
+
+    const r2 = await fetch(redirectUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: payload,
+    });
+
+    const text = await r2.text();
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: text };
+
+  } catch (err) {
+    console.error('upload-image error:', err);
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+  }
 };
