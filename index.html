@@ -2885,10 +2885,10 @@ async function uploadImageToDrive(id) {
     reader.onload = async function(e) {
       const base64 = e.target.result.split(',')[1];
       try {
-        const res = await fetch(SUBMIT_SHEET_URL, {
+        const res = await fetch('/.netlify/functions/upload-image', {
           method: 'POST',
-          headers: { 'Content-Type': 'text/plain' },
-          body: JSON.stringify({ action: 'uploadImage', data: base64, mimeType: file.type, filename: file.name }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: base64, mimeType: file.type, filename: file.name }),
         });
         const data = await res.json();
         if (data.success) {
