@@ -2863,14 +2863,17 @@ function handleFileSelect(input, id) {
 
 function processImageFile(file, id) {
   if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return; }
+  wFiles[id] = file;
   const reader = new FileReader();
   reader.onload = function(e) {
     const img = document.getElementById(id + '-img');
-    img.src = e.target.result;
-    document.getElementById(id + '-preview').style.display = 'block';
-    document.getElementById(id + '-label').innerHTML = `<span style="color:var(--green-d);font-weight:700">${file.name}</span><br><span style="font-size:12px;color:var(--ink4)">Tap to change</span>`;
-    document.getElementById(id + '-status').textContent = 'Ready to upload';
-    wFiles[id] = file;
+    if (img) img.src = e.target.result;
+    const preview = document.getElementById(id + '-preview');
+    if (preview) preview.style.display = 'block';
+    const label = document.getElementById(id + '-label');
+    if (label) label.innerHTML = `<span style="color:var(--green-d);font-weight:700">${file.name}</span><br><span style="font-size:12px;color:var(--ink4)">Tap to change</span>`;
+    const status = document.getElementById(id + '-status');
+    if (status) status.textContent = 'Ready to upload';
   };
   reader.readAsDataURL(file);
 }
