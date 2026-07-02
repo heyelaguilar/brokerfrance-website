@@ -5,98 +5,147 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>La Residencia — Tripping Summary</title>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><g><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="%231DB954" opacity=".9"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="%231DB954" opacity=".9"/></g></svg>'>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Manrope',sans-serif;background:#F2F2F7;color:#1c1c1e;-webkit-font-smoothing:antialiased;min-height:100vh;padding:40px 24px 80px}
-
-/* ── TOP HEADER ── */
-.top{text-align:center;margin-bottom:28px}
-.top img{height:40px;width:auto;margin-bottom:10px;display:block;margin-left:auto;margin-right:auto}
-.top-brand{font-size:22px;font-weight:800;color:#1c1c1e;letter-spacing:-.02em;margin-bottom:2px}
-.top-label{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#8e8e93}
-
-/* ── CLIENT CARD ── */
-.client-card{
-  background:#fff;border-radius:18px;padding:20px 24px;
-  max-width:700px;margin:0 auto 28px;
-  box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
-  display:grid;grid-template-columns:1fr 1fr;gap:12px 32px;
+:root{
+  --green:#1C3F2F;
+  --green-m:#2D6A4F;
+  --green-l:#EBF5EF;
+  --green-t:#D1EAD9;
+  --text:#111827;
+  --text2:#374151;
+  --text3:#6B7280;
+  --text4:#9CA3AF;
+  --border:#E5E7EB;
+  --bg:#F9FAFB;
+  --white:#fff;
 }
-.info-row{}
-.info-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8e8e93;margin-bottom:2px}
-.info-value{font-size:15px;font-weight:600;color:#1c1c1e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Manrope',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  padding:36px 32px 72px;
+}
 
-/* ── SECTION ── */
-.section{max-width:960px;margin:0 auto}
-.section-title{font-size:20px;font-weight:700;color:#1c1c1e;margin-bottom:14px;padding-left:4px}
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;padding-bottom:20px;
+  border-bottom:1.5px solid var(--green-t);
+}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{
+  width:38px;height:38px;
+  background:var(--green);border-radius:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.brand-icon svg{width:22px;height:22px}
+.brand-text{}
+.brand-name{font-size:14px;font-weight:800;color:var(--green);letter-spacing:.04em;text-transform:uppercase}
+.brand-tagline{font-size:10px;color:var(--text4);letter-spacing:.04em}
 
-/* ── TABLE CARD ── */
-.table-card{
-  background:#fff;border-radius:18px;
-  box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
+.header-right{text-align:right}
+.doc-badge{
+  display:inline-block;
+  background:var(--green-l);border:1px solid var(--green-t);
+  color:var(--green);font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:4px 12px;border-radius:100px;margin-bottom:4px;
+}
+.doc-date{font-size:11px;color:var(--text4)}
+
+/* ── INFO STRIP ── */
+.info-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin-bottom:24px;
+}
+.info-cell{
+  background:var(--white);
+  padding:14px 18px;
+}
+.info-cell:first-child{border-radius:13px 0 0 13px}
+.info-cell:last-child{border-radius:0 13px 13px 0}
+.info-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);margin-bottom:3px}
+.info-value{font-size:14px;font-weight:700;color:var(--text)}
+
+/* ── TABLE WRAPPER ── */
+.table-wrap{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:14px;
   overflow:hidden;
 }
-table{width:100%;border-collapse:collapse;font-size:13px}
-thead tr{background:#F2F2F7;border-bottom:1px solid #e5e5ea}
+.table-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px 12px;border-bottom:1px solid var(--border);
+}
+.table-title{font-size:15px;font-weight:700;color:var(--text)}
+.table-count{font-size:12px;color:var(--text4);background:var(--bg);padding:3px 10px;border-radius:100px;border:1px solid var(--border)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
 thead th{
-  padding:11px 14px;text-align:left;
+  padding:10px 14px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  text-align:left;
   font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  color:#8e8e93;white-space:nowrap;
+  color:var(--text3);white-space:nowrap;
 }
 thead th.r{text-align:right}
-tbody tr{border-bottom:1px solid #f2f2f7;transition:background .1s}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#fafafa}
-tbody td{padding:13px 14px;vertical-align:middle;color:#1c1c1e;line-height:1.4}
+tbody tr:hover{background:#FAFFFE}
+tbody td{padding:12px 14px;vertical-align:middle;color:var(--text2);line-height:1.4}
 tbody td.r{text-align:right}
 
 /* CELLS */
-td.num{font-size:11px;color:#c7c7cc;font-weight:600;width:28px;text-align:center}
-td.photo{width:68px;padding:8px 10px}
-td.photo img{width:60px;height:46px;object-fit:cover;border-radius:8px;border:1px solid #e5e5ea;display:block}
-td.photo .no-img{width:60px;height:46px;background:#f2f2f7;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:#c7c7cc}
-td.type-cell .t-name{font-weight:700;font-size:13px}
-td.type-cell .t-loc{font-size:11px;color:#8e8e93;margin-top:2px}
-td.area-cell{font-size:12px;color:#3a3a3c}
-td.price-cell{font-weight:700;color:#1c1c1e;font-size:13px}
-td.psqm-cell{font-size:12px;color:#636366}
-
+td.num{font-size:11px;color:var(--text4);font-weight:600;width:30px;text-align:center}
+td.photo-cell{width:68px;padding:8px 10px}
+td.photo-cell img{width:60px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--border);display:block}
+td.photo-cell .no-img{width:60px;height:46px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text4);border:1px solid var(--border)}
+.t-name{font-weight:700;font-size:13px;color:var(--text)}
+.t-loc{font-size:11px;color:var(--text3);margin-top:1px}
 .deal-pill{
-  display:inline-block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  display:inline-block;font-size:9px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
   padding:2px 7px;border-radius:100px;margin-top:3px;
 }
-.pill-sale{background:#e8f5e9;color:#2e7d32}
-.pill-rent{background:#e8f0fe;color:#1a56c4}
+.pill-sale{background:var(--green-l);color:var(--green);border:1px solid var(--green-t)}
+.pill-rent{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+td.area-val{font-size:12px;color:var(--text2)}
+td.price-val{font-weight:700;color:var(--text);font-size:13px}
+td.psqm-val{font-size:11.5px;color:var(--text3)}
+td.detail-val{font-size:11px;color:var(--text3);max-width:180px;line-height:1.6}
 
 /* ── FOOTER ── */
-.doc-footer{
-  max-width:960px;margin:24px auto 0;
+.footer{
+  margin-top:20px;
   display:flex;align-items:center;justify-content:space-between;
-  padding:0 4px;
 }
-.footer-note{font-size:10px;color:#aeaeb2;line-height:1.7}
-.footer-contact{text-align:right;font-size:10px;color:#aeaeb2}
-.footer-contact strong{color:#1C3F2F}
-
-/* ── LOADING ── */
-#loading{text-align:center;padding:48px;color:#aeaeb2;font-size:13px}
+.footer-note{font-size:10px;color:var(--text4);line-height:1.8}
+.footer-brand{font-size:11px;color:var(--text3);font-weight:600}
+.footer-brand span{color:var(--green)}
 
 /* ── PRINT BUTTON ── */
 .print-btn{
   position:fixed;bottom:24px;right:24px;
-  background:#1c1c1e;color:#fff;border:none;border-radius:100px;
+  background:var(--green);color:#fff;border:none;border-radius:100px;
   padding:11px 22px;font-size:12px;font-weight:700;font-family:inherit;
   cursor:pointer;display:flex;align-items:center;gap:7px;
-  box-shadow:0 4px 20px rgba(0,0,0,.18);transition:opacity .15s;
+  box-shadow:0 2px 12px rgba(28,63,47,.25);transition:background .15s;
 }
-.print-btn:hover{opacity:.85}
+.print-btn:hover{background:var(--green-m)}
 .print-btn svg{width:14px;height:14px}
 
-/* ── PRINT ── */
 @media print{
-  body{background:#fff;padding:20px}
-  .table-card,.client-card{box-shadow:none;border:1px solid #e5e5ea}
+  body{background:#fff;padding:16px 20px}
+  .table-wrap,.info-strip{box-shadow:none}
   .print-btn{display:none}
   tbody tr:hover{background:none}
 }
@@ -104,60 +153,79 @@ td.psqm-cell{font-size:12px;color:#636366}
 </head>
 <body>
 
-<!-- TOP -->
-<div class="top">
-  <img src="/image/mfrg-img.png" alt="Broker France">
-  <div class="top-brand">Broker France</div>
-  <div class="top-label">Tripping Summary</div>
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".95"/>
+        <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".95"/>
+        <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".95"/>
+        <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".95"/>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <div class="brand-name">France Brokerage</div>
+      <div class="brand-tagline">francebrokerage.com</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="doc-badge">Tripping Summary</div>
+    <div class="doc-date" id="today-date"></div>
+  </div>
 </div>
 
-<!-- CLIENT INFO -->
-<div class="client-card">
-  <div class="info-row">
+<!-- INFO STRIP -->
+<div class="info-strip">
+  <div class="info-cell">
     <div class="info-label">Client</div>
     <div class="info-value">Arvie</div>
   </div>
-  <div class="info-row">
+  <div class="info-cell">
     <div class="info-label">Date</div>
-    <div class="info-value" id="today-date"></div>
+    <div class="info-value" id="strip-date"></div>
   </div>
-  <div class="info-row">
+  <div class="info-cell">
     <div class="info-label">Broker</div>
     <div class="info-value">May Francia R. Gonzales</div>
   </div>
-  <div class="info-row">
+  <div class="info-cell">
     <div class="info-label">Property</div>
     <div class="info-value">La Residencia</div>
   </div>
 </div>
 
-<!-- SECTION -->
-<div class="section">
-  <div class="section-title">La Residencia</div>
-  <div class="table-card">
-    <div id="loading">Loading listings…</div>
-    <table id="table" style="display:none">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Photo</th>
-          <th>Type</th>
-          <th>Lot Area</th>
-          <th>Floor Area</th>
-          <th class="r">Price</th>
-          <th class="r">Price / sqm</th>
-          <th>Key Details</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+<!-- TABLE -->
+<div class="table-wrap">
+  <div class="table-head">
+    <span class="table-title">La Residencia</span>
+    <span class="table-count" id="listing-count">Loading…</span>
   </div>
+  <div id="loading" style="padding:40px;text-align:center;color:var(--text4);font-size:13px">Loading listings…</div>
+  <table id="table" style="display:none">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Photo</th>
+        <th>Type & Location</th>
+        <th>Lot Area</th>
+        <th>Floor Area</th>
+        <th class="r">Price</th>
+        <th class="r">Price / sqm</th>
+        <th>Key Details</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
 </div>
 
 <!-- FOOTER -->
-<div class="doc-footer">
-  <div class="footer-note">All prices are subject to change without prior notice.</div>
-  <div class="footer-contact"><strong>Broker France</strong> · info@francebrokerage.com</div>
+<div class="footer">
+  <div class="footer-note">
+    All prices are subject to change without prior notice.<br>
+    This document is prepared exclusively for the named client.
+  </div>
+  <div class="footer-brand"><span>France Brokerage</span> · info@francebrokerage.com</div>
 </div>
 
 <!-- PRINT -->
@@ -169,7 +237,9 @@ td.psqm-cell{font-size:12px;color:#636366}
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
 
-document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+document.getElementById('today-date').textContent = dateStr;
+document.getElementById('strip-date').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 
 function fmtFull(n){
   const num=parseFloat(String(n).replace(/[^0-9.]/g,''));
@@ -204,11 +274,13 @@ async function load(){
     render(listings);
   }catch(e){
     document.getElementById('loading').textContent='Could not load listings. Please refresh.';
+    document.getElementById('listing-count').textContent='Error';
   }
 }
 
 function render(listings){
   document.getElementById('loading').style.display='none';
+  document.getElementById('listing-count').textContent=listings.length+' propert'+(listings.length===1?'y':'ies');
   if(!listings.length){
     document.getElementById('loading').style.display='block';
     document.getElementById('loading').textContent='No La Residencia listings found.';
@@ -216,29 +288,30 @@ function render(listings){
   }
   const isRent=d=>(d||'').toLowerCase().includes('rent');
   document.getElementById('tbody').innerHTML=listings.map((r,i)=>{
-    const deal=pick(r,'deal','sale_lease');
-    const type=pick(r,'type','property_type');
-    const location=pick(r,'location');
-    const lotRaw=parseFloat(String(pick(r,'lot_area','lot')).replace(/[^0-9.]/g,''))||0;
-    const floorRaw=parseFloat(String(pick(r,'floor_area','floor')).replace(/[^0-9.]/g,''))||0;
-    const priceRaw=parseFloat(String(pick(r,'price','amount','selling_price')).replace(/[^0-9.]/g,''))||0;
-    const keyDetails=pick(r,'key_details','details','key');
-    const photo=driveThumb(pick(r,'thumbnail','photos','photo'));
-    const psqm=lotRaw&&priceRaw?fmtFull(priceRaw/lotRaw)+'/sqm':'—';
-    return `
-    <tr>
+    const deal    = pick(r,'deal','sale_lease');
+    const type    = pick(r,'type','property_type');
+    const location= pick(r,'location');
+    const lotRaw  = parseFloat(String(pick(r,'lot_area','lot')).replace(/[^0-9.]/g,''))||0;
+    const floorRaw= parseFloat(String(pick(r,'floor_area','floor')).replace(/[^0-9.]/g,''))||0;
+    const priceRaw= parseFloat(String(pick(r,'price','amount','selling_price')).replace(/[^0-9.]/g,''))||0;
+    const details = pick(r,'key_details','details','key');
+    const photo   = driveThumb(pick(r,'thumbnail','photos','photo'));
+    const psqm    = lotRaw&&priceRaw ? fmtFull(priceRaw/lotRaw)+'/sqm' : '—';
+    return `<tr>
       <td class="num">${i+1}</td>
-      <td class="photo">${photo?`<img src="${esc(photo)}" alt="" onerror="this.parentElement.innerHTML='<div class=no-img>No photo</div>'">`:'<div class="no-img">No photo</div>'}</td>
-      <td class="type-cell">
+      <td class="photo-cell">${photo
+        ?`<img src="${esc(photo)}" alt="" onerror="this.parentElement.innerHTML='<div class=no-img>No photo</div>'">`
+        :'<div class="no-img">No photo</div>'}</td>
+      <td>
         <div class="t-name">${esc(type||'Property')}</div>
         <div class="t-loc">${esc(location||'')}</div>
         <span class="deal-pill ${isRent(deal)?'pill-rent':'pill-sale'}">${esc(deal||'For Sale')}</span>
       </td>
-      <td class="area-cell">${lotRaw?lotRaw.toLocaleString()+' sqm':'—'}</td>
-      <td class="area-cell">${floorRaw?floorRaw.toLocaleString()+' sqm':'—'}</td>
-      <td class="price-cell r">${fmtFull(priceRaw)}</td>
-      <td class="psqm-cell r">${psqm}</td>
-      <td class="area-cell" style="max-width:180px;font-size:11px;color:#636366;line-height:1.6">${esc(keyDetails||'—')}</td>
+      <td class="area-val">${lotRaw?lotRaw.toLocaleString()+' sqm':'—'}</td>
+      <td class="area-val">${floorRaw?floorRaw.toLocaleString()+' sqm':'—'}</td>
+      <td class="price-val r">${fmtFull(priceRaw)}</td>
+      <td class="psqm-val r">${psqm}</td>
+      <td class="detail-val">${esc(details||'—')}</td>
     </tr>`;
   }).join('');
   document.getElementById('table').style.display='table';
