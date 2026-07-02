@@ -159,6 +159,15 @@ function fmt(n){
 }
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
+function driveThumb(url){
+  if(!url) return '';
+  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return 'https://drive.google.com/uc?export=view&id='+m[1];
+  const m2=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m2) return 'https://drive.google.com/uc?export=view&id='+m2[1];
+  return url;
+}
+
 function pick(r,...keys){
   for(const k of keys){
     if(r[k]!==undefined && r[k]!=='') return r[k];
@@ -195,7 +204,7 @@ function render(listings){
     const floorArea=pick(r,'floor_area','floor');
     const price=pick(r,'price','amount','selling_price');
     const keyDetails=pick(r,'key_details','details','key');
-    const photo=pick(r,'thumbnail','photos','photo');
+    const photo=driveThumb(pick(r,'thumbnail','photos','photo'));
     return `
     <tr>
       <td class="num">${i+1}</td>
