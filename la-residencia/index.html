@@ -27,14 +27,17 @@ body{font-family:'Manrope',sans-serif;background:#EBEBF0;color:#111;-webkit-font
 
 /* ── CLIENT CARD ── */
 .client-card{
-  background:#fff;border-radius:20px;padding:24px 32px;
+  background:#fff;border-radius:20px;
   box-shadow:0 1px 3px rgba(0,0,0,.06);
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:10px 0;margin-bottom:28px;
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr;
+  margin-bottom:28px;overflow:hidden;
+  border:1px solid #EBEBF0;
 }
-.cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px}
-.cinfo strong{font-weight:700;color:#111;min-width:52px}
-.cinfo span{color:#333;font-weight:500}
+.cinfo{padding:16px 20px;border-right:1px solid #EBEBF0}
+.cinfo:last-child{border-right:none}
+.cinfo strong{display:block;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#aaa;margin-bottom:4px}
+.cinfo span{font-size:14px;font-weight:700;color:#111;line-height:1.3}
+
 
 /* ── SECTION ── */
 .section-title{font-size:26px;font-weight:700;color:#111;margin-bottom:14px;letter-spacing:-.01em}
@@ -88,9 +91,11 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
   body{padding:24px 14px 80px}
   .top-name{font-size:18px}
   .top-icon{width:40px;height:40px}.top-icon svg{width:24px;height:24px}
-  .client-card{grid-template-columns:1fr;gap:6px;padding:18px 20px}
-  .client-card>div:last-child{text-align:left}
-  .cinfo{justify-content:flex-start!important}
+  .client-card{grid-template-columns:1fr 1fr}
+  .cinfo{padding:14px 16px}
+  .cinfo:nth-child(2){border-right:none}
+  .cinfo:nth-child(1),.cinfo:nth-child(2){border-bottom:1px solid #EBEBF0}
+  .cinfo span{font-size:13px}
   .section-title{font-size:18px}
   /* Scrollable table on mobile */
   .table-card{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
@@ -129,14 +134,10 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
 
 <!-- CLIENT -->
 <div class="client-card">
-  <div>
-    <div class="cinfo"><strong>Client:</strong> <span>Arvie</span></div>
-    <div class="cinfo"><strong>Broker:</strong> <span>May Francia R. Gonzales</span></div>
-  </div>
-  <div style="text-align:right">
-    <div class="cinfo" style="justify-content:flex-end"><strong>Date:</strong> <span id="cdate"></span></div>
-    <div class="cinfo" style="justify-content:flex-end"><strong>Time:</strong> <span>10:30 AM</span></div>
-  </div>
+  <div class="cinfo"><strong>Client</strong><span>Arvie</span></div>
+  <div class="cinfo"><strong>Broker</strong><span>May Francia R. Gonzales</span></div>
+  <div class="cinfo"><strong>Date</strong><span id="cdate"></span></div>
+  <div class="cinfo"><strong>Time</strong><span>10:30 AM</span></div>
 </div>
 
 <!-- SECTION -->
