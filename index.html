@@ -1029,7 +1029,7 @@ a{text-decoration:none;color:inherit}
   <div class="nav-links">
     <button class="nl on" id="nl-home" onclick="showPage('home')">HOME</button>
     <button class="nl" id="nl-listings" onclick="showPage('listings')">VIEW ALL LISTING</button>
-    <button class="nl" id="nl-developers" onclick="showPage('developers')">DEVELOPERS</button>
+    <!-- <button class="nl" id="nl-developers" onclick="showPage('developers')">DEVELOPERS</button> -->
     <button class="nl" id="nl-buyer" onclick="showPage('buyer')">LOOKING TO BUY</button>
     <button class="nl" id="nl-submit" onclick="showPage('submit')">LIST WITH US</button>
   </div>
@@ -2695,6 +2695,7 @@ function quickWA(id) {
 
 // ── PAGE NAV ──────────────────────────────────────────
 function showPage(name) {
+  if (name === 'developers') { showPage('home'); return; }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   window.scrollTo(0, 0);
@@ -2763,7 +2764,7 @@ const wFiles = {};
 // On load: resolve path to page
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
-  const routes = { '/listings':'listings', '/about':'contact', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit', '/developers':'developers' };
+  const routes = { '/listings':'listings', '/about':'contact', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit' };
   const page = routes[path];
   if (page) showPage(page);
 })();
