@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>La Residencia — Property Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Manrope',sans-serif;background:#0d1f17;color:#fff;-webkit-font-smoothing:antialiased}
+
+/* ── COVER SLIDE ── */
+#cover{
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:linear-gradient(160deg,#0d1f17 0%,#1C3F2F 60%,#0d1f17 100%);
+  text-align:center;padding:40px 24px;position:relative;overflow:hidden;
+}
+#cover::before{
+  content:'';position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.cover-tag{font-size:11px;font-weight:700;letter-spacing:.2em;color:#7EC8A0;text-transform:uppercase;margin-bottom:20px}
+.cover-title{font-size:clamp(36px,7vw,72px);font-weight:800;line-height:1.1;margin-bottom:16px;letter-spacing:-.02em}
+.cover-title span{color:#7EC8A0}
+.cover-sub{font-size:16px;color:rgba(255,255,255,.55);max-width:440px;line-height:1.7;margin-bottom:40px}
+.cover-date{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:100px;padding:10px 22px;font-size:13px;color:rgba(255,255,255,.7);
+}
+.cover-scroll{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:rgba(255,255,255,.3);
+  animation:bounce 2s infinite;
+}
+.cover-scroll svg{width:20px;height:20px;opacity:.4}
+@keyframes bounce{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* ── HEADER BAR ── */
+.site-header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(13,31,23,.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 32px;
+}
+.hdr-brand{font-size:13px;font-weight:700;letter-spacing:.08em;color:#7EC8A0;text-transform:uppercase}
+.hdr-count{font-size:12px;color:rgba(255,255,255,.4)}
+
+/* ── LISTINGS ── */
+.listings-section{
+  max-width:1100px;margin:0 auto;padding:60px 24px 100px;
+}
+.section-label{
+  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:#7EC8A0;margin-bottom:8px;
+}
+.section-title{font-size:28px;font-weight:800;margin-bottom:48px;letter-spacing:-.01em}
+
+.listing-card{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;overflow:hidden;margin-bottom:32px;
+  display:grid;grid-template-columns:340px 1fr;
+  transition:border-color .2s;
+}
+.listing-card:hover{border-color:rgba(126,200,160,.3)}
+.listing-card.no-img{grid-template-columns:1fr}
+
+.card-image{
+  position:relative;overflow:hidden;min-height:280px;background:#1a3028;
+  display:flex;align-items:center;justify-content:center;
+}
+.card-image img{width:100%;height:100%;object-fit:cover;display:block}
+.card-image .no-photo{color:rgba(255,255,255,.15);font-size:13px}
+.card-badge{
+  position:absolute;top:16px;left:16px;
+  background:#1C3F2F;border:1px solid rgba(126,200,160,.3);
+  color:#7EC8A0;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:5px 12px;border-radius:100px;
+}
+.deal-badge{
+  position:absolute;top:16px;right:16px;
+  color:#fff;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:5px 12px;border-radius:100px;
+}
+.deal-for-sale{background:rgba(28,63,47,.9);border:1px solid rgba(126,200,160,.4)}
+.deal-for-rent{background:rgba(30,64,175,.7);border:1px solid rgba(147,197,253,.4)}
+
+.card-body{padding:32px 36px;display:flex;flex-direction:column;justify-content:center}
+.card-num{font-size:11px;color:rgba(255,255,255,.25);letter-spacing:.12em;margin-bottom:12px}
+.card-type{font-size:22px;font-weight:800;margin-bottom:4px;line-height:1.2}
+.card-location{font-size:14px;color:rgba(255,255,255,.5);margin-bottom:28px;display:flex;align-items:center;gap:6px}
+.card-location svg{width:14px;height:14px;opacity:.5;flex-shrink:0}
+
+.card-specs{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;
+}
+.spec{background:rgba(255,255,255,.04);border-radius:12px;padding:14px 16px}
+.spec-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px}
+.spec-value{font-size:15px;font-weight:700;color:#fff}
+
+.card-price{
+  font-size:26px;font-weight:800;color:#7EC8A0;margin-bottom:20px;letter-spacing:-.02em;
+}
+.card-price span{font-size:14px;font-weight:500;color:rgba(255,255,255,.4)}
+
+.card-details{
+  border-top:1px solid rgba(255,255,255,.07);padding-top:20px;
+  font-size:13px;color:rgba(255,255,255,.55);line-height:1.7;
+}
+.card-details strong{color:rgba(255,255,255,.8);display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+
+/* ── FOOTER ── */
+.pres-footer{
+  text-align:center;padding:48px 24px;border-top:1px solid rgba(255,255,255,.06);
+  color:rgba(255,255,255,.25);font-size:12px;line-height:2;
+}
+.pres-footer strong{color:rgba(255,255,255,.5);display:block;font-size:15px;margin-bottom:6px}
+
+/* ── LOADING / EMPTY ── */
+#loading{display:flex;align-items:center;justify-content:center;min-height:60vh;flex-direction:column;gap:16px;color:rgba(255,255,255,.3)}
+.spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#7EC8A0;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:780px){
+  .listing-card{grid-template-columns:1fr}
+  .card-image{min-height:220px}
+  .card-body{padding:24px}
+  .card-specs{grid-template-columns:1fr 1fr}
+  .site-header{padding:14px 20px}
+}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section id="cover">
+  <div class="cover-tag">Broker France · Exclusive Presentation</div>
+  <h1 class="cover-title">La <span>Residencia</span></h1>
+  <p class="cover-sub">A curated selection of available properties prepared exclusively for your site visit today.</p>
+  <div class="cover-date">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span id="today-date"></span>
+  </div>
+  <div class="cover-scroll">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+    Scroll to view listings
+  </div>
+</section>
+
+<!-- HEADER -->
+<header class="site-header">
+  <div class="hdr-brand">Broker France</div>
+  <div class="hdr-count" id="listing-count"></div>
+</header>
+
+<!-- LISTINGS -->
+<section class="listings-section">
+  <div class="section-label">Available Properties</div>
+  <h2 class="section-title">La Residencia — Property Options</h2>
+  <div id="loading">
+    <div class="spinner"></div>
+    <span>Loading listings…</span>
+  </div>
+  <div id="cards"></div>
+</section>
+
+<!-- FOOTER -->
+<footer class="pres-footer">
+  <strong>Broker France</strong>
+  francebrokerage.com · info@francebrokerage.com<br>
+  This presentation is prepared exclusively for your site visit. All prices are subject to change without prior notice.
+</footer>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
+
+document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+
+function fmt(n) {
+  const num = parseFloat(String(n).replace(/[^0-9.]/g,''));
+  if (isNaN(num)) return n || '—';
+  if (num >= 1_000_000) return '₱' + (num/1_000_000).toFixed(2).replace(/\.?0+$/,'') + 'M';
+  if (num >= 1_000) return '₱' + (num/1_000).toFixed(0) + 'K';
+  return '₱' + num.toLocaleString();
+}
+
+function esc(s){ const d=document.createElement('div');d.textContent=s||'';return d.innerHTML; }
+
+async function load() {
+  try {
+    const res = await fetch(API_URL, { redirect: 'follow' });
+    const data = await res.json();
+    const listings = data.filter(r => {
+      const loc = (r.location || '').toLowerCase();
+      return loc.includes('residencia');
+    });
+    render(listings);
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<p style="color:rgba(255,255,255,.4)">Could not load listings. Please refresh.</p>';
+  }
+}
+
+function render(listings) {
+  document.getElementById('loading').style.display = 'none';
+  const count = listings.length;
+  document.getElementById('listing-count').textContent = count + ' propert' + (count===1?'y':'ies') + ' available';
+
+  if (!count) {
+    document.getElementById('cards').innerHTML = '<p style="color:rgba(255,255,255,.4);text-align:center;padding:60px 0">No listings found for La Residencia.</p>';
+    return;
+  }
+
+  document.getElementById('cards').innerHTML = listings.map((r, i) => {
+    const hasImg = r.photos && r.photos.trim();
+    const dealClass = (r.deal||'').toLowerCase().includes('rent') ? 'deal-for-rent' : 'deal-for-sale';
+    const dealLabel = r.deal || 'For Sale';
+    const lotArea = r.lot_area ? r.lot_area + ' sqm' : '—';
+    const floorArea = r.floor_area ? r.floor_area + ' sqm' : '—';
+    const price = r.price ? fmt(r.price) : '—';
+    const priceNote = (r.deal||'').toLowerCase().includes('rent') ? '/month' : '';
+
+    return `
+    <div class="listing-card${hasImg?'':' no-img'}">
+      ${hasImg ? `
+      <div class="card-image">
+        <img src="${esc(r.photos)}" alt="${esc(r.type)}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=no-photo>No photo available</span>'">
+        ${r.badge ? `<span class="card-badge">${esc(r.badge)}</span>` : ''}
+        <span class="card-badge deal-badge ${dealClass}">${esc(dealLabel)}</span>
+      </div>` : ''}
+      <div class="card-body">
+        <div class="card-num">Property ${String(i+1).padStart(2,'0')} of ${String(count).padStart(2,'0')}</div>
+        <div class="card-type">${esc(r.type || 'Property')}</div>
+        <div class="card-location">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          ${esc(r.location || '—')}
+        </div>
+        <div class="card-specs">
+          <div class="spec"><div class="spec-label">Lot Area</div><div class="spec-value">${esc(lotArea)}</div></div>
+          <div class="spec"><div class="spec-label">Floor Area</div><div class="spec-value">${esc(floorArea)}</div></div>
+        </div>
+        <div class="card-price">${price}${priceNote ? `<span>${priceNote}</span>` : ''}</div>
+        ${r.key_details ? `<div class="card-details"><strong>Key Details</strong>${esc(r.key_details)}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+load();
+</script>
+</body>
+</html>
