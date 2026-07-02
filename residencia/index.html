@@ -168,11 +168,23 @@ function fmt(n){
 }
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
+function pick(r,...keys){
+  for(const k of keys){
+    // exact match
+    if(r[k]!==undefined && r[k]!=='') return r[k];
+    // partial key match
+    const found=Object.keys(r).find(rk=>rk.toLowerCase().includes(k.toLowerCase()));
+    if(found && r[found]!=='') return r[found];
+  }
+  return '';
+}
+
 async function load(){
   try{
     const res=await fetch(API_URL,{redirect:'follow'});
     const data=await res.json();
-    const listings=data.filter(r=>(r.location||'').toLowerCase().includes('residencia'));
+    console.log('Sample row keys:', data[0] ? Object.keys(data[0]) : 'no data');
+    const listings=data.filter(r=>(pick(r,'location')||'').toLowerCase().includes('residencia'));
     render(listings);
   }catch(e){
     document.getElementById('loading').textContent='Could not load listings. Please refresh.';
@@ -187,20 +199,30 @@ function render(listings){
     return;
   }
   const isRent=d=>(d||'').toLowerCase().includes('rent');
-  document.getElementById('tbody').innerHTML=listings.map((r,i)=>`
+  document.getElementById('tbody').innerHTML=listings.map((r,i)=>{
+    const deal=pick(r,'deal','sale_lease');
+    const type=pick(r,'type','property_type');
+    const location=pick(r,'location');
+    const lotArea=pick(r,'lot_area','lot');
+    const floorArea=pick(r,'floor_area','floor');
+    const price=pick(r,'price','amount','selling_price');
+    const keyDetails=pick(r,'key_details','details','key');
+    const photo=pick(r,'photos','photo','thumbnail');
+    return `
     <tr>
       <td class="num">${i+1}</td>
-      <td class="photo">${r.photos?`<img src="${esc(r.photos)}" alt="" onerror="this.parentElement.innerHTML='<div class=no-img>No photo</div>'">`:'<div class="no-img">No photo</div>'}</td>
+      <td class="photo">${photo?`<img src="${esc(photo)}" alt="" onerror="this.parentElement.innerHTML='<div class=no-img>No photo</div>'">`:'<div class="no-img">No photo</div>'}</td>
       <td class="type">
-        ${esc(r.type||'Property')}
-        <div><span class="deal-pill ${isRent(r.deal)?'pill-rent':'pill-sale'}">${esc(r.deal||'For Sale')}</span></div>
+        ${esc(type||'Property')}
+        <div><span class="deal-pill ${isRent(deal)?'pill-rent':'pill-sale'}">${esc(deal||'For Sale')}</span></div>
       </td>
-      <td class="location">${esc(r.location||'—')}</td>
-      <td class="area">${r.lot_area?esc(r.lot_area)+' sqm':'—'}</td>
-      <td class="area">${r.floor_area?esc(r.floor_area)+' sqm':'—'}</td>
-      <td class="price">${r.price?fmt(r.price):'—'}${isRent(r.deal)?'<div style="font-size:10px;font-weight:500;color:#888">/month</div>':''}</td>
-      <td class="details">${esc(r.key_details||'—')}</td>
-    </tr>`).join('');
+      <td class="location">${esc(location||'—')}</td>
+      <td class="area">${lotArea?esc(lotArea)+' sqm':'—'}</td>
+      <td class="area">${floorArea?esc(floorArea)+' sqm':'—'}</td>
+      <td class="price">${price?fmt(price):'—'}${isRent(deal)?'<div style="font-size:10px;font-weight:500;color:#888">/month</div>':''}</td>
+      <td class="details">${esc(keyDetails||'—')}</td>
+    </tr>`;
+  }).join('');
   document.getElementById('table').style.display='table';
 }
 
