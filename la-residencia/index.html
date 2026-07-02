@@ -5,205 +5,129 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>La Residencia — Tripping Summary</title>
-<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><g><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="%231DB954" opacity=".9"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="%231DB954" opacity=".9"/></g></svg>'>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="%231DB954" opacity=".9"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="%231DB954" opacity=".9"/></svg>'>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-  --green:#1C3F2F;
-  --green-m:#2D6A4F;
-  --green-l:#EBF5EF;
-  --green-t:#D1EAD9;
-  --text:#111827;
-  --text2:#374151;
-  --text3:#6B7280;
-  --text4:#9CA3AF;
-  --border:#E5E7EB;
-  --bg:#F9FAFB;
-  --white:#fff;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:'Manrope',sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  -webkit-font-smoothing:antialiased;
-  padding:36px 32px 72px;
-}
+body{font-family:'Manrope',sans-serif;background:#EBEBF0;color:#111;-webkit-font-smoothing:antialiased;padding:48px 24px 80px;min-height:100vh}
 
-/* ── HEADER ── */
-.header{
-  display:flex;align-items:center;justify-content:space-between;
-  margin-bottom:24px;padding-bottom:20px;
-  border-bottom:1.5px solid var(--green-t);
-}
-.brand{display:flex;align-items:center;gap:10px}
-.brand-icon{
-  width:38px;height:38px;
-  background:var(--green);border-radius:10px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.brand-icon svg{width:22px;height:22px}
-.brand-text{}
-.brand-name{font-size:14px;font-weight:800;color:var(--green);letter-spacing:.04em;text-transform:uppercase}
-.brand-tagline{font-size:10px;color:var(--text4);letter-spacing:.04em}
+.wrap{max-width:900px;margin:0 auto}
 
-.header-right{text-align:right}
-.doc-badge{
-  display:inline-block;
-  background:var(--green-l);border:1px solid var(--green-t);
-  color:var(--green);font-size:10px;font-weight:700;
-  letter-spacing:.12em;text-transform:uppercase;
-  padding:4px 12px;border-radius:100px;margin-bottom:4px;
+/* ── TOP ── */
+.top{text-align:center;margin-bottom:32px}
+.top-brand{display:inline-flex;align-items:center;gap:14px;margin-bottom:10px}
+.top-icon{
+  width:52px;height:52px;background:#fff;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.1);flex-shrink:0;
 }
-.doc-date{font-size:11px;color:var(--text4)}
+.top-icon svg{width:32px;height:32px}
+.top-name{font-size:32px;font-weight:700;color:#111;letter-spacing:-.02em}
+.top-sub{font-size:12px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:#555}
 
-/* ── INFO STRIP ── */
-.info-strip{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  gap:1px;background:var(--border);
-  border:1px solid var(--border);border-radius:14px;
-  overflow:hidden;margin-bottom:24px;
+/* ── CLIENT CARD ── */
+.client-card{
+  background:#fff;border-radius:20px;padding:24px 32px;
+  box-shadow:0 1px 3px rgba(0,0,0,.06);
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px 0;margin-bottom:28px;
 }
-.info-cell{
-  background:var(--white);
-  padding:14px 18px;
-}
-.info-cell:first-child{border-radius:13px 0 0 13px}
-.info-cell:last-child{border-radius:0 13px 13px 0}
-.info-label{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text4);margin-bottom:3px}
-.info-value{font-size:14px;font-weight:700;color:var(--text)}
+.cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px}
+.cinfo strong{font-weight:700;color:#111;min-width:52px}
+.cinfo span{color:#333;font-weight:500}
 
-/* ── TABLE WRAPPER ── */
-.table-wrap{
-  background:var(--white);
-  border:1px solid var(--border);
-  border-radius:14px;
-  overflow:hidden;
-}
-.table-head{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 18px 12px;border-bottom:1px solid var(--border);
-}
-.table-title{font-size:15px;font-weight:700;color:var(--text)}
-.table-count{font-size:12px;color:var(--text4);background:var(--bg);padding:3px 10px;border-radius:100px;border:1px solid var(--border)}
+/* ── SECTION ── */
+.section-title{font-size:26px;font-weight:700;color:#111;margin-bottom:14px;letter-spacing:-.01em}
 
-/* ── TABLE ── */
-table{width:auto;min-width:100%;border-collapse:collapse;font-size:12.5px}
+/* ── TABLE CARD ── */
+.table-card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{
-  padding:10px 14px;
-  background:var(--bg);
-  border-bottom:1px solid var(--border);
-  text-align:left;
-  font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
-  color:var(--text3);white-space:nowrap;
+  padding:12px 16px;text-align:left;
+  font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#999;
+  border-bottom:1px solid #EBEBF0;background:#fff;white-space:nowrap;
 }
 thead th.r{text-align:right}
-tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr{border-bottom:1px solid #F4F4F6;transition:background .1s}
 tbody tr:last-child{border-bottom:none}
-tbody tr:hover{background:#FAFFFE}
-tbody td{padding:12px 14px;vertical-align:middle;color:var(--text2);line-height:1.4}
+tbody tr:hover{background:#FAFAFA}
+tbody td{padding:14px 16px;vertical-align:middle;line-height:1.45}
 tbody td.r{text-align:right}
 
-/* CELLS */
-td.num{font-size:11px;color:var(--text4);font-weight:600;width:30px;text-align:center}
-.t-name{font-weight:700;font-size:13px;color:var(--text)}
-.t-loc{font-size:11px;color:var(--text3);margin-top:1px}
+.t-name{font-weight:700;font-size:13px;color:#111;margin-bottom:2px}
+.t-loc{font-size:11px;color:#999;margin-bottom:4px}
 .deal-pill{
-  display:inline-block;font-size:9px;font-weight:700;
-  letter-spacing:.06em;text-transform:uppercase;
-  padding:2px 7px;border-radius:100px;margin-top:3px;
+  display:inline-block;font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:2px 8px;border-radius:100px;
+  background:#EBF5EF;color:#1C6B40;border:1px solid #C8E6D2;
 }
-.pill-sale{background:var(--green-l);color:var(--green);border:1px solid var(--green-t)}
-.pill-rent{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
-td.area-val{font-size:12px;color:var(--text2)}
-td.price-val{font-weight:700;color:var(--text);font-size:13px}
-td.psqm-val{font-size:11.5px;color:var(--text3)}
-td.detail-val{font-size:11px;color:var(--text3);max-width:180px;line-height:1.6}
+.pill-rent{background:#EEF2FF;color:#3730A3;border-color:#C7D2FE}
+td.area{font-size:13px;color:#333}
+td.price{font-weight:700;font-size:13px;color:#111}
+td.psqm{font-size:12px;color:#666}
+td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
 
 /* ── FOOTER ── */
-.footer{
-  margin-top:20px;
-  display:flex;align-items:center;justify-content:space-between;
-}
-.footer-note{font-size:10px;color:var(--text4);line-height:1.8}
-.footer-brand{font-size:11px;color:var(--text3);font-weight:600}
-.footer-brand span{color:var(--green)}
+.footer{margin-top:20px;display:flex;justify-content:space-between;align-items:center}
+.footer-note{font-size:10px;color:#aaa;line-height:1.8}
+.footer-right{font-size:11px;color:#888;font-weight:600}
+.footer-right span{color:#1C3F2F}
 
-/* ── PRINT BUTTON ── */
+/* ── PRINT BTN ── */
 .print-btn{
   position:fixed;bottom:24px;right:24px;
-  background:var(--green);color:#fff;border:none;border-radius:100px;
-  padding:11px 22px;font-size:12px;font-weight:700;font-family:inherit;
+  background:#1C3F2F;color:#fff;border:none;border-radius:100px;
+  padding:12px 22px;font-size:12px;font-weight:700;font-family:inherit;
   cursor:pointer;display:flex;align-items:center;gap:7px;
-  box-shadow:0 2px 12px rgba(28,63,47,.25);transition:background .15s;
+  box-shadow:0 4px 16px rgba(28,63,47,.3);
 }
-.print-btn:hover{background:var(--green-m)}
+.print-btn:hover{background:#2D6A4F}
 .print-btn svg{width:14px;height:14px}
 
 @media print{
-  body{background:#fff;padding:16px 20px}
-  .table-wrap,.info-strip{box-shadow:none}
+  body{background:#fff;padding:20px}
+  .table-card,.client-card{box-shadow:none;border:1px solid #eee}
   .print-btn{display:none}
-  tbody tr:hover{background:none}
 }
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<!-- HEADER -->
-<div class="header">
-  <div class="brand">
-    <div class="brand-icon">
+<!-- TOP -->
+<div class="top">
+  <div class="top-brand">
+    <div class="top-icon">
       <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".95"/>
-        <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".95"/>
-        <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".95"/>
-        <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".95"/>
+        <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".9"/>
+        <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".9"/>
+        <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".9"/>
+        <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".9"/>
       </svg>
     </div>
-    <div class="brand-text">
-      <div class="brand-name">France Brokerage</div>
-      <div class="brand-tagline">francebrokerage.com</div>
-    </div>
+    <div class="top-name">France Brokerage</div>
   </div>
-  <div class="header-right">
-    <div class="doc-badge">Tripping Summary</div>
-    <div class="doc-date" id="today-date"></div>
-  </div>
+  <div class="top-sub">Tripping Summary</div>
 </div>
 
-<!-- INFO STRIP -->
-<div class="info-strip">
-  <div class="info-cell">
-    <div class="info-label">Client</div>
-    <div class="info-value">Arvie</div>
-  </div>
-  <div class="info-cell">
-    <div class="info-label">Date</div>
-    <div class="info-value" id="strip-date"></div>
-  </div>
-  <div class="info-cell">
-    <div class="info-label">Broker</div>
-    <div class="info-value">May Francia R. Gonzales</div>
-  </div>
-  <div class="info-cell">
-    <div class="info-label">Property</div>
-    <div class="info-value">La Residencia</div>
-  </div>
+<!-- CLIENT -->
+<div class="client-card">
+  <div class="cinfo"><strong>Client:</strong> <span>Arvie</span></div>
+  <div class="cinfo"><strong>Date:</strong> <span id="cdate"></span></div>
+  <div class="cinfo"><strong>Broker:</strong> <span>May Francia R. Gonzales</span></div>
+  <div class="cinfo"><strong>Property:</strong> <span>La Residencia</span></div>
 </div>
+
+<!-- SECTION -->
+<div class="section-title">La Residencia</div>
 
 <!-- TABLE -->
-<div class="table-wrap">
-  <div class="table-head">
-    <span class="table-title">La Residencia</span>
-    <span class="table-count" id="listing-count">Loading…</span>
-  </div>
-  <div id="loading" style="padding:40px;text-align:center;color:var(--text4);font-size:13px">Loading listings…</div>
+<div class="table-card">
+  <div id="loading" style="padding:40px;text-align:center;color:#bbb;font-size:13px">Loading listings…</div>
   <table id="table" style="display:none">
     <thead>
       <tr>
-        <th>#</th>
-        <th>Type & Location</th>
+        <th>Type &amp; Location</th>
         <th>Lot Area</th>
         <th>Floor Area</th>
         <th class="r">Price</th>
@@ -217,14 +141,12 @@ td.detail-val{font-size:11px;color:var(--text3);max-width:180px;line-height:1.6}
 
 <!-- FOOTER -->
 <div class="footer">
-  <div class="footer-note">
-    All prices are subject to change without prior notice.<br>
-    This document is prepared exclusively for the named client.
-  </div>
-  <div class="footer-brand"><span>France Brokerage</span> · info@francebrokerage.com</div>
+  <div class="footer-note">All prices are subject to change without prior notice.</div>
+  <div class="footer-right"><span>France Brokerage</span> · info@francebrokerage.com</div>
 </div>
 
-<!-- PRINT -->
+</div><!-- /wrap -->
+
 <button class="print-btn" onclick="window.print()">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
   Print / Save PDF
@@ -233,78 +155,56 @@ td.detail-val{font-size:11px;color:var(--text3);max-width:180px;line-height:1.6}
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
 
-const dateStr = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-document.getElementById('today-date').textContent = dateStr;
-document.getElementById('strip-date').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+document.getElementById('cdate').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 
 function fmtFull(n){
   const num=parseFloat(String(n).replace(/[^0-9.]/g,''));
-  if(isNaN(num)||num===0) return '—';
+  if(isNaN(num)||num===0)return '—';
   return '₱'+num.toLocaleString('en-PH',{minimumFractionDigits:0,maximumFractionDigits:0});
 }
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
-
-function driveThumb(url){
-  if(!url) return '';
-  const m=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
-  if(m) return 'https://drive.google.com/uc?export=view&id='+m[1];
-  const m2=url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if(m2) return 'https://drive.google.com/uc?export=view&id='+m2[1];
-  return url;
-}
-
 function pick(r,...keys){
   for(const k of keys){
-    if(r[k]!==undefined&&r[k]!=='') return r[k];
-    const found=Object.keys(r).find(rk=>rk.toLowerCase().includes(k.toLowerCase()));
-    if(found&&r[found]!=='') return r[found];
-  }
-  return '';
+    if(r[k]!==undefined&&r[k]!=='')return r[k];
+    const f=Object.keys(r).find(rk=>rk.toLowerCase().includes(k.toLowerCase()));
+    if(f&&r[f]!=='')return r[f];
+  }return '';
 }
 
 async function load(){
   try{
     const res=await fetch(API_URL,{redirect:'follow'});
     const data=await res.json();
-    const listings=data.filter(r=>(pick(r,'location')||'').toLowerCase().includes('residencia'));
-    render(listings);
+    render(data.filter(r=>(pick(r,'location')||'').toLowerCase().includes('residencia')));
   }catch(e){
     document.getElementById('loading').textContent='Could not load listings. Please refresh.';
-    document.getElementById('listing-count').textContent='Error';
   }
 }
 
-function render(listings){
+function render(list){
   document.getElementById('loading').style.display='none';
-  document.getElementById('listing-count').textContent=listings.length+' propert'+(listings.length===1?'y':'ies');
-  if(!listings.length){
-    document.getElementById('loading').style.display='block';
-    document.getElementById('loading').textContent='No La Residencia listings found.';
-    return;
-  }
+  if(!list.length){document.getElementById('loading').style.display='block';document.getElementById('loading').textContent='No listings found.';return;}
   const isRent=d=>(d||'').toLowerCase().includes('rent');
-  document.getElementById('tbody').innerHTML=listings.map((r,i)=>{
-    const deal    = pick(r,'deal','sale_lease');
-    const type    = pick(r,'type','property_type');
-    const location= pick(r,'location');
-    const lotRaw  = parseFloat(String(pick(r,'lot_area','lot')).replace(/[^0-9.]/g,''))||0;
-    const floorRaw= parseFloat(String(pick(r,'floor_area','floor')).replace(/[^0-9.]/g,''))||0;
-    const priceRaw= parseFloat(String(pick(r,'price','amount','selling_price')).replace(/[^0-9.]/g,''))||0;
-    const details = pick(r,'key_details','details','key');
-    const photo   = driveThumb(pick(r,'thumbnail','photos','photo'));
-    const psqm    = lotRaw&&priceRaw ? fmtFull(priceRaw/lotRaw)+'/sqm' : '—';
+  document.getElementById('tbody').innerHTML=list.map(r=>{
+    const deal=pick(r,'deal','sale_lease');
+    const type=pick(r,'type','property_type');
+    const loc=pick(r,'location');
+    const lot=parseFloat(String(pick(r,'lot_area','lot')).replace(/[^0-9.]/g,''))||0;
+    const floor=parseFloat(String(pick(r,'floor_area','floor')).replace(/[^0-9.]/g,''))||0;
+    const price=parseFloat(String(pick(r,'price','amount','selling_price')).replace(/[^0-9.]/g,''))||0;
+    const details=pick(r,'key_details','details','key');
+    const psqm=lot&&price?fmtFull(price/lot)+'/sqm':'—';
     return `<tr>
-      <td class="num">${i+1}</td>
       <td>
         <div class="t-name">${esc(type||'Property')}</div>
-        <div class="t-loc">${esc(location||'')}</div>
-        <span class="deal-pill ${isRent(deal)?'pill-rent':'pill-sale'}">${esc(deal||'For Sale')}</span>
+        <div class="t-loc">${esc(loc||'')}</div>
+        <span class="deal-pill${isRent(deal)?' pill-rent':''}">${esc(deal||'For Sale')}</span>
       </td>
-      <td class="area-val">${lotRaw?lotRaw.toLocaleString()+' sqm':'—'}</td>
-      <td class="area-val">${floorRaw?floorRaw.toLocaleString()+' sqm':'—'}</td>
-      <td class="price-val r">${fmtFull(priceRaw)}</td>
-      <td class="psqm-val r">${psqm}</td>
-      <td class="detail-val">${esc(details||'—')}</td>
+      <td class="area">${lot?lot.toLocaleString()+' sqm':'—'}</td>
+      <td class="area">${floor?floor.toLocaleString()+' sqm':'—'}</td>
+      <td class="price r">${fmtFull(price)}</td>
+      <td class="psqm r">${psqm}</td>
+      <td class="detail">${esc(details||'—')}</td>
     </tr>`;
   }).join('');
   document.getElementById('table').style.display='table';
