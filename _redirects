@@ -1,4 +1,5 @@
-/residencia  /residencia/index.html   200
+/la-residencia  /la-residencia/index.html   200
+/residencia     /la-residencia   302
 /listing/*   /index.html   200
 /listings    /index.html   200
 /about       /index.html   200
