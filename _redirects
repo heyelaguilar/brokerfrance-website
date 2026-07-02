@@ -5,6 +5,6 @@
 /buyer       /index.html   200
 /match       /index.html   200
 /submit      /index.html   200
-/developers  /index.html   200
-/admin       /   302
-/admin/*     /   302
+/developers  /   302
+/admin       /admin/index.html   200
+/admin/*     /admin/index.html   200
