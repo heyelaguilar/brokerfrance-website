@@ -84,6 +84,23 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
 .print-btn:hover{background:#2D6A4F}
 .print-btn svg{width:14px;height:14px}
 
+@media(max-width:640px){
+  body{padding:24px 14px 80px}
+  .top-name{font-size:18px}
+  .top-icon{width:40px;height:40px}.top-icon svg{width:24px;height:24px}
+  .client-card{grid-template-columns:1fr;gap:6px;padding:18px 20px}
+  .client-card>div:last-child{text-align:left}
+  .cinfo{justify-content:flex-start!important}
+  .section-title{font-size:18px}
+  /* Scrollable table on mobile */
+  .table-card{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px}
+  table{font-size:12px;min-width:560px}
+  thead th{padding:10px 12px;font-size:9px}
+  tbody td{padding:11px 12px}
+  td.detail{max-width:140px;font-size:10.5px}
+  .footer{flex-direction:column;align-items:flex-start;gap:4px}
+  .print-btn{bottom:16px;right:16px;padding:10px 16px;font-size:11px}
+}
 @media print{
   body{background:#fff;padding:20px}
   .table-card,.client-card{box-shadow:none;border:1px solid #eee}
