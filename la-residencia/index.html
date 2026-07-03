@@ -29,10 +29,11 @@ body{font-family:'Manrope',sans-serif;background:#EBEBF0;color:#111;-webkit-font
 .client-card{
   background:#fff;border-radius:14px;padding:16px 24px;
   box-shadow:0 1px 3px rgba(0,0,0,.06);
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:6px 40px;margin-bottom:20px;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  gap:16px;margin-bottom:20px;
   border:1px solid #EBEBF0;
 }
+.client-left,.client-right{display:flex;flex-direction:column;gap:4px}
 .cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px;line-height:1.6}
 .cinfo strong{font-weight:700;color:#111;white-space:nowrap}
 .cinfo span{color:#444;font-weight:500}
@@ -134,10 +135,14 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
 
 <!-- CLIENT -->
 <div class="client-card">
-  <div class="cinfo"><strong>Client</strong><span>Arvie</span></div>
-  <div class="cinfo"><strong>Broker</strong><span>May Francia R. Gonzales</span></div>
-  <div class="cinfo hide-mobile"><strong>Date</strong><span id="cdate"></span></div>
-  <div class="cinfo hide-mobile"><strong>Time</strong><span>10:30 AM</span></div>
+  <div class="client-left">
+    <div class="cinfo"><strong>Client:</strong> <span>Arvie De Vera</span></div>
+    <div class="cinfo"><strong>Broker:</strong> <span>May Francia R. Gonzales</span></div>
+  </div>
+  <div class="client-right hide-mobile" style="text-align:right">
+    <div class="cinfo" style="justify-content:flex-end"><strong>Date:</strong> <span id="cdate"></span></div>
+    <div class="cinfo" style="justify-content:flex-end"><strong>Time:</strong> <span>10:00 AM</span></div>
+  </div>
 </div>
 
 <!-- SECTION -->
