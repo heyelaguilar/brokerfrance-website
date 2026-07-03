@@ -27,14 +27,15 @@ body{font-family:'Manrope',sans-serif;background:#EBEBF0;color:#111;-webkit-font
 
 /* ── CLIENT CARD ── */
 .client-card{
-  background:#fff;border-radius:14px;padding:12px 24px;
+  background:#fff;border-radius:14px;padding:16px 24px;
   box-shadow:0 1px 3px rgba(0,0,0,.06);
-  display:flex;gap:32px;margin-bottom:20px;
-  border:1px solid #EBEBF0;flex-wrap:wrap;
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:6px 40px;margin-bottom:20px;
+  border:1px solid #EBEBF0;
 }
-.cinfo{display:flex;flex-direction:column;gap:2px}
-.cinfo strong{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#aaa}
-.cinfo span{font-size:14px;font-weight:700;color:#111}
+.cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px;line-height:1.6}
+.cinfo strong{font-weight:700;color:#111;white-space:nowrap}
+.cinfo span{color:#444;font-weight:500}
 .hide-mobile{display:flex}
 
 
