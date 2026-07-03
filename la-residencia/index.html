@@ -108,9 +108,25 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
   .print-btn{bottom:16px;right:16px;padding:10px 16px;font-size:11px}
 }
 @media print{
-  body{background:#fff;padding:20px}
+  @page{size:A4;margin:8mm}
+  body{background:#fff;padding:0;font-size:11px}
+  .wrap{max-width:100%}
+  .top{margin-bottom:10px}
+  .top-icon{width:32px;height:32px}
+  .top-icon svg{width:20px;height:20px}
+  .top-name{font-size:15px}
+  .top-sub{font-size:8px}
+  .client-card{padding:8px 14px;margin-bottom:10px}
+  .cinfo{font-size:10.5px}
+  .section-title{font-size:15px;margin-bottom:6px}
   .table-card,.client-card{box-shadow:none;border:1px solid #eee}
-  .print-btn{display:none}
+  table{font-size:10px}
+  thead th{padding:5px 8px;font-size:7.5px}
+  tbody td{padding:5px 8px}
+  thead th:last-child,td.detail{display:none}
+  .footer{margin-top:8px}
+  .footer-note,.footer-right{font-size:8px}
+  .print-btn,.more-listings{display:none!important}
 }
 </style>
 </head>
@@ -166,6 +182,11 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
     </thead>
     <tbody id="tbody"></tbody>
   </table>
+</div>
+
+<!-- MORE LISTINGS -->
+<div class="more-listings" style="text-align:center;margin-top:20px;font-size:13px;color:#555">
+  For more properties, check our listing at <a href="https://francebrokerage.com" style="color:#1C6B40;font-weight:700;text-decoration:none">francebrokerage.com</a>
 </div>
 
 <!-- FOOTER -->
