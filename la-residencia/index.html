@@ -172,7 +172,7 @@ td.detail{font-size:11.5px;color:#555;max-width:200px;line-height:1.6}
 </button>
 
 <script>
-const API_URL = 'https://script.google.com/macros/s/AKfycbxkV-FR10oa7bqQLDQxg1aKNh_XtydRqfN9tXOw9IetH1BAiILjKPXfql61aDACXTVcEw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycby9HtdFVdICJeCucUosYs0cPt_Ah5eRENB3Sp7aDDB1-u2273D5lAB_pzUW0H_irlmaVw/exec';
 
 document.getElementById('cdate').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 
@@ -193,10 +193,16 @@ function pick(r,...keys){
 async function load(){
   try{
     const res=await fetch(API_URL,{redirect:'follow'});
-    const data=await res.json();
-    render(data.filter(r=>(pick(r,'location')||'').toLowerCase().includes('residencia')));
+    const text=await res.text();
+    console.log('API response (first 300):', text.substring(0,300));
+    const data=JSON.parse(text);
+    console.log('Total rows:', data.length, '| Keys:', data[0]?Object.keys(data[0]):[]);
+    const filtered=data.filter(r=>(pick(r,'location')||'').toLowerCase().includes('residencia'));
+    console.log('Residencia rows:', filtered.length);
+    render(filtered);
   }catch(e){
-    document.getElementById('loading').textContent='Could not load listings. Please refresh.';
+    console.error('Load error:', e);
+    document.getElementById('loading').textContent='Could not load listings — '+e.message;
   }
 }
 
