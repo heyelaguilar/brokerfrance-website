@@ -674,8 +674,11 @@ a{text-decoration:none;color:inherit}
 .spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
 @keyframes spin{to{transform:rotate(360deg)}}
 @keyframes uploadPulse{0%,100%{opacity:1}50%{opacity:.4}}
-.upload-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:10px;margin-top:12px}
-.upload-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--bg);border:1.5px solid var(--border)}
+.upload-grid{display:grid;grid-template-columns:repeat(auto-fill,64px);gap:10px;margin-top:12px}
+.upload-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--bg);border:1.5px solid var(--border)}
+.amount-unit-toggle{display:flex;gap:8px;margin-top:8px}
+.amount-unit-btn{flex:1;padding:9px 12px;border-radius:var(--rs);border:1.5px solid var(--border);background:#fff;font-size:13px;font-weight:700;color:var(--ink3);cursor:pointer;transition:all .15s}
+.amount-unit-btn.active{border-color:var(--green);background:var(--green-l);color:var(--green-d)}
 .upload-thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .upload-thumb-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);transition:opacity .2s}
 .upload-thumb-overlay.done{background:rgba(28,63,47,.7)}
@@ -2745,7 +2748,7 @@ const WIZARD_STEPS = [
   {
     num: 'Step 2 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
     fields: [
-      { id:'sp-lot',    label:'Lot Area (sqm)',     req:false, type:'number', ph:'e.g. 150',     hint:'Leave blank if not applicable' },
+      { id:'sp-lot',    label:'Lot Area (sqm)',     req:true,  type:'number', ph:'e.g. 150' },
       { id:'sp-floor',  label:'Floor Area (sqm)',   req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
       { id:'sp-amount', label:'Asking Price (PHP)', req:true,  type:'text', ph:'e.g. 5,500,000 or 5.5M', prefix:'₱', formatter:'currency' },
     ]
@@ -2765,7 +2768,6 @@ const WIZARD_STEPS = [
       { id:'sp-phone',    label:'Mobile Number', req:true,  type:'tel',    ph:'+63 9XX XXX XXXX' },
       { id:'sp-email',    label:'Email Address', req:false, type:'email',  ph:'juan@email.com' },
       { id:'sp-role',     label:'I am the',      req:true,  type:'select', opts:['Owner','Broker','Sales Person','Authorized Representative'] },
-      { id:'sp-tct',      label:'',              req:false, type:'checkbox', text:'Property has a Transfer Certificate of Title (TCT)' },
     ]
   }
 ];
@@ -3024,10 +3026,11 @@ function parseCurrencyInput(raw) {
 function formatCurrencyInput(el) {
   const num = parseCurrencyInput(el.value);
   const disp = document.getElementById('sp-amount-display');
+  const suffix = wData['sp-amount-unit'] === 'sqm' ? ' / sqm' : '';
   if (!isNaN(num) && num > 0) {
     el.dataset.raw = num;
     if (disp) {
-      disp.textContent = '₱ ' + num.toLocaleString('en-PH');
+      disp.textContent = '₱ ' + num.toLocaleString('en-PH') + suffix;
       disp.style.display = 'block';
     }
   } else {
@@ -3036,8 +3039,22 @@ function formatCurrencyInput(el) {
   }
 }
 
+function setAmountUnit(unit) {
+  wData['sp-amount-unit'] = unit;
+  document.querySelectorAll('.amount-unit-btn').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+  const amountEl = document.getElementById('sp-amount');
+  if (amountEl) formatCurrencyInput(amountEl);
+}
+
+function formatAmountDisplay(amount) {
+  if (!amount) return '—';
+  const suffix = wData['sp-amount-unit'] === 'sqm' ? ' / sqm' : '';
+  return '₱ ' + Number(amount).toLocaleString('en-PH') + suffix;
+}
+
 function initWizard() {
   wStep = 0;
+  wData['sp-amount-unit'] = 'total';
   renderWizardStep();
 }
 
@@ -3084,9 +3101,14 @@ function renderWizardStep() {
         <span class="wf-check-text">${f.text}</span>
       </div>`;
     } else if (f.formatter === 'currency') {
+      const unit = wData['sp-amount-unit'] || 'total';
       input = `<div style="position:relative">
         <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none">₱</span>
         <input type="text" id="${f.id}" placeholder="${f.ph||''}" style="padding-left:30px" oninput="formatCurrencyInput(this)" autocomplete="off">
+      </div>
+      <div class="amount-unit-toggle">
+        <button type="button" class="amount-unit-btn ${unit==='total'?'active':''}" data-unit="total" onclick="setAmountUnit('total')">Total Price</button>
+        <button type="button" class="amount-unit-btn ${unit==='sqm'?'active':''}" data-unit="sqm" onclick="setAmountUnit('sqm')">Price per sqm</button>
       </div>
       <div id="${f.id}-display" style="display:none;margin-top:6px;padding:10px 14px;background:var(--green-l);border-radius:var(--rs);font-size:15px;font-weight:800;color:var(--green-d);letter-spacing:-.01em"></div>`;
     } else {
@@ -3171,16 +3193,17 @@ function wizardBack() {
 
 function renderWizardReview() {
   document.getElementById('wProgressBar').style.width = '100%';
+  const photoCount = (wData['sp-photos'] || '').split('|').map(s=>s.trim()).filter(Boolean).length;
   const rows = [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
-    ['Role', wData['sp-role'] || '—'], ['Has TCT', wData['sp-tct'] || 'No'],
+    ['Role', wData['sp-role'] || '—'],
     ['Deal', wData['sp-deal']], ['Type', wData['sp-type']], ['Location', wData['sp-location']],
     ['Lot Area', wData['sp-lot'] ? wData['sp-lot'] + ' sqm' : '—'],
     ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
-    ['Amount', wData['sp-amount'] ? '₱ ' + Number(wData['sp-amount']).toLocaleString('en-PH') : '—'],
+    ['Amount', formatAmountDisplay(wData['sp-amount'])],
     ['Key Details', wData['sp-key'] || '—'],
-    ['Thumbnail', wData['sp-thumbnail'] || '—'],
-    ['Photos', wData['sp-photos'] || '—'],
+    ['Main Photo', wData['sp-thumbnail'] ? '✓ Uploaded' : '—'],
+    ['Photos', photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—'],
   ].map(([l,v]) => `<div class="wizard-review-row"><span class="wizard-review-label">${l}</span><span class="wizard-review-value">${v}</span></div>`).join('');
 
   document.getElementById('wizardContent').innerHTML = `
@@ -3221,10 +3244,16 @@ async function wizardSubmit(btn) {
     // 1. Save to Google Sheet, proxied through our own function so we can
     // actually read success/failure (a direct no-cors browser fetch to Apps
     // Script can't surface errors — it always looks like it worked).
+    // Encode the per-sqm unit directly into the amount string (e.g. "5500/sqm")
+    // since the sheet only has one Amount column — matches the legacy format
+    // already used for older manually-entered per-sqm listings.
+    const submitAmount = wData['sp-amount-unit'] === 'sqm' && wData['sp-amount']
+      ? wData['sp-amount'] + '/sqm'
+      : wData['sp-amount'];
     const saveRes = await fetch('/.netlify/functions/submit-listing', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(wData),
+      body: JSON.stringify({ ...wData, 'sp-amount': submitAmount }),
     });
     const saveData = await saveRes.json().catch(() => ({}));
     if (!saveRes.ok || !saveData.success) {
@@ -3251,7 +3280,7 @@ async function wizardSubmit(btn) {
         body: JSON.stringify({
           name: wData['sp-name'], phone: wData['sp-phone'], email: wData['sp-email'],
           interest: `New Listing — ${wData['sp-type']} in ${wData['sp-location']}`,
-          message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${wData['sp-amount']}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
+          message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${submitAmount}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
         }),
       });
     } catch (emailErr) {
