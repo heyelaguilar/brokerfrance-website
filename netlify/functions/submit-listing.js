@@ -1,4 +1,4 @@
-const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxkV-FR10oa7bqQLDQxg1aKNh_XtydRqfN9tXOw9IetH1BAiILjKPXfql61aDACXTVcEw/exec';
+const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzg3MGAbRGKgYvb0YtPh_5nCiBkulqqaF8gbpYa6ZFOI2VsWSF__i_qcvUjMJgmyGJ6/exec';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
