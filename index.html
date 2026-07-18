@@ -3069,9 +3069,18 @@ function formatCurrencyInput(el) {
 
 function setAmountUnit(unit) {
   wData['sp-amount-unit'] = unit;
-  document.querySelectorAll('.amount-unit-btn').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
+  document.querySelectorAll('.amount-unit-btn[data-unit]').forEach(b => b.classList.toggle('active', b.dataset.unit === unit));
   const amountEl = document.getElementById('sp-amount');
   if (amountEl) formatCurrencyInput(amountEl);
+}
+
+function setPhotosMode(mode) {
+  wData['sp-photos-mode'] = mode;
+  document.querySelectorAll('.amount-unit-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  const uploadEl = document.getElementById('sp-photos-upload-mode');
+  const driveEl = document.getElementById('sp-photos-drive-mode');
+  if (uploadEl) uploadEl.style.display = mode === 'upload' ? '' : 'none';
+  if (driveEl) driveEl.style.display = mode === 'drive' ? '' : 'none';
 }
 
 function formatAmountDisplay(amount) {
@@ -3083,6 +3092,7 @@ function formatAmountDisplay(amount) {
 function initWizard() {
   wStep = 0;
   wData['sp-amount-unit'] = 'total';
+  wData['sp-photos-mode'] = 'upload';
   renderWizardStep();
 }
 
@@ -3112,15 +3122,26 @@ function renderWizardStep() {
         <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
       </div>`;
     } else if (f.type === 'multi-file') {
+      const mode = wData['sp-photos-mode'] || 'upload';
       return `<div class="wf">
         <label>${f.label}</label>
-        <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleMultiFileDrop(event,'${f.id}')">
-          <input type="file" id="${f.id}-input" accept="image/*" multiple style="display:none" onchange="handleMultiFileSelect(this,'${f.id}')">
-          <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <div style="color:var(--ink3);font-size:14px;font-weight:600">Tap to select photos<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB each — up to 10 photos</span></div>
+        <div class="amount-unit-toggle">
+          <button type="button" class="amount-unit-btn ${mode==='upload'?'active':''}" data-mode="upload" onclick="setPhotosMode('upload')">Upload Photos</button>
+          <button type="button" class="amount-unit-btn ${mode==='drive'?'active':''}" data-mode="drive" onclick="setPhotosMode('drive')">Paste Drive Folder Link</button>
         </div>
-        <div id="${f.id}-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
-        <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+        <div id="${f.id}-upload-mode" style="display:${mode==='upload'?'':'none'};margin-top:10px">
+          <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleMultiFileDrop(event,'${f.id}')">
+            <input type="file" id="${f.id}-input" accept="image/*" multiple style="display:none" onchange="handleMultiFileSelect(this,'${f.id}')">
+            <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="color:var(--ink3);font-size:14px;font-weight:600">Tap to select photos<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB each — up to 10 photos</span></div>
+          </div>
+          <div id="${f.id}-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+          <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+        </div>
+        <div id="${f.id}-drive-mode" style="display:${mode==='drive'?'':'none'};margin-top:10px">
+          <input type="text" id="${f.id}-drive-url" placeholder="https://drive.google.com/drive/folders/..." value="${esc(wData['sp-photos-drive-url']||'')}" oninput="wData['sp-photos-drive-url']=this.value">
+          <span class="hint">Paste a public Google Drive folder link containing your photos</span>
+        </div>
       </div>`;
     } else if (f.type === 'checkbox') {
       return `<div class="wf-check" id="${f.id}-wrap" onclick="toggleCheck('${f.id}')">
@@ -3222,6 +3243,9 @@ function wizardBack() {
 function renderWizardReview() {
   document.getElementById('wProgressBar').style.width = '100%';
   const photoCount = (wFiles['sp-photos'] || []).length;
+  const photosDisplay = wData['sp-photos-mode'] === 'drive'
+    ? (wData['sp-photos-drive-url'] ? '✓ Drive folder linked' : '—')
+    : (photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—');
   const rows = [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
     ['Role', wData['sp-role'] || '—'],
@@ -3231,7 +3255,7 @@ function renderWizardReview() {
     ['Amount', formatAmountDisplay(wData['sp-amount'])],
     ['Key Details', wData['sp-key'] || '—'],
     ['Main Photo', wFiles['sp-thumbnail'] ? '✓ Selected' : '—'],
-    ['Photos', photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—'],
+    ['Photos', photosDisplay],
   ].map(([l,v]) => `<div class="wizard-review-row"><span class="wizard-review-label">${l}</span><span class="wizard-review-value">${v}</span></div>`).join('');
 
   document.getElementById('wizardContent').innerHTML = `
@@ -3262,11 +3286,15 @@ async function wizardSubmit(btn) {
     } catch (imgErr) {
       console.warn('Thumbnail upload failed (non-fatal):', imgErr);
     }
-    try {
-      const photosUrl = await uploadMultiImagesToDrive('sp-photos');
-      if (photosUrl) wData['sp-photos'] = photosUrl;
-    } catch (imgErr) {
-      console.warn('Photos upload failed (non-fatal):', imgErr);
+    if (wData['sp-photos-mode'] === 'drive') {
+      wData['sp-photos'] = wData['sp-photos-drive-url'] || '';
+    } else {
+      try {
+        const photosUrl = await uploadMultiImagesToDrive('sp-photos');
+        if (photosUrl) wData['sp-photos'] = photosUrl;
+      } catch (imgErr) {
+        console.warn('Photos upload failed (non-fatal):', imgErr);
+      }
     }
 
     // 1. Save to Google Sheet, proxied through our own function so we can
