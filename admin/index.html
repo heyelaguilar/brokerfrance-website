@@ -136,6 +136,7 @@ button{font-family:inherit;cursor:pointer}
 .sub-field-label{font-size:10px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.06em}
 .sub-field-val{font-size:13px;font-weight:600;color:var(--ink2);margin-top:2px;word-break:break-all}
 .sub-thumb{width:100%;height:160px;object-fit:cover;border-radius:8px;margin-bottom:14px;border:1px solid var(--border)}
+.sub-thumb-sm{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
 .sub-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:14px}
 .sub-status{margin-right:auto}
 .bdg-pending{background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB}
@@ -381,7 +382,26 @@ button{font-family:inherit;cursor:pointer}
         <button class="sub-filter" onclick="filterSubs('Verified',this)">Verified</button>
         <button class="sub-filter" onclick="filterSubs('Approved',this)">Approved</button>
       </div>
-      <div id="submissions-list"><div class="empty">Loading submissions…</div></div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>Photo</th>
+                <th>Submitted</th>
+                <th>Property</th>
+                <th>Price</th>
+                <th>Contact</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="submissions-tbody">
+              <tr class="loading-row"><td colspan="7">Loading submissions…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- TRANSACTIONS TAB -->
@@ -640,15 +660,15 @@ let allSubmissions = [];
 let subFilter = 'all';
 
 async function loadSubmissions() {
-  document.getElementById('submissions-list').innerHTML = '<div class="empty">Loading submissions…</div>';
+  document.getElementById('submissions-tbody').innerHTML = '<tr class="loading-row"><td colspan="7">Loading submissions…</td></tr>';
   try {
     const res = await fetch(SUBMIT_SHEET_URL + '?action=getSubmissions', { redirect: 'follow' });
     const data = await res.json();
     allSubmissions = (data || []).reverse();
     renderSubmissions();
   } catch(e) {
-    document.getElementById('submissions-list').innerHTML =
-      '<div class="empty">Could not load submissions.<br><small>' + e.message + '</small></div>';
+    document.getElementById('submissions-tbody').innerHTML =
+      '<tr class="loading-row"><td colspan="7">Could not load submissions: ' + e.message + '</td></tr>';
   }
 }
 
@@ -666,7 +686,7 @@ function statusBadge(status) {
 }
 
 function renderSubmissions() {
-  const el = document.getElementById('submissions-list');
+  const tbody = document.getElementById('submissions-tbody');
   const rows = subFilter === 'all' ? allSubmissions : allSubmissions.filter(r => (r.Status||r.status||'Pending') === subFilter);
 
   // stats
@@ -675,50 +695,46 @@ function renderSubmissions() {
   document.getElementById('sub-stat-verified').textContent = allSubmissions.filter(r => r.Status === 'Verified').length;
   document.getElementById('sub-stat-approved').textContent = allSubmissions.filter(r => r.Status === 'Approved').length;
 
-  if (!rows.length) { el.innerHTML = '<div class="empty">No submissions found.</div>'; return; }
+  if (!rows.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No submissions found.</td></tr>'; return; }
 
-  el.innerHTML = rows.map((r, i) => {
+  tbody.innerHTML = rows.map((r, i) => {
     const status = r.Status || r.status || 'Pending';
     const name = r.Name || r.name || '—';
     const thumb = r.Thumbnail || r.thumbnail || '';
     const photos = r.Photos || r.photos || '';
     const rowIndex = allSubmissions.indexOf(r);
-    return `<div class="sub-card" id="sub-card-${rowIndex}">
-      <div class="sub-card-hdr">
-        <div>
-          <div class="sub-card-name">${esc(name)}</div>
-          <div class="sub-card-time">${esc(r.Timestamp || r.timestamp || '')}</div>
-        </div>
-        ${statusBadge(status)}
-      </div>
-      ${thumb ? `<img class="sub-thumb" src="${esc(thumb)}" onerror="this.style.display='none'">` : ''}
-      <div class="sub-fields">
-        <div class="sub-field"><div class="sub-field-label">Deal</div><div class="sub-field-val">${esc(r.Deal||r.deal||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Type</div><div class="sub-field-val">${esc(r.Type||r.type||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Location</div><div class="sub-field-val">${esc(r.Location||r.location||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Price</div><div class="sub-field-val">${esc(r.Amount||r.amount||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Lot (sqm)</div><div class="sub-field-val">${esc(r['Lot (sqm)']||r.lot||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Floor (sqm)</div><div class="sub-field-val">${esc(r['Floor (sqm)']||r.floor||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Role</div><div class="sub-field-val">${esc(r.Role||r.role||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Phone</div><div class="sub-field-val">${esc(r.Phone||r.phone||'—')}</div></div>
-        <div class="sub-field"><div class="sub-field-label">Email</div><div class="sub-field-val">${esc(r.Email||r.email||'—')}</div></div>
-        ${r['Key Details']||r.key ? `<div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Key Details</div><div class="sub-field-val">${esc(r['Key Details']||r.key)}</div></div>` : ''}
-        ${photos ? `<div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Photos</div><div class="sub-field-val"><a href="${esc(photos)}" target="_blank" style="color:var(--green-d);font-weight:700">View Photo Folder ↗</a></div></div>` : ''}
-      </div>
-      <div class="sub-actions">
-        <div class="sub-status">${statusBadge(status)}</div>
-        ${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Mark Contacted</button>` : ''}
-        ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Mark Verified</button>` : ''}
-        ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve & Publish</button>` : '<span style="font-size:13px;font-weight:700;color:#166534">✓ Published on Website</span>'}
-      </div>
-    </div>`;
+    return `<tr id="sub-row-${rowIndex}">
+      <td>${thumb ? `<img class="sub-thumb-sm" src="${esc(thumb)}" onerror="this.style.display='none'">` : '—'}</td>
+      <td>
+        <div style="font-weight:700;color:var(--ink)">${esc(name)}</div>
+        <div style="font-size:11px;color:var(--ink4)">${esc(r.Timestamp || r.timestamp || '')}</div>
+      </td>
+      <td>
+        <div style="font-weight:600;color:var(--ink)">${esc(r.Deal||r.deal||'—')} · ${esc(r.Type||r.type||'—')}</div>
+        <div style="color:var(--ink3)">${esc(r.Location||r.location||'—')}</div>
+        ${r['Key Details']||r.key ? `<div style="color:var(--ink4);font-size:12px">${esc(r['Key Details']||r.key)}</div>` : ''}
+        ${photos ? `<a href="${esc(photos)}" target="_blank" style="color:var(--green-d);font-weight:700;font-size:12px">View Photos ↗</a>` : ''}
+      </td>
+      <td class="tbl-price">${esc(r.Amount||r.amount||'—')}</td>
+      <td>
+        <div>${esc(r.Phone||r.phone||'—')}</div>
+        <div style="color:var(--ink3);font-size:12px">${esc(r.Email||r.email||'—')}</div>
+        <div style="color:var(--ink4);font-size:11px">${esc(r.Role||r.role||'—')}</div>
+      </td>
+      <td>${statusBadge(status)}</td>
+      <td><div class="tbl-actions">
+        ${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Contacted</button>` : ''}
+        ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Verified</button>` : ''}
+        ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve</button>` : '<span style="font-size:12px;font-weight:700;color:#166534">✓ Published</span>'}
+      </div></td>
+    </tr>`;
   }).join('');
 }
 
 async function updateSubStatus(index, newStatus) {
   const r = allSubmissions[index];
   if (!r) return;
-  const card = document.getElementById('sub-card-' + index);
+  const card = document.getElementById('sub-row-' + index);
   if (card) card.style.opacity = '0.5';
   try {
     await fetch('/.netlify/functions/update-submission', {
