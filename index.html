@@ -2444,7 +2444,7 @@ function renderGallery(l, cols) {
   if (galleryPhotos.length) {
     const total = galleryPhotos.length;
     gallery.innerHTML = `
-      <img class="gallery-main" id="galleryMain" src="${esc(galleryPhotos[0])}" alt="${esc(l.name)}" onerror="driveThumbFallback(this,'${esc(galleryPhotos[0])}')">
+      <img class="gallery-main" id="galleryMain" alt="${esc(l.name)}">
       <div class="gallery-nav">
         <button class="gallery-nav-btn" id="galleryPrev" onclick="galleryNav(-1)" ${total <= 1 ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -2455,14 +2455,24 @@ function renderGallery(l, cols) {
       </div>
       ${total > 1 ? `<div class="gallery-count-pill" id="galleryPill">1 / ${total}</div>` : ''}
     `;
+    setGalleryImage(galleryPhotos[0]);
   } else {
     gallery.innerHTML = `<div class="detail-gallery-ph" style="background:linear-gradient(135deg,#${cols})">${getTypeSvg(l.type, 72)}<p>Photos coming soon</p></div>`;
   }
 }
 
+// Sets the gallery's main image, wiring the error fallback to the image
+// actually being shown (not whichever one first rendered the gallery).
+function setGalleryImage(url) {
+  const img = document.getElementById('galleryMain');
+  if (!img) return;
+  img.onerror = () => driveThumbFallback(img, url);
+  img.src = url;
+}
+
 function galleryNav(dir) {
   galleryIndex = Math.max(0, Math.min(galleryPhotos.length - 1, galleryIndex + dir));
-  document.getElementById('galleryMain').src = galleryPhotos[galleryIndex];
+  setGalleryImage(galleryPhotos[galleryIndex]);
   document.getElementById('galleryPrev').disabled = galleryIndex === 0;
   document.getElementById('galleryNext').disabled = galleryIndex === galleryPhotos.length - 1;
   const pill = document.getElementById('galleryPill');
@@ -3359,7 +3369,7 @@ function fetchFolderImages(folderId) {
   if (!folderCache[folderId]) {
     folderCache[folderId] = fetch('/.netlify/functions/drive-folder?id=' + folderId)
       .then(r => r.json())
-      .then(data => (data.images || []).map(img => 'https://drive.google.com/uc?export=view&id=' + img.id))
+      .then(data => (data.images || []).map(img => 'https://lh3.googleusercontent.com/d/' + img.id))
       .catch(() => []);
   }
   return folderCache[folderId];
