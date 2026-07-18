@@ -3336,7 +3336,7 @@ async function wizardSubmit(btn) {
 }
 
 // ── HELPERS ───────────────────────────────────────────
-function getPhotos(str) { return str ? str.split('|').map(s=>s.trim()).filter(Boolean) : []; }
+function getPhotos(str) { return str ? str.split('|').map(s=>s.trim()).filter(s => /^https?:\/\//i.test(s)) : []; }
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function cap(s) { return s ? s[0].toUpperCase() + s.slice(1) : ''; }
 
