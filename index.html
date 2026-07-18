@@ -3218,14 +3218,18 @@ async function wizardSubmit(btn) {
       console.warn('Photos upload failed (non-fatal):', imgErr);
     }
 
-    // 1. Save to Google Sheet via Apps Script
-    // text/plain avoids CORS preflight; Apps Script reads e.postData.contents as JSON
-    await fetch(SUBMIT_SHEET_URL, {
+    // 1. Save to Google Sheet, proxied through our own function so we can
+    // actually read success/failure (a direct no-cors browser fetch to Apps
+    // Script can't surface errors — it always looks like it worked).
+    const saveRes = await fetch('/.netlify/functions/submit-listing', {
       method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(wData),
     });
+    const saveData = await saveRes.json().catch(() => ({}));
+    if (!saveRes.ok || !saveData.success) {
+      throw new Error(saveData.error || 'Failed to save listing');
+    }
 
     // 2. Send confirmation email to submitter (non-fatal)
     try {
