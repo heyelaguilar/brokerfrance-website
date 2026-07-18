@@ -3290,7 +3290,7 @@ function driveThumb(url) {
   if (fileMatch) return 'https://drive.google.com/uc?export=view&id=' + fileMatch[1];
   const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
   if (openMatch) return 'https://drive.google.com/uc?export=view&id=' + openMatch[1];
-  return '';
+  return url; // not a Drive link (e.g. Cloudinary) — use as-is
 }
 function driveThumbFallback(imgEl, url) {
   const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
