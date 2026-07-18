@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxvcbk90-XX0NeoIyZg150xcvh0-F2ldKFDq8xMgLaV0Q0Pn0H8XEKl7dkaSyhuyQ0/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw6K2kW3AOpA_PNN6G9b0MArcjVzn9_Hc-E8v8UKrBAgH0TBZSZt9956Ntf1utrBUjIUQ/exec';
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {

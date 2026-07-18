@@ -1971,7 +1971,7 @@ Ideal Property</div>
 // ── CONFIG ────────────────────────────────────────────
 const PHONE = '639778290053';
 const EMAIL = 'rebfrancergonzales@gmail.com';
-const API_URL = 'https://script.google.com/macros/s/AKfycbzxypP5HTYU84220_VIvANxY2By8hRHpFoLmyQh0jGDB-dWQ1fQ5pHqCnTMbz3h2f3P/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbw6K2kW3AOpA_PNN6G9b0MArcjVzn9_Hc-E8v8UKrBAgH0TBZSZt9956Ntf1utrBUjIUQ/exec';
 
 // ── COLUMN MAP ────────────────────────────────────────
 const COL = { id:0, deal:1, type:2, location:3, lot_area:4, floor_area:5, price:6, key_details:7, photos:8, exclusive:9, badge:10, whatsapp:11 };
@@ -2885,8 +2885,8 @@ function handleMultiFileSelect(input, id) {
 }
 
 function processMultiFiles(files, id) {
-  const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024);
-  if (!valid.length) { showToast('Please select image files under 5MB each'); return; }
+  const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 3 * 1024 * 1024);
+  if (!valid.length) { showToast('Please select image files under 3MB each'); return; }
   if (valid.length > 10) { showToast('Max 10 photos allowed'); return; }
   wFiles[id] = valid;
   const grid = document.getElementById(id + '-previews');
@@ -2929,19 +2929,19 @@ async function uploadMultiImagesToDrive(id) {
     else if (state === 'error') overlay.innerHTML = `<div class="upload-thumb-check">✕</div><div class="upload-thumb-label">Failed</div>`;
   };
   const urls = [];
-  const folderName = 'brokerfrance/' + (wData['sp-name'] || 'submission').replace(/\s+/g, '-').toLowerCase() + '-' + Date.now();
   setProgress(0);
   for (let i = 0; i < files.length; i++) {
     setThumb(i, 'uploading');
     setStatus(`Uploading photo ${i + 1} of ${files.length}…`);
-    const formData = new FormData();
-    formData.append('file', files[i]);
-    formData.append('upload_preset', 'francebrokerage');
-    formData.append('folder', folderName);
     try {
-      const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload', { method: 'POST', body: formData });
+      const base64 = await fileToBase64(files[i]);
+      const res = await fetch('/.netlify/functions/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: base64, mimeType: files[i].type, filename: files[i].name }),
+      });
       const data = await res.json();
-      if (data.secure_url) { urls.push(data.secure_url); setThumb(i, 'done'); }
+      if (data.success && data.url) { urls.push(data.url); setThumb(i, 'done'); }
       else setThumb(i, 'error');
     } catch(err) { setThumb(i, 'error'); console.warn('Photo upload failed:', err); }
     setProgress(Math.round(((i + 1) / files.length) * 100));
@@ -2964,7 +2964,7 @@ function handleFileSelect(input, id) {
 }
 
 function processImageFile(file, id) {
-  if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return; }
+  if (file.size > 3 * 1024 * 1024) { showToast('Image must be under 3MB'); return; }
   wFiles[id] = file;
   const reader = new FileReader();
   reader.onload = function(e) {
@@ -2980,23 +2980,31 @@ function processImageFile(file, id) {
   reader.readAsDataURL(file);
 }
 
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 async function uploadImageToDrive(id) {
   const file = wFiles[id] || null;
   if (!file) return '';
   const setStatus = (msg) => { const el = document.getElementById(id + '-status'); if (el) el.textContent = msg; };
   setStatus('Uploading…');
   try {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'francebrokerage');
-    const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload', {
+    const base64 = await fileToBase64(file);
+    const res = await fetch('/.netlify/functions/upload-image', {
       method: 'POST',
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data: base64, mimeType: file.type, filename: file.name }),
     });
     const data = await res.json();
-    if (data.secure_url) {
+    if (data.success && data.url) {
       setStatus('✓ Uploaded');
-      return data.secure_url;
+      return data.url;
     } else {
       setStatus('Upload failed');
       return '';
@@ -3010,7 +3018,7 @@ async function uploadImageToDrive(id) {
 
 // ── PROPERTY SUBMISSION WIZARD ────────────────────────
 // Google Apps Script endpoint — saves to "Submissions" sheet
-const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzxypP5HTYU84220_VIvANxY2By8hRHpFoLmyQh0jGDB-dWQ1fQ5pHqCnTMbz3h2f3P/exec';
+const SUBMIT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbw6K2kW3AOpA_PNN6G9b0MArcjVzn9_Hc-E8v8UKrBAgH0TBZSZt9956Ntf1utrBUjIUQ/exec';
 
 function parseCurrencyInput(raw) {
   if (!raw) return NaN;
@@ -3061,7 +3069,7 @@ function renderWizardStep() {
           <div id="${f.id}-preview" style="display:none;margin-bottom:12px"><img id="${f.id}-img" style="max-height:140px;border-radius:8px;object-fit:cover"></div>
           <div id="${f.id}-label" style="color:var(--ink3);font-size:14px;font-weight:600">
             <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Tap to upload or drag & drop<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB</span>
+            Tap to upload or drag & drop<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 3MB</span>
           </div>
         </div>
         <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
@@ -3072,7 +3080,7 @@ function renderWizardStep() {
         <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleMultiFileDrop(event,'${f.id}')">
           <input type="file" id="${f.id}-input" accept="image/*" multiple style="display:none" onchange="handleMultiFileSelect(this,'${f.id}')">
           <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <div style="color:var(--ink3);font-size:14px;font-weight:600">Tap to select photos<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB each — up to 10 photos</span></div>
+          <div style="color:var(--ink3);font-size:14px;font-weight:600">Tap to select photos<br><span style="font-size:12px;color:var(--ink4)">JPG, PNG, WEBP — max 3MB each — up to 10 photos</span></div>
         </div>
         <div id="${f.id}-previews" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
         <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
