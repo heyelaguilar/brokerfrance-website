@@ -2184,6 +2184,7 @@ async function init() {
   }
   renderAll();
   fetchLikes();
+  hydrateFolderPhotos();
   // open listing from URL param e.g. ?listing=5
   // support /listing/ID and ?listing=ID
   const pathMatch = window.location.pathname.match(/\/listing\/(.+)/);
@@ -2291,7 +2292,8 @@ function renderCard(l) {
   const cols    = TYPE_COLORS[l.type] || '2a2a2a,555';
   const isSaved = saved.has(l.id);
   const isLiked = likedIds.has(l.id);
-  const photos  = getPhotos(l.photos);
+  const folderId = driveFolderId(l.photos);
+  const photos  = folderId ? (l.folderPhotos || []) : getPhotos(l.photos);
   const thumb   = l.thumbnail || photos[0];
 
   const rawThumbUrl = esc(l.thumbnail || '');
@@ -2367,7 +2369,7 @@ function renderCard(l) {
 }
 
 // ── DETAIL PAGE ───────────────────────────────────────
-function openDetail(id) {
+async function openDetail(id) {
   const l = listings.find(x => String(x.id) === String(id));
   if (!l) return;
   currentListing = l;
@@ -2376,30 +2378,13 @@ function openDetail(id) {
   history.pushState({listingId: l.id}, '', '/listing/' + l.id);
 
   const cols = TYPE_COLORS[l.type] || '2a2a2a,555';
-  const photos = getPhotos(l.photos);
-  const mainPhoto = l.thumbnail || photos[0] || '';
-  const gallery = document.getElementById('detailGallery');
+  const folderId = driveFolderId(l.photos);
 
-  const extraPhotos = photos.map(p => driveThumb(p) || p).filter(Boolean);
-  galleryPhotos = [mainPhoto, ...extraPhotos.filter(p => p !== mainPhoto)].filter(Boolean).slice(0, 5);
-  galleryIndex  = 0;
-
-  if (galleryPhotos.length) {
-    const total = galleryPhotos.length;
-    gallery.innerHTML = `
-      <img class="gallery-main" id="galleryMain" src="${esc(galleryPhotos[0])}" alt="${esc(l.name)}" onerror="driveThumbFallback(this,'${esc(galleryPhotos[0])}')">
-      <div class="gallery-nav">
-        <button class="gallery-nav-btn" id="galleryPrev" onclick="galleryNav(-1)" ${total <= 1 ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="gallery-nav-btn" id="galleryNext" onclick="galleryNav(1)" ${total <= 1 ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-      </div>
-      ${total > 1 ? `<div class="gallery-count-pill" id="galleryPill">1 / ${total}</div>` : ''}
-    `;
+  if (folderId && !l.folderPhotos) {
+    document.getElementById('detailGallery').innerHTML =
+      `<div class="detail-gallery-ph" style="background:linear-gradient(135deg,#${cols})"><div class="spinner"></div><p>Loading photos…</p></div>`;
   } else {
-    gallery.innerHTML = `<div class="detail-gallery-ph" style="background:linear-gradient(135deg,#${cols})">${getTypeSvg(l.type, 72)}<p>Photos coming soon</p></div>`;
+    renderGallery(l, cols);
   }
 
   // Badges
@@ -2440,6 +2425,39 @@ function openDetail(id) {
   document.getElementById('inqEmail').value = '';
 
   showPage('detail');
+
+  if (folderId && !l.folderPhotos) {
+    l.folderPhotos = await fetchFolderImages(folderId);
+    if (!l.thumbnail && l.folderPhotos.length) l.thumbnail = l.folderPhotos[0];
+    if (currentListing === l) renderGallery(l, cols);
+  }
+}
+
+function renderGallery(l, cols) {
+  const gallery = document.getElementById('detailGallery');
+  const folderId = driveFolderId(l.photos);
+  const photos = folderId ? (l.folderPhotos || []) : getPhotos(l.photos).map(p => driveThumb(p) || p).filter(Boolean);
+  const mainPhoto = l.thumbnail || photos[0] || '';
+  galleryPhotos = [mainPhoto, ...photos.filter(p => p !== mainPhoto)].filter(Boolean).slice(0, 30);
+  galleryIndex  = 0;
+
+  if (galleryPhotos.length) {
+    const total = galleryPhotos.length;
+    gallery.innerHTML = `
+      <img class="gallery-main" id="galleryMain" src="${esc(galleryPhotos[0])}" alt="${esc(l.name)}" onerror="driveThumbFallback(this,'${esc(galleryPhotos[0])}')">
+      <div class="gallery-nav">
+        <button class="gallery-nav-btn" id="galleryPrev" onclick="galleryNav(-1)" ${total <= 1 ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="gallery-nav-btn" id="galleryNext" onclick="galleryNav(1)" ${total <= 1 ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      ${total > 1 ? `<div class="gallery-count-pill" id="galleryPill">1 / ${total}</div>` : ''}
+    `;
+  } else {
+    gallery.innerHTML = `<div class="detail-gallery-ph" style="background:linear-gradient(135deg,#${cols})">${getTypeSvg(l.type, 72)}<p>Photos coming soon</p></div>`;
+  }
 }
 
 function galleryNav(dir) {
@@ -3327,6 +3345,37 @@ function driveThumbFallback(imgEl, url) {
   if (id) { imgEl.src = 'https://lh3.googleusercontent.com/d/' + id; imgEl.onerror = null; }
   else { imgEl.style.display='none'; imgEl.nextElementSibling && (imgEl.nextElementSibling.style.display='flex'); }
 }
+
+// Detects a Google Drive FOLDER share link (as opposed to an individual file link)
+function driveFolderId(url) {
+  if (!url) return '';
+  const m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : '';
+}
+
+// Fetches every image in a public Drive folder via the drive-folder function, cached per folder.
+const folderCache = {};
+function fetchFolderImages(folderId) {
+  if (!folderCache[folderId]) {
+    folderCache[folderId] = fetch('/.netlify/functions/drive-folder?id=' + folderId)
+      .then(r => r.json())
+      .then(data => (data.images || []).map(img => 'https://drive.google.com/uc?export=view&id=' + img.id))
+      .catch(() => []);
+  }
+  return folderCache[folderId];
+}
+
+// Resolves folder-linked listings' photos in the background, then re-renders cards with them.
+async function hydrateFolderPhotos() {
+  const targets = listings.filter(l => driveFolderId(l.photos) && !l.folderPhotos);
+  if (!targets.length) return;
+  await Promise.all(targets.map(async l => {
+    l.folderPhotos = await fetchFolderImages(driveFolderId(l.photos));
+    if (!l.thumbnail && l.folderPhotos.length) l.thumbnail = l.folderPhotos[0];
+  }));
+  renderAll();
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
