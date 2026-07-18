@@ -3193,7 +3193,7 @@ function wizardBack() {
 
 function renderWizardReview() {
   document.getElementById('wProgressBar').style.width = '100%';
-  const photoCount = (wData['sp-photos'] || '').split('|').map(s=>s.trim()).filter(Boolean).length;
+  const photoCount = (wFiles['sp-photos'] || []).length;
   const rows = [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
     ['Role', wData['sp-role'] || '—'],
@@ -3202,7 +3202,7 @@ function renderWizardReview() {
     ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
     ['Amount', formatAmountDisplay(wData['sp-amount'])],
     ['Key Details', wData['sp-key'] || '—'],
-    ['Main Photo', wData['sp-thumbnail'] ? '✓ Uploaded' : '—'],
+    ['Main Photo', wFiles['sp-thumbnail'] ? '✓ Selected' : '—'],
     ['Photos', photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—'],
   ].map(([l,v]) => `<div class="wizard-review-row"><span class="wizard-review-label">${l}</span><span class="wizard-review-value">${v}</span></div>`).join('');
 
