@@ -439,7 +439,7 @@ a{text-decoration:none;color:inherit}
 /* gallery */
 .detail-gallery-wrap{position:relative;margin:24px 0}
 .detail-gallery{border-radius:var(--rl);overflow:hidden;height:480px;background:var(--bg);position:relative}
-.share-wrap-onimage{position:absolute;bottom:16px;left:16px;z-index:5}
+.share-wrap-onimage{position:absolute;top:16px;left:16px;z-index:5}
 .share-wrap-onimage .btn-share{background:rgba(255,255,255,.95);box-shadow:0 2px 8px rgba(0,0,0,.15)}
 .detail-gallery img.gallery-main{width:100%;height:100%;object-fit:cover;display:block}
 .detail-gallery-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
@@ -1564,8 +1564,6 @@ Ideal Property</div>
           <div class="detail-specs-grid" id="detailSpecs"></div>
           <div class="detail-sec">About This Property</div>
           <div class="detail-desc" id="detailDesc"></div>
-          <div class="detail-sec">Location</div>
-          <div style="background:var(--bg);border-radius:var(--rs);padding:14px;font-size:15px;color:var(--ink2);border:1px solid var(--border);margin-bottom:28px">📍 <span id="detailLocFull"></span></div>
         </div>
       </div>
       <div class="detail-sidebar">
@@ -2416,21 +2414,12 @@ async function openDetail(id) {
   document.getElementById('detailPrice').textContent = l.price;
   document.getElementById('detailName').textContent  = l.name;
   document.getElementById('detailLoc').textContent   = l.location;
-  document.getElementById('detailLocFull').textContent = l.location;
 
   // Build specs from what we have
   const specItems = [];
   if (l.lot_area   && l.lot_area !== '—')   specItems.push({ l:'Lot Area',    v: l.lot_area + ' sqm' });
   if (l.floor_area && l.floor_area !== '—') specItems.push({ l:'Floor Area',  v: l.floor_area + ' sqm' });
   specItems.push({ l:'Type', v: cap(l.type) });
-  specItems.push({ l:'Deal', v: l.deal === 'both' ? 'For Sale & Lease' : 'For ' + cap(l.deal) });
-  // Key details as individual spec boxes
-  if (l.key_details) {
-    l.key_details.split('|').filter(Boolean).slice(0, 6).forEach(kd => {
-      const [label, ...rest] = kd.split(':');
-      specItems.push({ l: label.trim(), v: rest.length ? rest.join(':').trim() : '✓' });
-    });
-  }
   document.getElementById('detailSpecs').innerHTML = specItems.slice(0, 8).map(s =>
     `<div class="dsbox"><div class="dsl">${esc(s.l)}</div><div class="dsv">${esc(s.v)}</div></div>`
   ).join('');
@@ -2829,6 +2818,7 @@ const wFiles = {};
 // On load: resolve path to page
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
+  if (/^\/listing\//.test(path)) { showPage('detail'); return; }
   const routes = { '/listings':'listings', '/about':'contact', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit' };
   const page = routes[path];
   if (page) showPage(page);
