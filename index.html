@@ -1314,12 +1314,12 @@ a{text-decoration:none;color:inherit}
     <div class="list-cta-inner">
       <!--<div class="list-cta-tag">For Property Owners</div>-->
       <h2 class="list-cta-title">Have a Property to<br><em>Sell or Rent Out?</em></h2>
-      <p class="list-cta-sub">List with Broker France and connect with qualified buyers and tenants. We handle everything — from marketing to closing.</p>
-      <div class="list-cta-perks">
+      <p class="list-cta-sub">List with us and connect with qualified buyers and tenants. We handle everything; from marketing to closing.</p>
+     <!--<div class="list-cta-perks">
         <span class="list-cta-perk">Wide Buyer Network</span>
         <span class="list-cta-perk">PRC-licensed Broker</span>
         <span class="list-cta-perk">Fast Turnaround</span>
-      </div>
+      </div>--> 
       <button class="list-cta-btn" onclick="showPage('submit')">
         Submit My Property
       </button>
@@ -1556,7 +1556,6 @@ Ideal Property</div>
         <div class="detail-badges" id="detailBadges"></div>
         <div class="detail-main">
           <div class="detail-price" id="detailPrice"></div>
-          <div class="detail-name" id="detailName"></div>
           <div class="detail-loc">
             <svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
             <span id="detailLoc"></span>
@@ -2412,7 +2411,6 @@ async function openDetail(id) {
 
   // Core info
   document.getElementById('detailPrice').textContent = l.price;
-  document.getElementById('detailName').textContent  = l.name;
   document.getElementById('detailLoc').textContent   = l.location;
 
   // Build specs from what we have
