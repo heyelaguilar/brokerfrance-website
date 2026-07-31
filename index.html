@@ -2031,14 +2031,24 @@ function normaliseDeal(raw) {
 
 // ── PRICE FORMATTER ───────────────────────────────────
 // Converts "110000000.00" → "₱110M", "75000000" → "₱75M", "3700000" → "₱3.7M"
-function formatPrice(raw) {
-  if (!raw) return '';
+// Per-sqm listings ("5500/sqm") are multiplied by lot_area to get the total contract price.
+function formatPrice(raw, lotArea) {
+  if (!raw) return { display: '', numeric: NaN };
+  const isPerSqm = /\/\s*sqm\b/i.test(raw);
   const n = parseFloat(raw.replace(/,/g, ''));
-  if (isNaN(n) || n === 0) return '';
+  if (isNaN(n) || n === 0) return { display: '', numeric: NaN };
+  if (isPerSqm) {
+    const lot = parseFloat(String(lotArea || '').replace(/,/g, ''));
+    if (!isNaN(lot) && lot > 0) {
+      const total = n * lot;
+      return { display: '₱' + total.toLocaleString(), numeric: total };
+    }
+    return { display: '₱' + n.toLocaleString() + ' / sqm', numeric: n };
+  }
   //if (n >= 1_000_000_000) return '₱' + (n / 1_000_000_000).toFixed(n % 1_000_000_000 === 0 ? 0 : 2) + 'B';
   //if (n >= 1_000_000)     return '₱' + (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'M';
   //if (n >= 1_000)         return '₱' + (n / 1_000).toFixed(0) + 'K';
-  return '₱' + n.toLocaleString();
+  return { display: '₱' + n.toLocaleString(), numeric: n };
 }
 
 // ── TYPE NORMALISER ───────────────────────────────────
@@ -2170,8 +2180,10 @@ async function init() {
       const rawDeal  = get('deal');
       const deal     = normaliseDeal(rawDeal) || 'sale'; // default to sale if empty
       const loc      = get('location') || '—';
+      const lotArea  = get('lot_area');
       const rawPrice = get('price') || get('amount');
-      const price    = formatPrice(rawPrice) || 'Price on Request';
+      const priced   = formatPrice(rawPrice, lotArea);
+      const price    = priced.display || 'Price on Request';
       const type     = normaliseType(get('type') || 'property');
       const kd       = get('key_details');
       const isEx     = get('exclusive').toUpperCase() === 'TRUE';
@@ -2185,9 +2197,9 @@ async function init() {
         id: get('id') || String(i + 1),
         deal,
         type, location: loc,
-        lot_area:   get('lot_area'),
+        lot_area:   lotArea,
         floor_area: get('floor_area'),
-        price, rawPrice, key_details: kd,
+        price, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
         photos, thumbnail, exclusive: isEx,
         badge: get('badge'),
         whatsapp: wa, name, desc: ''
@@ -3065,17 +3077,23 @@ function parseCurrencyInput(raw) {
 function formatCurrencyInput(el) {
   const num = parseCurrencyInput(el.value);
   const disp = document.getElementById('sp-amount-display');
-  const suffix = wData['sp-amount-unit'] === 'sqm' ? ' / sqm' : '';
   if (!isNaN(num) && num > 0) {
     el.dataset.raw = num;
     if (disp) {
-      disp.textContent = '₱ ' + num.toLocaleString('en-PH') + suffix;
+      const lotEl = document.getElementById('sp-lot');
+      disp.textContent = formatAmountDisplay(num, lotEl ? lotEl.value : wData['sp-lot'], wData['sp-amount-unit']);
       disp.style.display = 'block';
     }
   } else {
     el.dataset.raw = '';
     if (disp) disp.style.display = 'none';
   }
+}
+
+function onLotAreaInput(el) {
+  wData['sp-lot'] = el.value;
+  const amountEl = document.getElementById('sp-amount');
+  if (amountEl && amountEl.value) formatCurrencyInput(amountEl);
 }
 
 function setAmountUnit(unit) {
@@ -3094,10 +3112,19 @@ function setPhotosMode(mode) {
   if (driveEl) driveEl.style.display = mode === 'drive' ? '' : 'none';
 }
 
-function formatAmountDisplay(amount) {
-  if (!amount) return '—';
-  const suffix = wData['sp-amount-unit'] === 'sqm' ? ' / sqm' : '';
-  return '₱ ' + Number(amount).toLocaleString('en-PH') + suffix;
+// Shows both the total contract price and the per-sqm rate, deriving
+// whichever one wasn't directly entered from the lot area (when available).
+function formatAmountDisplay(amount, lotArea, unit) {
+  const num = Number(amount);
+  if (!amount || isNaN(num) || num <= 0) return '—';
+  const isSqm = (unit || wData['sp-amount-unit']) === 'sqm';
+  const lot = parseFloat(String(lotArea || '').replace(/,/g, ''));
+  const hasLot = !isNaN(lot) && lot > 0;
+  const total  = isSqm ? (hasLot ? num * lot : null) : num;
+  const perSqm = isSqm ? num : (hasLot ? num / lot : null);
+  const fmt = n => '₱ ' + Math.round(n).toLocaleString('en-PH');
+  if (total != null && perSqm != null) return `${fmt(total)} total  •  ${fmt(perSqm)} / sqm`;
+  return total != null ? `${fmt(total)} total` : `${fmt(perSqm)} / sqm`;
 }
 
 function initWizard() {
@@ -3175,7 +3202,8 @@ function renderWizardStep() {
       const wrap = f.prefix ? `style="position:relative"` : '';
       const pre  = f.prefix ? `<span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--ink3);font-weight:600;pointer-events:none">${f.prefix}</span>` : '';
       const pl   = f.prefix ? 'padding-left:30px' : '';
-      input = `<div ${wrap}>${pre}<input type="${f.type}" id="${f.id}" placeholder="${f.ph||''}" style="${pl}"></div>`;
+      const oninput = f.id === 'sp-lot' ? ` oninput="onLotAreaInput(this)"` : '';
+      input = `<div ${wrap}>${pre}<input type="${f.type}" id="${f.id}" placeholder="${f.ph||''}" style="${pl}"${oninput}></div>`;
     }
     return `<div class="wf">
       <label>${f.label}${f.req ? '<em> *</em>' : ''}</label>
@@ -3263,7 +3291,7 @@ function renderWizardReview() {
     ['Deal', wData['sp-deal']], ['Type', wData['sp-type']], ['Location', wData['sp-location']],
     ['Lot Area', wData['sp-lot'] ? wData['sp-lot'] + ' sqm' : '—'],
     ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
-    ['Amount', formatAmountDisplay(wData['sp-amount'])],
+    ['Amount', formatAmountDisplay(wData['sp-amount'], wData['sp-lot'], wData['sp-amount-unit'])],
     ['Key Details', wData['sp-key'] || '—'],
     ['Main Photo', wFiles['sp-thumbnail'] ? '✓ Selected' : '—'],
     ['Photos', photosDisplay],
