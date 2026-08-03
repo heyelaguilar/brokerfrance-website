@@ -3327,6 +3327,13 @@ async function wizardSubmit(btn) {
   btn.textContent = 'Submitting…';
   btn.disabled = true;
 
+  // Contact step is skipped on /troy-listing, so attribute the submission
+  // to Troy directly rather than saving it with a blank submitter identity.
+  if (!wizardIncludeContact) {
+    wData['sp-name'] = 'Troy Corea';
+    wData['sp-role'] = 'Broker';
+  }
+
   try {
     // 0. Upload thumbnail + additional photos to Cloudinary
     try {
@@ -3401,7 +3408,9 @@ async function wizardSubmit(btn) {
         <p>Thank you! We've received your property details and saved them to our records. Broker France will contact you within <strong>24 hours</strong> to verify and publish your listing.</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px">
           <button class="wizard-next" style="margin:0" onclick="initWizard()">Add Another Listing</button>
-          <button class="btn-secondary" onclick="showPage('home')">Back to Home</button>
+          ${wizardIncludeContact
+            ? `<button class="btn-secondary" onclick="showPage('home')">Back to Home</button>`
+            : `<button class="btn-secondary" onclick="wizardIncludeContact=false;showPage('submit')">Back to Troy's Listing</button>`}
         </div>
       </div>`;
     Object.keys(wData).forEach(k => delete wData[k]);
