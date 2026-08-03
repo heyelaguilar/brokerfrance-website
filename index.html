@@ -3410,7 +3410,7 @@ async function wizardSubmit(btn) {
           <button class="wizard-next" style="margin:0" onclick="initWizard()">Add Another Listing</button>
           ${wizardIncludeContact
             ? `<button class="btn-secondary" onclick="showPage('home')">Back to Home</button>`
-            : `<button class="btn-secondary" onclick="wizardIncludeContact=false;showPage('submit')">Back to Troy's Listing</button>`}
+            : ``}
         </div>
       </div>`;
     Object.keys(wData).forEach(k => delete wData[k]);
