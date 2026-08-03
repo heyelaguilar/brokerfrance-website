@@ -176,7 +176,7 @@ button{font-family:inherit;cursor:pointer}
 .rpt-card-left{flex:1;min-width:0}
 .rpt-card-name{font-size:15px;font-weight:800;color:var(--ink);margin-bottom:4px}
 .rpt-card-loc{font-size:13px;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:4px}
-.rpt-card-specs{font-size:12px;color:var(--ink4)}
+.rpt-card-thumb{width:56px;height:56px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0}
 .rpt-card-price{font-size:20px;font-weight:800;color:var(--green);white-space:nowrap;text-align:right}
 .rpt-card-deal{font-size:11px;font-weight:700;margin-top:4px;text-align:right}
 
@@ -1048,15 +1048,14 @@ function generateReport() {
       const isLease = deal2.includes('lease') || deal2.includes('rent');
       const dealColor = isLease ? '#1D4ED8' : '#1C3F2F';
       const dealLbl  = isLease ? 'For Lease' : 'For Sale';
-      const lot   = l.lot   ? l.lot + ' sqm lot'   : '';
-      const floor = l.floor ? l.floor + ' sqm floor' : '';
-      const specs = [l.type, lot, floor].filter(Boolean).join('  ·  ');
+      const topText = [l.type, l.lot ? l.lot + ' sqm lot' : ''].filter(Boolean).join(' · ');
+      const thumb = l.thumbnail || '';
       return `<div class="rpt-card">
         <div style="font-size:13px;font-weight:700;color:#718096;min-width:28px;padding-top:2px">${i+1}.</div>
+        ${thumb ? `<img class="rpt-card-thumb" src="${esc(thumb)}" onerror="this.remove()">` : ''}
         <div class="rpt-card-left">
-          <div class="rpt-card-name">${esc(l.location||'—')}</div>
+          <div class="rpt-card-name">${esc(topText || '—')}</div>
           <div class="rpt-card-loc">📍 ${esc(l.location||'—')}</div>
-          ${specs ? `<div class="rpt-card-specs">${esc(specs)}</div>` : ''}
         </div>
         <div>
           <div class="rpt-card-price">${esc(price)}</div>
