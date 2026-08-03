@@ -3399,7 +3399,10 @@ async function wizardSubmit(btn) {
         <div class="wizard-success-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
         <h2>Listing Submitted!</h2>
         <p>Thank you! We've received your property details and saved them to our records. Broker France will contact you within <strong>24 hours</strong> to verify and publish your listing.</p>
-        <button class="wizard-next" style="margin:24px auto 0;display:flex" onclick="showPage('home')">Back to Home</button>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px">
+          <button class="wizard-next" style="margin:0" onclick="initWizard()">Add Another Listing</button>
+          <button class="btn-secondary" onclick="showPage('home')">Back to Home</button>
+        </div>
       </div>`;
     Object.keys(wData).forEach(k => delete wData[k]);
     Object.keys(wFiles).forEach(k => delete wFiles[k]);
