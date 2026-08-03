@@ -7,6 +7,7 @@
 /buyer       /index.html   200
 /match       /index.html   200
 /submit      /index.html   200
+/troy-listing /index.html   200
 /developers  /   302
 /admin       /admin/index.html   200
 /admin/*     /admin/index.html   200

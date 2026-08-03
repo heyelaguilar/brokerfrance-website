@@ -1054,7 +1054,7 @@ a{text-decoration:none;color:inherit}
     <button class="nl" id="nl-listings" onclick="showPage('listings')">View All Listings</button>
     <!-- <button class="nl" id="nl-developers" onclick="showPage('developers')">DEVELOPERS</button> -->
     <button class="nl" id="nl-buyer" onclick="showPage('buyer')">Looking to Buy</button>
-    <button class="nl" id="nl-submit" onclick="showPage('submit')">List with Us</button>
+    <button class="nl" id="nl-submit" onclick="wizardIncludeContact=true;showPage('submit')">List with Us</button>
   </div>
 
   <div class="nav-actions">
@@ -1320,7 +1320,7 @@ a{text-decoration:none;color:inherit}
         <span class="list-cta-perk">PRC-licensed Broker</span>
         <span class="list-cta-perk">Fast Turnaround</span>
       </div>
-      <button class="list-cta-btn" onclick="showPage('submit')">
+      <button class="list-cta-btn" onclick="wizardIncludeContact=true;showPage('submit')">
         Submit My Property
       </button>
     </div>
@@ -2775,7 +2775,7 @@ function showPage(name) {
   if (name === 'listings') applyFilters();
   // Update URL — 'detail' and 'match' manage their own URLs, skip here
   if (name === 'detail' || name === 'match') return;
-  const urlMap = { home:'/', listings:'/listings', contact:'/contact', buyer:'/buyer', submit:'/submit', developers:'/developers' };
+  const urlMap = { home:'/', listings:'/listings', contact:'/contact', buyer:'/buyer', submit: wizardIncludeContact ? '/submit' : '/troy-listing', developers:'/developers' };
   const url = urlMap[name] || '/';
   if (window.location.pathname !== url) history.pushState({ page: name }, '', url);
 }
@@ -2786,9 +2786,11 @@ window.addEventListener('popstate', e => {
 });
 
 // ── WIZARD DATA — must live before resolveRoute so direct /submit loads work ──
-const WIZARD_STEPS = [
+// WIZARD_STEPS_ALL is the full step list; the Contact step (last) is left out
+// on /troy-listing, a variant for Troy where contact details aren't collected.
+const WIZARD_STEPS_ALL = [
   {
-    num: 'Step 1 of 4', title: 'Your Property', sub: 'Basic details about the property you want to list.',
+    title: 'Your Property', sub: 'Basic details about the property you want to list.',
     fields: [
       { id:'sp-deal',     label:'Deal Type',     req:true,  type:'select', opts:['For Sale','For Lease','For Sale & For Lease'] },
       { id:'sp-type',     label:'Property Type', req:true,  type:'select', opts:['Residential H&L','Condominium','Commercial','Commercial Lot','Commercial Bldg','Farm','Beach','Warehouse','Lot Only','Hotel'] },
@@ -2796,7 +2798,7 @@ const WIZARD_STEPS = [
     ]
   },
   {
-    num: 'Step 2 of 4', title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
+    title: 'Size & Price', sub: 'Help buyers understand the scope and value of your property.',
     fields: [
       { id:'sp-lot',    label:'Lot Area (sqm)',     req:true,  type:'number', ph:'e.g. 150' },
       { id:'sp-floor',  label:'Floor Area (sqm)',   req:false, type:'number', ph:'e.g. 120',     hint:'Leave blank if not applicable' },
@@ -2804,7 +2806,7 @@ const WIZARD_STEPS = [
     ]
   },
   {
-    num: 'Step 3 of 4', title: 'Details & Photos', sub: 'Share key features and property photos.',
+    title: 'Details & Photos', sub: 'Share key features and property photos.',
     fields: [
       { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
       { id:'sp-thumbnail', label:'Main Photo (Upload)',      req:false, type:'file' },
@@ -2812,7 +2814,7 @@ const WIZARD_STEPS = [
     ]
   },
   {
-    num: 'Step 4 of 4', title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
+    title: 'Your Contact Details', sub: 'Almost done! How should we reach you?',
     fields: [
       { id:'sp-name',     label:'Full Name',     req:true,  type:'text',   ph:'Juan dela Cruz' },
       { id:'sp-phone',    label:'Mobile Number', req:true,  type:'tel',    ph:'+63 9XX XXX XXXX' },
@@ -2821,6 +2823,8 @@ const WIZARD_STEPS = [
     ]
   }
 ];
+let WIZARD_STEPS = WIZARD_STEPS_ALL;
+let wizardIncludeContact = true;
 let wStep = 0;
 const wData = {};
 const wFiles = {};
@@ -2829,6 +2833,7 @@ const wFiles = {};
 (function resolveRoute() {
   const path = window.location.pathname.replace(/\/$/, '') || '/';
   if (/^\/listing\//.test(path)) { showPage('detail'); return; }
+  if (path === '/troy-listing') { wizardIncludeContact = false; showPage('submit'); return; }
   const routes = { '/listings':'listings', '/about':'contact', '/contact':'contact', '/buyer':'buyer', '/match':'match', '/submit':'submit' };
   const page = routes[path];
   if (page) showPage(page);
@@ -3131,6 +3136,8 @@ function initWizard() {
   wStep = 0;
   wData['sp-amount-unit'] = 'total';
   wData['sp-photos-mode'] = 'upload';
+  const steps = wizardIncludeContact ? WIZARD_STEPS_ALL : WIZARD_STEPS_ALL.slice(0, -1);
+  WIZARD_STEPS = steps.map((s, i) => ({ ...s, num: `Step ${i + 1} of ${steps.length}` }));
   renderWizardStep();
 }
 
@@ -3285,9 +3292,12 @@ function renderWizardReview() {
   const photosDisplay = wData['sp-photos-mode'] === 'drive'
     ? (wData['sp-photos-drive-url'] ? '✓ Drive folder linked' : '—')
     : (photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—');
-  const rows = [
+  const contactRows = wizardIncludeContact ? [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
     ['Role', wData['sp-role'] || '—'],
+  ] : [];
+  const rows = [
+    ...contactRows,
     ['Deal', wData['sp-deal']], ['Type', wData['sp-type']], ['Location', wData['sp-location']],
     ['Lot Area', wData['sp-lot'] ? wData['sp-lot'] + ' sqm' : '—'],
     ['Floor Area', wData['sp-floor'] ? wData['sp-floor'] + ' sqm' : '—'],
