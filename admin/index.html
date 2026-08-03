@@ -995,6 +995,23 @@ function formatPeso(raw) {
   return n ? '₱' + n.toLocaleString('en-PH') : '—';
 }
 
+// Google Drive share links don't work as direct <img src> — convert to a
+// viewable form, with driveThumbFallback() as a second attempt on error.
+function driveThumb(url) {
+  if (!url) return '';
+  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return 'https://drive.google.com/uc?export=view&id=' + fileMatch[1];
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) return 'https://drive.google.com/uc?export=view&id=' + openMatch[1];
+  return url; // not a Drive link (e.g. Cloudinary) — use as-is
+}
+function driveThumbFallback(imgEl, url) {
+  const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const id = fileMatch ? fileMatch[1] : (url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || [])[1];
+  if (id) { imgEl.src = 'https://lh3.googleusercontent.com/d/' + id; imgEl.onerror = null; }
+  else { imgEl.remove(); }
+}
+
 function generateReport() {
   const deal     = document.getElementById('rpt-deal').value.toLowerCase();
   const type     = document.getElementById('rpt-type').value.toLowerCase();
@@ -1049,10 +1066,11 @@ function generateReport() {
       const dealColor = isLease ? '#1D4ED8' : '#1C3F2F';
       const dealLbl  = isLease ? 'For Lease' : 'For Sale';
       const topText = [l.type, l.lot ? l.lot + ' sqm lot' : ''].filter(Boolean).join(' · ');
-      const thumb = l.thumbnail || '';
+      const rawThumb = l.thumbnail || '';
+      const thumb = driveThumb(rawThumb);
       return `<div class="rpt-card">
         <div style="font-size:13px;font-weight:700;color:#718096;min-width:28px;padding-top:2px">${i+1}.</div>
-        ${thumb ? `<img class="rpt-card-thumb" src="${esc(thumb)}" onerror="this.remove()">` : ''}
+        ${thumb ? `<img class="rpt-card-thumb" src="${esc(thumb)}" onerror="driveThumbFallback(this,'${esc(rawThumb)}')">` : ''}
         <div class="rpt-card-left">
           <div class="rpt-card-name">${esc(topText || '—')}</div>
           <div class="rpt-card-loc">📍 ${esc(l.location||'—')}</div>
