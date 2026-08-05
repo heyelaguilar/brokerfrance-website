@@ -141,13 +141,10 @@ button{font-family:inherit;cursor:pointer}
 .sub-status{margin-right:auto}
 .bdg-pending{background:#F3F4F6;color:#6B7280;border:1px solid #D1D5DB}
 .bdg-contacted{background:#FEF9C3;color:#854D0E}
-.bdg-verified{background:#DBEAFE;color:#1E40AF}
 .bdg-approved{background:#DCFCE7;color:#166534}
 .btn-action{padding:7px 14px;border-radius:var(--rs);font-size:12px;font-weight:700;border:none;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
 .btn-contacted{background:#FEF9C3;color:#92400E}
 .btn-contacted:hover{background:#FDE68A}
-.btn-verified{background:#DBEAFE;color:#1E3A8A}
-.btn-verified:hover{background:#BFDBFE}
 .btn-approve{background:var(--green);color:#fff}
 .btn-approve:hover{background:var(--green-d)}
 .btn-approve:disabled{background:#9CA3AF;cursor:not-allowed}
@@ -421,15 +418,14 @@ button{font-family:inherit;cursor:pointer}
       <div class="sub-stats">
         <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" id="sub-stat-total">—</div></div>
         <div class="stat-card"><div class="stat-label">Pending</div><div class="stat-val" id="sub-stat-pending">—</div></div>
-        <div class="stat-card"><div class="stat-label">Verified</div><div class="stat-val" id="sub-stat-verified">—</div></div>
-        <div class="stat-card"><div class="stat-label">Approved</div><div class="stat-val" id="sub-stat-approved">—</div></div>
+        <div class="stat-card"><div class="stat-label">On Hold</div><div class="stat-val" id="sub-stat-hold">—</div></div>
+        <div class="stat-card"><div class="stat-label">Published</div><div class="stat-val" id="sub-stat-approved">—</div></div>
       </div>
       <div class="sub-filter-row">
         <button class="sub-filter on" onclick="filterSubs('all',this)">All</button>
         <button class="sub-filter" onclick="filterSubs('Pending',this)">Pending</button>
-        <button class="sub-filter" onclick="filterSubs('Contacted',this)">Contacted</button>
-        <button class="sub-filter" onclick="filterSubs('Verified',this)">Verified</button>
-        <button class="sub-filter" onclick="filterSubs('Approved',this)">Approved</button>
+        <button class="sub-filter" onclick="filterSubs('Hold',this)">On Hold</button>
+        <button class="sub-filter" onclick="filterSubs('Approved',this)">Published</button>
       </div>
       <div class="card">
         <div style="overflow-x:auto" id="submissions-table-wrap">
@@ -747,14 +743,15 @@ function filterSubs(filter, btn) {
 
 function statusBadge(status) {
   const s = (status || 'Pending').trim();
-  const map = { Pending:'bdg-pending', Contacted:'bdg-contacted', Verified:'bdg-verified', Approved:'bdg-approved' };
-  return `<span class="bdg ${map[s]||'bdg-pending'}">${s}</span>`;
+  const map = { Pending:'bdg-pending', Hold:'bdg-contacted', Approved:'bdg-approved' };
+  const label = { Hold:'On Hold', Approved:'Published' }[s] || s;
+  return `<span class="bdg ${map[s]||'bdg-pending'}">${label}</span>`;
 }
 
 function subActionsHtml(status, rowIndex) {
-  return `${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Contacted</button>` : ''}
-    ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Verified</button>` : ''}
-    ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve${status==='Verified' ? ' & Publish' : ''}</button>` : '<span style="font-size:12px;font-weight:700;color:#166534">✓ Published</span>'}`;
+  if (status === 'Approved') return '<span style="font-size:12px;font-weight:700;color:#166534">✓ Published</span>';
+  return `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)">🚀 Publish</button>
+    <button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Hold')">⏸ Hold for Review</button>`;
 }
 
 function renderSubmissions() {
@@ -765,7 +762,7 @@ function renderSubmissions() {
   // stats
   document.getElementById('sub-stat-total').textContent = allSubmissions.length;
   document.getElementById('sub-stat-pending').textContent = allSubmissions.filter(r => !r.Status || r.Status === 'Pending').length;
-  document.getElementById('sub-stat-verified').textContent = allSubmissions.filter(r => r.Status === 'Verified').length;
+  document.getElementById('sub-stat-hold').textContent = allSubmissions.filter(r => r.Status === 'Hold').length;
   document.getElementById('sub-stat-approved').textContent = allSubmissions.filter(r => r.Status === 'Approved').length;
 
   if (!rows.length) {
@@ -859,7 +856,7 @@ async function updateSubStatus(index, newStatus) {
 async function approveSubmission(index, btn) {
   const r = allSubmissions[index];
   if (!r) return;
-  if (!confirm(`Approve and publish "${r.Name || r.name}'s" listing to the website?`)) return;
+  if (!confirm(`Publish "${r.Name || r.name}'s" listing to the website?`)) return;
   btn.textContent = 'Publishing…';
   btn.disabled = true;
   try {
@@ -870,10 +867,10 @@ async function approveSubmission(index, btn) {
     });
     r.Status = 'Approved';
     renderSubmissions();
-    showToast('✓ Listing approved and published!');
+    showToast('✓ Listing published!');
   } catch(e) {
-    showToast('Failed to approve listing');
-    btn.textContent = '🚀 Approve & Publish';
+    showToast('Failed to publish listing');
+    btn.textContent = '🚀 Publish';
     btn.disabled = false;
   }
 }
