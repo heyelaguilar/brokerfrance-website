@@ -250,10 +250,58 @@ button{font-family:inherit;cursor:pointer}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
 .toast.show{opacity:1;transform:translateY(0)}
 
-@media(max-width:900px){
+@media(max-width:900px) and (min-width:769px){
   .sidebar{width:200px}
   .main{margin-left:200px;padding:20px}
   .stats-row{grid-template-columns:1fr 1fr}
+}
+
+/* ── MOBILE ── sidebar collapses into a horizontal top bar */
+.sub-cards{display:none}
+@media(max-width:768px){
+  .sidebar{
+    position:fixed;top:0;left:0;right:0;bottom:auto;width:100%;height:auto;
+    flex-direction:row;align-items:center;padding:8px 10px;gap:2px;
+    overflow-x:auto;-webkit-overflow-scrolling:touch;z-index:200;
+  }
+  .sidebar-brand{display:none}
+  .nav-item{
+    flex-direction:column;gap:3px;padding:8px 12px;font-size:10px;
+    white-space:nowrap;border-left:none;border-bottom:2px solid transparent;flex-shrink:0;
+  }
+  .nav-item.active{border-left-color:transparent;border-bottom-color:#fff}
+  .nav-item svg{width:18px;height:18px}
+  .sidebar-bottom{
+    margin-top:0;margin-left:auto;padding:0 0 0 10px;border-top:none;
+    display:flex;align-items:center;flex-shrink:0;
+  }
+  .sidebar-user{display:none}
+  .btn-logout{padding:8px 12px;font-size:11px;white-space:nowrap}
+
+  .main{margin-left:0;margin-top:60px;padding:16px}
+  .page-hdr{margin-bottom:20px}
+  .page-hdr h1{font-size:19px}
+  .page-hdr[style*="space-between"]{flex-wrap:wrap;gap:10px}
+
+  .stats-row,.sub-stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .stat-card{padding:14px}
+  .stat-val{font-size:22px}
+
+  .card-hdr{flex-wrap:wrap}
+  .card-search{width:100%}
+
+  .sub-fields{grid-template-columns:1fr 1fr}
+  .sub-filter-row{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+
+  .txn-card{flex-wrap:wrap}
+  .txn-date{text-align:left}
+
+  .rpt-card{flex-wrap:wrap}
+  .rpt-card>div:last-child{text-align:left;margin-left:auto}
+
+  /* Submissions: table is unusable this narrow — switch to stacked cards */
+  #submissions-table-wrap{display:none}
+  .sub-cards{display:block}
 }
 </style>
 </head>
@@ -384,7 +432,7 @@ button{font-family:inherit;cursor:pointer}
         <button class="sub-filter" onclick="filterSubs('Approved',this)">Approved</button>
       </div>
       <div class="card">
-        <div style="overflow-x:auto">
+        <div style="overflow-x:auto" id="submissions-table-wrap">
           <table class="tbl">
             <thead>
               <tr>
@@ -403,6 +451,7 @@ button{font-family:inherit;cursor:pointer}
           </table>
         </div>
       </div>
+      <div class="sub-cards" id="submissions-cards"></div>
     </div>
 
     <!-- TRANSACTIONS TAB -->
@@ -702,8 +751,15 @@ function statusBadge(status) {
   return `<span class="bdg ${map[s]||'bdg-pending'}">${s}</span>`;
 }
 
+function subActionsHtml(status, rowIndex) {
+  return `${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Contacted</button>` : ''}
+    ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Verified</button>` : ''}
+    ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve${status==='Verified' ? ' & Publish' : ''}</button>` : '<span style="font-size:12px;font-weight:700;color:#166534">✓ Published</span>'}`;
+}
+
 function renderSubmissions() {
   const tbody = document.getElementById('submissions-tbody');
+  const cardsEl = document.getElementById('submissions-cards');
   const rows = subFilter === 'all' ? allSubmissions : allSubmissions.filter(r => (r.Status||r.status||'Pending') === subFilter);
 
   // stats
@@ -712,15 +768,21 @@ function renderSubmissions() {
   document.getElementById('sub-stat-verified').textContent = allSubmissions.filter(r => r.Status === 'Verified').length;
   document.getElementById('sub-stat-approved').textContent = allSubmissions.filter(r => r.Status === 'Approved').length;
 
-  if (!rows.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No submissions found.</td></tr>'; return; }
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="loading-row"><td colspan="7">No submissions found.</td></tr>';
+    cardsEl.innerHTML = '<div class="empty">No submissions found.</div>';
+    return;
+  }
 
-  tbody.innerHTML = rows.map((r, i) => {
-    const status = r.Status || r.status || 'Pending';
-    const name = r.Name || r.name || '—';
-    const thumb = r.Thumbnail || r.thumbnail || '';
-    const photos = r.Photos || r.photos || '';
+  const built = rows.map((r, i) => {
+    const status  = r.Status || r.status || 'Pending';
+    const name    = r.Name || r.name || '—';
+    const thumb   = r.Thumbnail || r.thumbnail || '';
+    const photos  = r.Photos || r.photos || '';
+    const keyVal  = r['Key Details'] || r.key || '';
     const rowIndex = allSubmissions.indexOf(r);
-    return `<tr id="sub-row-${rowIndex}">
+
+    const row = `<tr id="sub-row-${rowIndex}">
       <td>${thumb ? `<img class="sub-thumb-sm" src="${esc(thumb)}" onerror="this.style.display='none'">` : '—'}</td>
       <td>
         <div style="font-weight:700;color:var(--ink)">${esc(name)}</div>
@@ -729,7 +791,7 @@ function renderSubmissions() {
       <td>
         <div style="font-weight:600;color:var(--ink)">${esc(r.Deal||r.deal||'—')} · ${esc(r.Type||r.type||'—')}</div>
         <div style="color:var(--ink3)">${esc(r.Location||r.location||'—')}</div>
-        ${r['Key Details']||r.key ? `<div style="color:var(--ink4);font-size:12px">${esc(r['Key Details']||r.key)}</div>` : ''}
+        ${keyVal ? `<div style="color:var(--ink4);font-size:12px">${esc(keyVal)}</div>` : ''}
         ${photos ? `<a href="${esc(photos)}" target="_blank" style="color:var(--green-d);font-weight:700;font-size:12px">View Photos ↗</a>` : ''}
       </td>
       <td class="tbl-price">${esc(r.Amount||r.amount||'—')}</td>
@@ -739,19 +801,44 @@ function renderSubmissions() {
         <div style="color:var(--ink4);font-size:11px">${esc(r.Role||r.role||'—')}</div>
       </td>
       <td>${statusBadge(status)}</td>
-      <td><div class="tbl-actions">
-        ${status === 'Pending' ? `<button class="btn-action btn-contacted" onclick="updateSubStatus(${rowIndex},'Contacted')">📞 Contacted</button>` : ''}
-        ${status === 'Contacted' ? `<button class="btn-action btn-verified" onclick="updateSubStatus(${rowIndex},'Verified')">✓ Verified</button>` : ''}
-        ${status !== 'Approved' ? `<button class="btn-action btn-approve" onclick="approveSubmission(${rowIndex},this)" ${status !== 'Verified' ? 'disabled title="Verify first before approving"' : ''}>🚀 Approve</button>` : '<span style="font-size:12px;font-weight:700;color:#166534">✓ Published</span>'}
-      </div></td>
+      <td><div class="tbl-actions">${subActionsHtml(status, rowIndex)}</div></td>
     </tr>`;
-  }).join('');
+
+    const card = `<div class="sub-card" id="sub-card-${rowIndex}">
+      <div class="sub-card-hdr">
+        <div>
+          <div class="sub-card-name">${esc(name)}</div>
+          <div class="sub-card-time">${esc(r.Timestamp || r.timestamp || '')}</div>
+        </div>
+        ${statusBadge(status)}
+      </div>
+      ${thumb ? `<img class="sub-thumb" src="${esc(thumb)}" onerror="this.style.display='none'">` : ''}
+      <div class="sub-fields">
+        <div class="sub-field"><div class="sub-field-label">Deal / Type</div><div class="sub-field-val">${esc(r.Deal||r.deal||'—')} · ${esc(r.Type||r.type||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Price</div><div class="sub-field-val">${esc(r.Amount||r.amount||'—')}</div></div>
+        <div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Location</div><div class="sub-field-val">${esc(r.Location||r.location||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Phone</div><div class="sub-field-val">${esc(r.Phone||r.phone||'—')}</div></div>
+        <div class="sub-field"><div class="sub-field-label">Role</div><div class="sub-field-val">${esc(r.Role||r.role||'—')}</div></div>
+        <div class="sub-field" style="grid-column:1/-1"><div class="sub-field-label">Email</div><div class="sub-field-val">${esc(r.Email||r.email||'—')}</div></div>
+      </div>
+      ${keyVal ? `<div style="color:var(--ink4);font-size:12px;margin-bottom:12px">${esc(keyVal)}</div>` : ''}
+      ${photos ? `<a href="${esc(photos)}" target="_blank" style="display:block;margin-bottom:12px;color:var(--green-d);font-weight:700;font-size:12px">View Photos ↗</a>` : ''}
+      <div class="sub-actions">${subActionsHtml(status, rowIndex)}</div>
+    </div>`;
+
+    return { row, card };
+  });
+
+  tbody.innerHTML = built.map(b => b.row).join('');
+  cardsEl.innerHTML = built.map(b => b.card).join('');
 }
 
 async function updateSubStatus(index, newStatus) {
   const r = allSubmissions[index];
   if (!r) return;
-  const card = document.getElementById('sub-row-' + index);
+  const row  = document.getElementById('sub-row-' + index);
+  const card = document.getElementById('sub-card-' + index);
+  if (row)  row.style.opacity = '0.5';
   if (card) card.style.opacity = '0.5';
   try {
     await fetch('/.netlify/functions/update-submission', {
@@ -764,6 +851,7 @@ async function updateSubStatus(index, newStatus) {
     showToast(`Marked as ${newStatus}`);
   } catch(e) {
     showToast('Failed to update status');
+    if (row)  row.style.opacity = '1';
     if (card) card.style.opacity = '1';
   }
 }
