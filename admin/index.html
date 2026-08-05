@@ -204,6 +204,7 @@ button{font-family:inherit;cursor:pointer}
 .ig-dl-btn:hover{background:var(--green-d)}
 .ig-dl-btn svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.5}
 .ig-note{font-size:12px;color:var(--ink4);text-align:center;margin-top:10px}
+.txt-modal-textarea{width:100%;min-height:380px;padding:16px;border-radius:var(--rs);border:1.5px solid var(--border);font-family:inherit;font-size:13px;line-height:1.6;color:var(--ink);resize:vertical;margin-bottom:16px}
 
 /* transaction detail */
 .txn-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:24px}
@@ -551,6 +552,21 @@ button{font-family:inherit;cursor:pointer}
   </div>
 </div>
 
+<!-- LISTING TEXT MODAL -->
+<div class="ig-modal-bg" id="txt-modal-bg" style="display:none" onclick="if(event.target===this)closeTextModal()">
+  <div class="ig-modal">
+    <div class="ig-modal-hdr">
+      <h3>📝 Listing Post Text</h3>
+      <button class="ig-modal-close" onclick="closeTextModal()">✕</button>
+    </div>
+    <textarea class="txt-modal-textarea" id="txt-modal-textarea" readonly></textarea>
+    <button class="ig-dl-btn" onclick="copyListingText()">
+      <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copy to Clipboard
+    </button>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -638,6 +654,7 @@ function renderListingsTable(list) {
       <td><div class="tbl-actions">
         <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
         <button class="btn-ig" onclick="openIgModal('${esc(l.id||'')}')">📸 Post</button>
+        <button class="btn-ig" onclick="openTextModal('${esc(l.id||'')}')">📝 Text</button>
       </div></td>
     </tr>`;
   }).join('');
@@ -1310,6 +1327,77 @@ function downloadIgPost() {
   a.href = canvas.toDataURL('image/png');
   a.click();
   showToast('Downloaded!');
+}
+
+// ── LISTING TEXT POST GENERATOR ────────────────────────
+// "P7,000,000 or P35,000 per sqm" style line, deriving whichever figure
+// wasn't directly entered from lot size, same logic as the site's own
+// price formatter.
+function priceLineForPost(l) {
+  const raw = String(l.price || l.amount || '');
+  const n = parseFloat(raw.replace(/,/g, ''));
+  if (isNaN(n) || n <= 0) return 'Price on Request';
+  const isPerSqm = /\/\s*sqm\b/i.test(raw);
+  const lot = parseFloat(String(l.lot || '').replace(/,/g, ''));
+  const hasLot = !isNaN(lot) && lot > 0;
+  const total  = isPerSqm ? (hasLot ? n * lot : null) : n;
+  const perSqm = isPerSqm ? n : (hasLot ? n / lot : null);
+  const fmt = v => 'P' + Math.round(v).toLocaleString('en-PH');
+  if (total != null && perSqm != null) return `${fmt(total)} or ${fmt(perSqm)} per sqm`;
+  return total != null ? fmt(total) : `${fmt(perSqm)} per sqm`;
+}
+
+function generateListingText(l) {
+  const dealLower  = (l.deal || '').toLowerCase();
+  const isLease    = dealLower.includes('lease') || dealLower.includes('rent');
+  const dealPrefix = isLease ? 'FL' : 'FS';
+  const dealWord   = isLease ? 'FOR LEASE' : 'FOR SALE';
+  const titleLine  = `${(l.location || 'Property').toUpperCase()}${l.type ? ' ' + l.type.toUpperCase() : ''} ${dealWord}!`;
+  const sizeLine   = l.lot ? `${l.lot} sqm` : (l.floor ? `${l.floor} sqm floor area` : '');
+  const features   = String(l.key || '').split('|').map(s => s.trim()).filter(Boolean).join('; ');
+  const link       = `https://francebrokerage.com/listing/${l.id || ''}`;
+
+  const lines = [`${dealPrefix}:`, '', 'New Listing!!!', '', titleLine];
+  if (sizeLine) lines.push(sizeLine);
+  if (features) lines.push(features);
+  lines.push(
+    priceLineForPost(l),
+    'Pls click the link below for more details!',
+    'For more Broker France properties, pls visit francebrokerage.com or PM me!',
+    '',
+    link,
+    '',
+    `Let's collab!❤️`,
+    '',
+    'MAY FRANCIA R. GONZALES',
+    'Real Estate Broker (PRC# 020049)',
+    'STAREB Member',
+    '0977-829-0053',
+    'rebfrancergonzales@gmail.com',
+    'www.francebrokerage.com',
+  );
+  return lines.join('\n');
+}
+
+let txtModalListing = null;
+
+function openTextModal(id) {
+  txtModalListing = allListings.find(l => String(l.id) === String(id));
+  if (!txtModalListing) { showToast('Listing not found'); return; }
+  document.getElementById('txt-modal-textarea').value = generateListingText(txtModalListing);
+  document.getElementById('txt-modal-bg').style.display = 'flex';
+}
+
+function closeTextModal() {
+  document.getElementById('txt-modal-bg').style.display = 'none';
+}
+
+function copyListingText() {
+  const ta = document.getElementById('txt-modal-textarea');
+  ta.select();
+  navigator.clipboard.writeText(ta.value)
+    .then(() => showToast('Copied to clipboard!'))
+    .catch(() => showToast('Could not copy — select and copy manually.'));
 }
 
 // ── UTILS ─────────────────────────────────────────────
