@@ -1575,6 +1575,10 @@ Ideal Property</div>
               <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.72A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
               Call Now · 0977 829 0053
             </a>
+            <button class="btn-call-d" onclick="copyListingPostText()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy Post Text
+            </button>
             <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px">Quick Inquiry</div>
           <div class="dsc-form">
             <input type="text" placeholder="Your name" id="inqName">
@@ -2185,7 +2189,7 @@ async function init() {
         type, location: loc,
         lot_area:   lotArea,
         floor_area: get('floor_area'),
-        price, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
+        price, priceRaw: rawPrice, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
         photos, thumbnail, exclusive: isEx,
         badge: get('badge'),
         whatsapp: wa, name, desc: ''
@@ -2538,6 +2542,68 @@ function shareAction(platform) {
       showToast('Link copied! Paste it in Messenger.');
     }
   }
+}
+
+// ── SOCIAL POST TEXT ──────────────────────────────────
+// "P7,000,000 or P35,000 per sqm" style line, deriving whichever figure
+// wasn't directly entered from lot area.
+function priceLineForPost(l) {
+  const raw = String(l.priceRaw || '');
+  const n = parseFloat(raw.replace(/,/g, ''));
+  if (isNaN(n) || n <= 0) return 'Price on Request';
+  const isPerSqm = /\/\s*sqm\b/i.test(raw);
+  const lot = parseFloat(String(l.lot_area || '').replace(/,/g, ''));
+  const hasLot = !isNaN(lot) && lot > 0;
+  const total  = isPerSqm ? (hasLot ? n * lot : null) : n;
+  const perSqm = isPerSqm ? n : (hasLot ? n / lot : null);
+  const fmt = v => 'P' + Math.round(v).toLocaleString('en-PH');
+  if (total != null && perSqm != null) return `${fmt(total)} or ${fmt(perSqm)} per sqm`;
+  return total != null ? fmt(total) : `${fmt(perSqm)} per sqm`;
+}
+
+function generateListingText(l) {
+  const dealWord   = l.deal === 'lease' ? 'FOR LEASE' : (l.deal === 'both' ? 'FOR SALE / FOR LEASE' : 'FOR SALE');
+  const dealPrefix = l.deal === 'lease' ? 'FL' : (l.deal === 'both' ? 'FS/FL' : 'FS');
+  const titleLine  = `${(l.location || 'Property').toUpperCase()}${l.type ? ' ' + l.type.toUpperCase() : ''} ${dealWord}!`;
+  const sizeLine    = l.lot_area ? `${l.lot_area} sqm` : (l.floor_area ? `${l.floor_area} sqm floor area` : '');
+  const features    = String(l.key_details || '').split('|').map(s => s.trim()).filter(Boolean).join('; ');
+  const link        = window.location.origin + '/listing/' + (l.id || '');
+
+  const lines = [`${dealPrefix}:`, '', 'New Listing!!!', '', titleLine];
+  if (sizeLine) lines.push(sizeLine);
+  if (features) lines.push(features);
+  lines.push(
+    priceLineForPost(l),
+    'Pls click the link below for more details!',
+    'For more Broker France properties, pls visit francebrokerage.com or PM me!',
+    '',
+    link,
+    '',
+    `Let's collab!❤️`,
+    '',
+    'MAY FRANCIA R. GONZALES',
+    'Real Estate Broker (PRC# 020049)',
+    'STAREB Member',
+    '0977-829-0053',
+    'rebfrancergonzales@gmail.com',
+    'www.francebrokerage.com',
+  );
+  return lines.join('\n');
+}
+
+function copyListingPostText() {
+  const l = currentListing;
+  if (!l) return;
+  const text = generateListingText(l);
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Post text copied!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Post text copied!');
+    });
 }
 
 // ── DEVELOPERS ────────────────────────────────────────
