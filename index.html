@@ -1547,6 +1547,11 @@ Ideal Property</div>
                 <svg viewBox="0 0 24 24" fill="#0099FF"><path d="M12 2C6.477 2 2 6.14 2 11.25c0 2.92 1.54 5.52 3.94 7.23V22l3.47-1.91c.85.23 1.75.36 2.59.36 5.52 0 10-4.14 10-9.25S17.52 2 12 2z"/><path fill="#fff" d="M13.5 8.5l-3.5 3.75L7.5 10l-2 2L9 14.5l2.5-2.5 2.5 2 2.5-6z"/></svg>
                 Messenger
               </button>
+              <div class="share-drop-divider"></div>
+              <button class="share-drop-item" onclick="document.getElementById('share-drop').classList.remove('open');copyListingPostText()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4a1 1 0 011-1h14a1 1 0 011 1v13a1 1 0 01-1 1h-3"/><rect x="4" y="9" width="12" height="12" rx="1"/></svg>
+                Copy Post Text
+              </button>
             </div>
           </div>
         </div>
@@ -1575,10 +1580,6 @@ Ideal Property</div>
               <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.81a19.79 19.79 0 01-3.07-8.72A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14v2.92z"/></svg>
               Call Now · 0977 829 0053
             </a>
-            <button class="btn-call-d" onclick="copyListingPostText()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-              Copy Post Text
-            </button>
             <div style="font-size:13px;font-weight:800;color:var(--ink);margin-bottom:4px">Quick Inquiry</div>
           <div class="dsc-form">
             <input type="text" placeholder="Your name" id="inqName">
