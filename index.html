@@ -3465,7 +3465,10 @@ async function wizardSubmit(btn) {
             : ``}
         </div>
       </div>`;
-    Object.keys(wData).forEach(k => delete wData[k]);
+    // Keep the contact details so submitting another listing in the same
+    // session doesn't require re-typing name/phone/email/role each time.
+    const keepKeys = ['sp-name', 'sp-phone', 'sp-email', 'sp-role'];
+    Object.keys(wData).forEach(k => { if (!keepKeys.includes(k)) delete wData[k]; });
     Object.keys(wFiles).forEach(k => delete wFiles[k]);
 
   } catch (err) {
