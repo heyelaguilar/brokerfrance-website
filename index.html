@@ -2858,11 +2858,12 @@ const WIZARD_STEPS_ALL = [
     ]
   },
   {
-    title: 'Details & Photos', sub: 'Share key features and property photos.',
+    title: 'Details, Photos & Video', sub: 'Share key features, property photos, and an optional walkthrough video.',
     fields: [
       { id:'sp-key',       label:'Key Features',            req:false, type:'textarea', ph:'e.g. 3 Bedrooms | 2 Bathrooms | Corner Lot | Clean Title', hint:'Separate features with a pipe |' },
       { id:'sp-thumbnail', label:'Main Photo (Upload)',      req:false, type:'file' },
       { id:'sp-photos',    label:'Additional Photos',        req:false, type:'multi-file' },
+      { id:'sp-video',     label:'Property Video',           req:false, type:'video' },
     ]
   },
   {
@@ -3117,6 +3118,69 @@ async function uploadImageToDrive(id) {
   }
 }
 
+// ── VIDEO UPLOAD ───────────────────────────────────────
+function handleVideoDrop(e, id) {
+  e.preventDefault();
+  document.getElementById(id + '-wrap').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) processVideoFile(file, id);
+}
+
+function handleVideoSelect(input, id) {
+  const file = input.files[0];
+  if (file) processVideoFile(file, id);
+}
+
+function processVideoFile(file, id) {
+  if (!file.type.startsWith('video/')) { showToast('Please select a video file'); return; }
+  if (file.size > 50 * 1024 * 1024) { showToast('Video must be under 50MB'); return; }
+  wFiles[id] = file;
+  const vid = document.getElementById(id + '-el');
+  if (vid) vid.src = URL.createObjectURL(file);
+  const preview = document.getElementById(id + '-preview');
+  if (preview) preview.style.display = 'block';
+  const label = document.getElementById(id + '-label');
+  if (label) label.innerHTML = `<span style="color:var(--green-d);font-weight:700">${esc(file.name)}</span><br><span style="font-size:12px;color:var(--ink4)">Tap to change</span>`;
+  const status = document.getElementById(id + '-status');
+  if (status) status.textContent = 'Ready to upload';
+}
+
+async function uploadVideoToCloud(id) {
+  const file = wFiles[id] || null;
+  if (!file) return '';
+  const setStatus = (msg) => { const el = document.getElementById(id + '-status'); if (el) el.textContent = msg; };
+  setStatus('Uploading video…');
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'francebrokerage');
+    const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/video/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.secure_url) {
+      setStatus('✓ Uploaded');
+      return data.secure_url;
+    } else {
+      setStatus('Upload failed');
+      return '';
+    }
+  } catch(err) {
+    setStatus('Upload failed');
+    return '';
+  }
+}
+
+function setVideoMode(mode) {
+  wData['sp-video-mode'] = mode;
+  document.querySelectorAll('.amount-unit-btn[data-vmode]').forEach(b => b.classList.toggle('active', b.dataset.vmode === mode));
+  const linkEl = document.getElementById('sp-video-link-mode');
+  const uploadEl = document.getElementById('sp-video-upload-mode');
+  if (linkEl) linkEl.style.display = mode === 'link' ? '' : 'none';
+  if (uploadEl) uploadEl.style.display = mode === 'upload' ? '' : 'none';
+}
+
 
 // ── PROPERTY SUBMISSION WIZARD ────────────────────────
 // Google Apps Script endpoint — saves to "Submissions" sheet
@@ -3188,6 +3252,7 @@ function initWizard() {
   wStep = 0;
   wData['sp-amount-unit'] = 'total';
   wData['sp-photos-mode'] = 'upload';
+  wData['sp-video-mode'] = 'link';
   const steps = wizardIncludeContact ? WIZARD_STEPS_ALL : WIZARD_STEPS_ALL.slice(0, -1);
   WIZARD_STEPS = steps.map((s, i) => ({ ...s, num: `Step ${i + 1} of ${steps.length}` }));
   renderWizardStep();
@@ -3238,6 +3303,30 @@ function renderWizardStep() {
         <div id="${f.id}-drive-mode" style="display:${mode==='drive'?'':'none'};margin-top:10px">
           <input type="text" id="${f.id}-drive-url" placeholder="https://drive.google.com/drive/folders/..." value="${esc(wData['sp-photos-drive-url']||'')}" oninput="wData['sp-photos-drive-url']=this.value">
           <span class="hint">Paste a public Google Drive folder link containing your photos</span>
+        </div>
+      </div>`;
+    } else if (f.type === 'video') {
+      const vmode = wData['sp-video-mode'] || 'link';
+      return `<div class="wf">
+        <label>${f.label}</label>
+        <div class="amount-unit-toggle">
+          <button type="button" class="amount-unit-btn ${vmode==='link'?'active':''}" data-vmode="link" onclick="setVideoMode('link')">Paste Video Link</button>
+          <button type="button" class="amount-unit-btn ${vmode==='upload'?'active':''}" data-vmode="upload" onclick="setVideoMode('upload')">Upload Video</button>
+        </div>
+        <div id="${f.id}-link-mode" style="display:${vmode==='link'?'':'none'};margin-top:10px">
+          <input type="text" id="${f.id}-link-url" placeholder="https://youtube.com/watch?v=... or Facebook/Drive link" value="${esc(wData['sp-video-link-url']||'')}" oninput="wData['sp-video-link-url']=this.value">
+          <span class="hint">YouTube, Facebook, or Google Drive video link</span>
+        </div>
+        <div id="${f.id}-upload-mode" style="display:${vmode==='upload'?'':'none'};margin-top:10px">
+          <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleVideoDrop(event,'${f.id}')">
+            <input type="file" id="${f.id}-input" accept="video/*" style="display:none" onchange="handleVideoSelect(this,'${f.id}')">
+            <div id="${f.id}-preview" style="display:none;margin-bottom:12px"><video id="${f.id}-el" controls style="max-height:160px;border-radius:8px;max-width:100%"></video></div>
+            <div id="${f.id}-label" style="color:var(--ink3);font-size:14px;font-weight:600">
+              <svg viewBox="0 0 24 24" style="width:28px;height:28px;stroke:var(--ink4);fill:none;stroke-width:1.5;margin-bottom:8px;display:block;margin-inline:auto"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Tap to upload or drag & drop<br><span style="font-size:12px;color:var(--ink4)">MP4, MOV — max 50MB</span>
+            </div>
+          </div>
+          <div id="${f.id}-status" style="font-size:13px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
         </div>
       </div>`;
     } else if (f.type === 'checkbox') {
@@ -3344,6 +3433,9 @@ function renderWizardReview() {
   const photosDisplay = wData['sp-photos-mode'] === 'drive'
     ? (wData['sp-photos-drive-url'] ? '✓ Drive folder linked' : '—')
     : (photoCount ? photoCount + ' photo' + (photoCount !== 1 ? 's' : '') : '—');
+  const videoDisplay = wData['sp-video-mode'] === 'upload'
+    ? (wFiles['sp-video'] ? '✓ Video selected' : '—')
+    : (wData['sp-video-link-url'] ? '✓ Link added' : '—');
   const contactRows = wizardIncludeContact ? [
     ['Name', wData['sp-name']], ['Phone', wData['sp-phone']], ['Email', wData['sp-email'] || '—'],
     ['Role', wData['sp-role'] || '—'],
@@ -3357,6 +3449,7 @@ function renderWizardReview() {
     ['Key Details', wData['sp-key'] || '—'],
     ['Main Photo', wFiles['sp-thumbnail'] ? '✓ Selected' : '—'],
     ['Photos', photosDisplay],
+    ['Video', videoDisplay],
   ].map(([l,v]) => `<div class="wizard-review-row"><span class="wizard-review-label">${l}</span><span class="wizard-review-value">${v}</span></div>`).join('');
 
   document.getElementById('wizardContent').innerHTML = `
@@ -3405,6 +3498,18 @@ async function wizardSubmit(btn) {
       }
     }
 
+    // 0b. Resolve video: either the pasted link or an uploaded file
+    if (wData['sp-video-mode'] === 'upload') {
+      try {
+        const videoUrl = await uploadVideoToCloud('sp-video');
+        if (videoUrl) wData['sp-video'] = videoUrl;
+      } catch (vidErr) {
+        console.warn('Video upload failed (non-fatal):', vidErr);
+      }
+    } else {
+      wData['sp-video'] = wData['sp-video-link-url'] || '';
+    }
+
     // 1. Save to Google Sheet, proxied through our own function so we can
     // actually read success/failure (a direct no-cors browser fetch to Apps
     // Script can't surface errors — it always looks like it worked).
@@ -3444,7 +3549,7 @@ async function wizardSubmit(btn) {
         body: JSON.stringify({
           name: wData['sp-name'], phone: wData['sp-phone'], email: wData['sp-email'],
           interest: `New Listing — ${wData['sp-type']} in ${wData['sp-location']}`,
-          message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${submitAmount}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}`,
+          message: `deal: ${wData['sp-deal']}\ntype: ${wData['sp-type']}\nlocation: ${wData['sp-location']}\nlot: ${wData['sp-lot']||'—'}\nfloor: ${wData['sp-floor']||'—'}\namount: ${submitAmount}\nkey: ${wData['sp-key']||'—'}\nthumbnail: ${wData['sp-thumbnail']||'—'}\nphotos: ${wData['sp-photos']||'—'}\nvideo: ${wData['sp-video']||'—'}`,
         }),
       });
     } catch (emailErr) {
