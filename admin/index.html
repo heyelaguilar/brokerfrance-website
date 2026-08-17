@@ -205,13 +205,25 @@ button{font-family:inherit;cursor:pointer}
 .trip-table tbody td{padding:14px 16px;vertical-align:middle;line-height:1.45}
 .trip-table tbody td.r{text-align:right}
 .trip-footer{margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#718096;display:flex;justify-content:space-between}
+.trip-cards-mobile{display:none}
+.trip-card{background:#fff;border:1px solid #EBEBF0;border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.trip-card-hdr{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.trip-card-n{font-size:12px;font-weight:700;color:#999}
+.trip-card-type{font-size:14px;font-weight:800;color:#111;flex:1}
+.trip-card-price{font-size:14px;font-weight:800;color:#1C6B40;white-space:nowrap}
+.trip-card-loc{font-size:12px;color:#666;margin-bottom:10px}
+.trip-card-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding-top:10px;border-top:1px solid #F4F4F6}
+.trip-card-grid div{font-size:12px;font-weight:600;color:#333}
+.trip-card-grid span{display:block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#999;margin-bottom:2px}
+.trip-card-key{margin-top:10px;padding-top:10px;border-top:1px solid #F4F4F6;font-size:12px;color:#555}
 
 @media print {
   body * { visibility: hidden }
   #print-area, #print-area *, #trip-print-area, #trip-print-area * { visibility: visible }
   #print-area, #trip-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px }
   #trip-print-area { padding: 0 }
-  .trip-table-card { overflow: visible !important; border-radius: 0 }
+  .trip-table-card { display: block !important; overflow: visible !important; border-radius: 0 }
+  .trip-cards-mobile { display: none !important }
   .trip-table thead { display: table-header-group }
   .trip-table tr, .trip-client-card, .trip-letterhead { break-inside: avoid; page-break-inside: avoid }
   .no-print { display: none !important }
@@ -333,6 +345,12 @@ button{font-family:inherit;cursor:pointer}
   /* Submissions: table is unusable this narrow — switch to stacked cards */
   #submissions-table-wrap{display:none}
   .sub-cards{display:block}
+
+  /* Tripping Summary: same problem, same fix — the 8-column table can't
+     be swiped open on a phone, so show cards instead (print still uses
+     the table regardless of screen width, handled in @media print) */
+  .trip-table-card{display:none}
+  .trip-cards-mobile{display:block}
 }
 </style>
 </head>
@@ -1367,29 +1385,65 @@ function generateTripReport() {
         </tr></thead>
         <tbody>
           ${results.map((l, i) => {
-            const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
-            const floor = parseFloat(String(l.floor || '').replace(/[^0-9.]/g, '')) || 0;
-            const price = tripTotalPrice(l);
-            const psqm = lot && price ? formatPeso(price / lot) + '/sqm' : '—';
+            const r = tripRowData(l);
             return `<tr>
               <td style="color:#999;font-weight:600">${i + 1}</td>
-              <td>${esc(l.type || 'Property')}</td>
-              <td>${esc(l.location || '—')}</td>
-              <td>${lot ? lot.toLocaleString() + ' sqm' : '—'}</td>
-              <td>${floor ? floor.toLocaleString() + ' sqm' : '—'}</td>
-              <td class="r" style="font-weight:700">${esc(formatPeso(price))}</td>
-              <td class="r" style="color:#666">${psqm}</td>
-              <td style="font-size:12px;color:#555;max-width:200px">${esc(l.key || '—')}</td>
+              <td>${esc(r.type)}</td>
+              <td>${esc(r.location)}</td>
+              <td>${esc(r.lotDisplay)}</td>
+              <td>${esc(r.floorDisplay)}</td>
+              <td class="r" style="font-weight:700">${esc(r.priceDisplay)}</td>
+              <td class="r" style="color:#666">${esc(r.psqmDisplay)}</td>
+              <td style="font-size:12px;color:#555;max-width:200px">${esc(r.keyDetails)}</td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
+    </div>
+    <!-- Wide tables can't be reliably swiped on phones — mobile shows these
+         stacked cards instead (CSS toggles which is visible; print always
+         uses the table above regardless of screen size). -->
+    <div class="trip-cards-mobile">
+      ${results.map((l, i) => {
+        const r = tripRowData(l);
+        return `<div class="trip-card">
+          <div class="trip-card-hdr">
+            <span class="trip-card-n">${i + 1}</span>
+            <span class="trip-card-type">${esc(r.type)}</span>
+            <span class="trip-card-price">${esc(r.priceDisplay)}</span>
+          </div>
+          <div class="trip-card-loc">${esc(r.location)}</div>
+          <div class="trip-card-grid">
+            <div><span>Lot Area</span>${esc(r.lotDisplay)}</div>
+            <div><span>Floor Area</span>${esc(r.floorDisplay)}</div>
+            <div><span>Price / sqm</span>${esc(r.psqmDisplay)}</div>
+          </div>
+          ${r.keyDetails !== '—' ? `<div class="trip-card-key">${esc(r.keyDetails)}</div>` : ''}
+        </div>`;
+      }).join('')}
     </div>
     <div class="trip-footer">
       <span>All prices are subject to change without prior notice.</span>
       <span>May Francia Rivares-Gonzales · PRC Licensed Broker 020049 · francebrokerage.com</span>
     </div>
   </div>`;
+}
+
+// Shared per-listing display values for both the table (desktop/print) and
+// the stacked-card view (mobile) so they can never drift out of sync.
+function tripRowData(l) {
+  const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
+  const floor = parseFloat(String(l.floor || '').replace(/[^0-9.]/g, '')) || 0;
+  const price = tripTotalPrice(l);
+  return {
+    type: l.type || 'Property',
+    location: l.location || '—',
+    lotDisplay: lot ? lot.toLocaleString() + ' sqm' : '—',
+    floorDisplay: floor ? floor.toLocaleString() + ' sqm' : '—',
+    priceDisplay: formatPeso(price),
+    psqmDisplay: lot && price ? formatPeso(price / lot) + '/sqm' : '—',
+    keyDetails: l.key || '—',
+  };
 }
 
 // Swaps the tab title for the duration of printing so the browser's own
