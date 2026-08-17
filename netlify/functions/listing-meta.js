@@ -58,6 +58,26 @@ function replaceMeta(html, property, attr, content) {
   return html.replace(re, `<meta ${attr}="${property}" content="${esc(content)}">`);
 }
 
+// Kept across warm invocations of the same function instance. A shared link
+// is typically scraped several times within minutes (multiple apps, retries),
+// so this turns most of those repeat hits into an instant in-memory lookup
+// instead of a ~1.5-2s Apps Script round trip — link-preview crawlers
+// (WhatsApp/Viber especially) have tight fetch timeouts, so shaving this
+// leg matters more than it would for a normal page load.
+let cachedListings = null;
+let cachedAt = 0;
+const LISTINGS_TTL_MS = 5 * 60 * 1000;
+
+async function getListings() {
+  if (cachedListings && Date.now() - cachedAt < LISTINGS_TTL_MS) return cachedListings;
+  const res = await fetch(API_URL);
+  if (!res.ok) throw new Error('Apps Script fetch failed: ' + res.status);
+  const data = await res.json();
+  cachedListings = data;
+  cachedAt = Date.now();
+  return data;
+}
+
 exports.handler = async (event) => {
   // _redirects routes /listing/:id to /.netlify/functions/listing-meta/:id
   // (query-string splat substitution isn't supported by the plain-text
@@ -67,18 +87,14 @@ exports.handler = async (event) => {
   const origin = `https://${host}`;
 
   try {
-    const [htmlRes, dataRes] = await Promise.all([
+    const [htmlRes, data] = await Promise.all([
       fetch(`${origin}/index.html`),
-      fetch(API_URL),
+      getListings().catch(() => null),
     ]);
     if (!htmlRes.ok) throw new Error('index.html fetch failed: ' + htmlRes.status);
     let html = await htmlRes.text();
 
-    let listing = null;
-    if (id && dataRes.ok) {
-      const data = await dataRes.json();
-      listing = data.find(row => pick(row, 'id') === id) || null;
-    }
+    const listing = (id && data) ? (data.find(row => pick(row, 'id') === id) || null) : null;
 
     if (listing) {
       const location = pick(listing, 'location');
