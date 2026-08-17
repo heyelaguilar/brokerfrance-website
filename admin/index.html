@@ -231,6 +231,11 @@ button{font-family:inherit;cursor:pointer}
   .trip-cards-mobile { display: none !important }
   .trip-table thead { display: table-header-group }
   .trip-table tr, .trip-client-card, .trip-letterhead { break-inside: avoid; page-break-inside: avoid }
+  /* Tighter so the 9-column table fits A4 portrait's ~190mm usable width
+     without the right-most columns running off the page edge. */
+  .trip-table { font-size: 11px }
+  .trip-table thead th, .trip-table tbody td { padding: 7px 8px }
+  .trip-table-thumb { width: 32px; height: 32px }
 }
 
 /* ig post */
@@ -1466,11 +1471,10 @@ function downloadTripPDF() {
   const original = document.title;
   document.title = `Tripping Summary — ${buyer}`;
 
-  // Landscape fits the 8-column table without clipping; scoped to just this
-  // print job (via a temporary stylesheet) so it doesn't affect the
-  // separate Reports tab's print output, which stays portrait.
+  // Scoped to just this print job (via a temporary stylesheet) so it
+  // doesn't affect the separate Reports tab's print output.
   const pageStyle = document.createElement('style');
-  pageStyle.textContent = '@page { size: A4 landscape; margin: 10mm }';
+  pageStyle.textContent = '@page { size: A4 portrait; margin: 10mm }';
   document.head.appendChild(pageStyle);
 
   const restore = () => {
