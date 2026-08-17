@@ -187,6 +187,11 @@ button{font-family:inherit;cursor:pointer}
 .trip-row-price{font-size:12px;font-weight:700;color:var(--ink2);white-space:nowrap;margin-left:auto}
 
 /* trip report (mirrors /la-residencia tripping-summary layout) */
+.trip-letterhead{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #1C3F2F}
+.trip-letterhead-icon{width:44px;height:44px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.1);flex-shrink:0}
+.trip-letterhead-icon svg{width:28px;height:28px}
+.trip-letterhead-name{font-size:19px;font-weight:800;color:#111;letter-spacing:-.02em}
+.trip-letterhead-sub{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1C6B40}
 .trip-client-card{background:#fff;border:1px solid #EBEBF0;border-radius:14px;padding:16px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px}
 .trip-cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px;line-height:1.6}
 .trip-cinfo strong{font-weight:700;color:#111;white-space:nowrap}
@@ -199,11 +204,16 @@ button{font-family:inherit;cursor:pointer}
 .trip-table tbody tr:last-child{border-bottom:none}
 .trip-table tbody td{padding:14px 16px;vertical-align:middle;line-height:1.45}
 .trip-table tbody td.r{text-align:right}
+.trip-footer{margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#718096;display:flex;justify-content:space-between}
 
 @media print {
   body * { visibility: hidden }
   #print-area, #print-area *, #trip-print-area, #trip-print-area * { visibility: visible }
   #print-area, #trip-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px }
+  #trip-print-area { padding: 0 }
+  .trip-table-card { overflow: visible !important; border-radius: 0 }
+  .trip-table thead { display: table-header-group }
+  .trip-table tr, .trip-client-card, .trip-letterhead { break-inside: avoid; page-break-inside: avoid }
   .no-print { display: none !important }
 }
 
@@ -598,7 +608,7 @@ button{font-family:inherit;cursor:pointer}
         <div id="trip-picker" style="max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs)"></div>
         <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
           <button class="btn-create" style="padding:10px 24px" onclick="generateTripReport()">Generate Report</button>
-          <button id="trip-pdf-btn" style="display:none;padding:10px 24px;border-radius:var(--rs);background:#fff;color:var(--ink2);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer" onclick="window.print()">⬇ Download PDF</button>
+          <button id="trip-pdf-btn" style="display:none;padding:10px 24px;border-radius:var(--rs);background:#fff;color:var(--ink2);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer" onclick="downloadTripPDF()">⬇ Download PDF</button>
           <span id="trip-count" style="font-size:13px;color:var(--ink4)">0 selected</span>
         </div>
       </div>
@@ -1280,7 +1290,7 @@ function renderTripPicker() {
         <div class="trip-row-name">${esc(topText || 'Property')}</div>
         <div class="trip-row-loc">${esc(l.location || '—')}</div>
       </div>
-      <div class="trip-row-price">${esc(formatPeso(l.price || l.amount))}</div>
+      <div class="trip-row-price">${esc(formatPeso(tripTotalPrice(l)))}</div>
     </label>`;
   }).join('');
 }
@@ -1288,6 +1298,20 @@ function renderTripPicker() {
 function toggleTripSelect(id, checked) {
   if (checked) tripSelected.add(id); else tripSelected.delete(id);
   document.getElementById('trip-count').textContent = tripSelected.size + ' selected';
+}
+
+// Some sheet rows store price as a per-sqm rate (e.g. "22000/sqm") rather
+// than a total — mirrors formatPrice()'s isPerSqm handling on the public
+// site, so the report always shows the actual total property price.
+function tripTotalPrice(l) {
+  const raw = String(l.price || l.amount || '');
+  const n = parseFloat(raw.replace(/[^0-9.]/g, ''));
+  if (isNaN(n) || n === 0) return 0;
+  if (/\/\s*sqm\b/i.test(raw)) {
+    const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
+    return lot > 0 ? n * lot : 0;
+  }
+  return n;
 }
 
 function generateTripReport() {
@@ -1311,6 +1335,20 @@ function generateTripReport() {
   pdfBtn.style.display = 'inline-block';
 
   el.innerHTML = `<div id="trip-print-area">
+    <div class="trip-letterhead">
+      <div class="trip-letterhead-icon">
+        <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".9"/>
+          <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".9"/>
+          <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".9"/>
+          <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="trip-letterhead-name">Broker France</div>
+        <div class="trip-letterhead-sub">Property Tripping Summary</div>
+      </div>
+    </div>
     <div class="trip-client-card">
       <div style="display:flex;flex-direction:column;gap:4px">
         <div class="trip-cinfo"><strong>Client:</strong> <span>${esc(buyer)}</span></div>
@@ -1331,7 +1369,7 @@ function generateTripReport() {
           ${results.map((l, i) => {
             const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
             const floor = parseFloat(String(l.floor || '').replace(/[^0-9.]/g, '')) || 0;
-            const price = parseFloat(String(l.price || l.amount || '').replace(/[^0-9.]/g, '')) || 0;
+            const price = tripTotalPrice(l);
             const psqm = lot && price ? formatPeso(price / lot) + '/sqm' : '—';
             return `<tr>
               <td style="color:#999;font-weight:600">${i + 1}</td>
@@ -1347,11 +1385,36 @@ function generateTripReport() {
         </tbody>
       </table>
     </div>
-    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#718096;display:flex;justify-content:space-between">
+    <div class="trip-footer">
       <span>All prices are subject to change without prior notice.</span>
       <span>May Francia Rivares-Gonzales · PRC Licensed Broker 020049 · francebrokerage.com</span>
     </div>
   </div>`;
+}
+
+// Swaps the tab title for the duration of printing so the browser's own
+// print header (which shows the page <title>) reads as a client-facing
+// report title instead of "Admin — Broker France".
+function downloadTripPDF() {
+  const buyer = document.getElementById('trip-buyer').value.trim() || 'Buyer';
+  const original = document.title;
+  document.title = `Tripping Summary — ${buyer}`;
+
+  // Landscape fits the 8-column table without clipping; scoped to just this
+  // print job (via a temporary stylesheet) so it doesn't affect the
+  // separate Reports tab's print output, which stays portrait.
+  const pageStyle = document.createElement('style');
+  pageStyle.textContent = '@page { size: A4 landscape; margin: 10mm }';
+  document.head.appendChild(pageStyle);
+
+  const restore = () => {
+    document.title = original;
+    pageStyle.remove();
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  window.print();
+  setTimeout(restore, 2000);
 }
 
 // ── IG POST GENERATOR ─────────────────────────────────
