@@ -636,6 +636,7 @@ button{font-family:inherit;cursor:pointer}
         <div style="display:flex;gap:12px;align-items:center;margin-top:16px">
           <button class="btn-create" style="padding:10px 24px" onclick="generateTripReport()">Generate Report</button>
           <button id="trip-pdf-btn" style="display:none;padding:10px 24px;border-radius:var(--rs);background:#fff;color:var(--ink2);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer" onclick="downloadTripPDF()">⬇ Download PDF</button>
+          <button id="trip-link-btn" style="display:none;padding:10px 24px;border-radius:var(--rs);background:#fff;color:var(--ink2);border:1px solid var(--border);font-size:13px;font-weight:600;cursor:pointer" onclick="copyTripLink()">🔗 Copy Link</button>
           <span id="trip-count" style="font-size:13px;color:var(--ink4)">0 selected</span>
         </div>
       </div>
@@ -1351,15 +1352,18 @@ function generateTripReport() {
   const results = (allListings || []).filter(l => tripSelected.has(l.id));
   const el = document.getElementById('trip-results');
   const pdfBtn = document.getElementById('trip-pdf-btn');
+  const linkBtn = document.getElementById('trip-link-btn');
 
   if (!results.length) {
     el.innerHTML = '';
     pdfBtn.style.display = 'none';
+    linkBtn.style.display = 'none';
     showToast('Select at least one property first');
     return;
   }
 
   pdfBtn.style.display = 'inline-block';
+  linkBtn.style.display = 'inline-block';
 
   el.innerHTML = `<div id="trip-print-area">
     <div class="trip-letterhead">
@@ -1485,6 +1489,28 @@ function downloadTripPDF() {
   window.addEventListener('afterprint', restore);
   window.print();
   setTimeout(restore, 2000);
+}
+
+// Builds a public, no-login link to the same report at /trip-summary —
+// it re-fetches listings itself from the same public API, so the link
+// stays live even if the buyer opens it later, rather than being a
+// snapshot of prices at generation time.
+function copyTripLink() {
+  const buyer = document.getElementById('trip-buyer').value.trim() || 'Buyer';
+  const dateVal = document.getElementById('trip-date').value;
+  const ids = Array.from(tripSelected).join(',');
+  if (!ids) { showToast('Select at least one property first'); return; }
+
+  const url = `${location.origin}/trip-summary?buyer=${encodeURIComponent(buyer)}&date=${encodeURIComponent(dateVal)}&ids=${encodeURIComponent(ids)}`;
+  navigator.clipboard.writeText(url)
+    .then(() => showToast('Link copied!'))
+    .catch(() => {
+      const inp = document.createElement('input');
+      inp.value = url; document.body.appendChild(inp);
+      inp.select(); document.execCommand('copy');
+      document.body.removeChild(inp);
+      showToast('Link copied!');
+    });
 }
 
 // ── IG POST GENERATOR ─────────────────────────────────

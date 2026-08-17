@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Tripping Summary — Broker France</title>
+<link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="%231DB954" opacity=".9"/><path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="%2315963F" opacity=".9"/><path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="%231DB954" opacity=".9"/></svg>'>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Manrope',sans-serif;background:#EBEBF0;color:#111;-webkit-font-smoothing:antialiased;padding:48px 24px 80px;min-height:100vh}
+.wrap{max-width:900px;margin:0 auto}
+
+.top{display:flex;align-items:center;gap:14px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #1C3F2F}
+.top-icon{width:44px;height:44px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.1);flex-shrink:0}
+.top-icon svg{width:28px;height:28px}
+.top-name{font-size:19px;font-weight:800;color:#111;letter-spacing:-.02em}
+.top-sub{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#1C6B40}
+
+.client-card{background:#fff;border-radius:14px;padding:16px 24px;box-shadow:0 1px 3px rgba(0,0,0,.06);display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:20px;border:1px solid #EBEBF0}
+.cinfo{display:flex;align-items:baseline;gap:6px;font-size:14px;line-height:1.6}
+.cinfo strong{font-weight:700;color:#111;white-space:nowrap}
+.cinfo span{color:#444;font-weight:500}
+
+.table-card{background:#fff;border-radius:14px;overflow-x:auto;box-shadow:0 1px 3px rgba(0,0,0,.06);border:1px solid #EBEBF0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:12px 16px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#999;border-bottom:1px solid #EBEBF0;white-space:nowrap}
+thead th.r{text-align:right}
+tbody tr{border-bottom:1px solid #F4F4F6}
+tbody tr:last-child{border-bottom:none}
+tbody td{padding:14px 16px;vertical-align:middle;line-height:1.45}
+tbody td.r{text-align:right}
+.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #EBEBF0;display:block;background:#F4F4F6}
+
+.footer{margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;font-size:12px;color:#718096;display:flex;justify-content:space-between}
+
+.print-btn{position:fixed;bottom:24px;right:24px;background:#1C3F2F;color:#fff;border:none;border-radius:100px;padding:12px 22px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px;box-shadow:0 4px 16px rgba(28,63,47,.3)}
+.print-btn:hover{background:#2D6A4F}
+.print-btn svg{width:14px;height:14px}
+
+.empty{padding:40px;text-align:center;color:#999;font-size:13px}
+
+@media(max-width:640px){
+  body{padding:24px 14px 80px}
+  .top-name{font-size:16px}
+  .table-card{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:640px}
+}
+@media print{
+  @page{size:A4 portrait;margin:10mm}
+  body{background:#fff;padding:0;font-size:11px}
+  .wrap{max-width:100%}
+  table{font-size:11px}
+  thead th,tbody td{padding:7px 8px}
+  .thumb{width:32px;height:32px}
+  tbody tr{break-inside:avoid;page-break-inside:avoid}
+  thead{display:table-header-group}
+  .print-btn{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="top">
+  <div class="top-icon">
+    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M40 38 C40 28 30 18 22 22 C18 30 28 40 38 40" fill="#1DB954" opacity=".9"/>
+      <path d="M40 38 C40 28 50 18 58 22 C62 30 52 40 42 40" fill="#15963F" opacity=".9"/>
+      <path d="M40 42 C40 52 30 62 22 58 C18 50 28 40 38 40" fill="#15963F" opacity=".9"/>
+      <path d="M40 42 C40 52 50 62 58 58 C62 50 52 40 42 40" fill="#1DB954" opacity=".9"/>
+    </svg>
+  </div>
+  <div>
+    <div class="top-name">Broker France</div>
+    <div class="top-sub">Property Tripping Summary</div>
+  </div>
+</div>
+
+<div class="client-card">
+  <div style="display:flex;flex-direction:column;gap:4px">
+    <div class="cinfo"><strong>Client:</strong> <span id="cbuyer"></span></div>
+    <div class="cinfo"><strong>Broker:</strong> <span>May Francia R. Gonzales</span></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:4px;text-align:right">
+    <div class="cinfo" style="justify-content:flex-end"><strong>Date:</strong> <span id="cdate"></span></div>
+    <div class="cinfo" style="justify-content:flex-end"><strong>Properties:</strong> <span id="ccount"></span></div>
+  </div>
+</div>
+
+<div class="table-card">
+  <div id="loading" style="padding:40px;text-align:center;color:#bbb;font-size:13px">Loading listings…</div>
+  <table id="table" style="display:none">
+    <thead>
+      <tr>
+        <th>Photo</th><th>#</th><th>Type</th><th>Location</th><th>Lot Area</th><th>Floor Area</th>
+        <th class="r">Price</th><th class="r">Price / sqm</th><th>Key Details</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<div class="footer">
+  <div>All prices are subject to change without prior notice.</div>
+  <div>May Francia Rivares-Gonzales · PRC Licensed Broker 020049 · francebrokerage.com</div>
+</div>
+
+</div><!-- /wrap -->
+
+<button class="print-btn" onclick="window.print()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+  Print / Save PDF
+</button>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbw6K2kW3AOpA_PNN6G9b0MArcjVzn9_Hc-E8v8UKrBAgH0TBZSZt9956Ntf1utrBUjIUQ/exec';
+
+const ALIASES = {
+  id: ['id'], location: ['location'], type: ['property_type', 'type'],
+  price: ['price', 'selling_price', 'amount'], key_details: ['key_details', 'details', 'key'],
+};
+function pick(l, field) {
+  const keys = Object.keys(l).map(k => ({ orig: k, norm: k.toLowerCase().trim().replace(/\s+/g, '_') }));
+  for (const alias of ALIASES[field]) {
+    const found = keys.find(k => k.norm.includes(alias));
+    if (found) return String(l[found.orig] || '').trim();
+  }
+  return '';
+}
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+function formatPeso(n) {
+  n = Number(n);
+  return n ? '₱' + n.toLocaleString('en-PH', { maximumFractionDigits: 0 }) : '—';
+}
+// Some rows store price as a per-sqm rate (e.g. "22000/sqm") rather than a
+// total — mirrors the same handling in admin/index.html and the public
+// site's formatPrice(), so the total always reflects the actual price.
+function totalPrice(l) {
+  const raw = pick(l, 'price');
+  const n = parseFloat(raw.replace(/[^0-9.]/g, ''));
+  if (isNaN(n) || n === 0) return 0;
+  if (/\/\s*sqm\b/i.test(raw)) {
+    const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
+    return lot > 0 ? n * lot : 0;
+  }
+  return n;
+}
+function driveThumb(url) {
+  if (!url) return '';
+  const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1) return 'https://drive.google.com/uc?export=view&id=' + m1[1];
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return 'https://drive.google.com/uc?export=view&id=' + m2[1];
+  return url;
+}
+function driveThumbFallback(imgEl, url) {
+  const m1 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  const id = m1 ? m1[1] : (url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || [])[1];
+  if (id) { imgEl.src = 'https://lh3.googleusercontent.com/d/' + id; imgEl.onerror = null; }
+  else { imgEl.style.visibility = 'hidden'; }
+}
+
+const params = new URLSearchParams(location.search);
+const buyer = params.get('buyer') || 'Buyer';
+const dateParam = params.get('date') || '';
+const ids = new Set((params.get('ids') || '').split(',').map(s => s.trim()).filter(Boolean));
+
+document.getElementById('cbuyer').textContent = buyer;
+document.getElementById('cdate').textContent = dateParam
+  ? new Date(dateParam + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+  : new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+document.title = `Tripping Summary — ${buyer}`;
+
+async function load() {
+  if (!ids.size) {
+    document.getElementById('loading').textContent = 'No properties specified in this link.';
+    return;
+  }
+  try {
+    const res = await fetch(API_URL, { cache: 'no-store', redirect: 'follow' });
+    const data = await res.json();
+    const results = data.filter(l => ids.has(pick(l, 'id')));
+    render(results);
+  } catch (e) {
+    document.getElementById('loading').textContent = 'Could not load listings — ' + e.message;
+  }
+}
+
+function render(list) {
+  document.getElementById('ccount').textContent = list.length;
+  if (!list.length) {
+    document.getElementById('loading').textContent = 'No matching properties found.';
+    return;
+  }
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('tbody').innerHTML = list.map((l, i) => {
+    const lot = parseFloat(String(l.lot || '').replace(/[^0-9.]/g, '')) || 0;
+    const floor = parseFloat(String(l.floor || '').replace(/[^0-9.]/g, '')) || 0;
+    const price = totalPrice(l);
+    const psqm = lot && price ? formatPeso(price / lot) + '/sqm' : '—';
+    const rawThumb = l.thumbnail || '';
+    const thumb = driveThumb(rawThumb);
+    return `<tr>
+      <td>${thumb
+        ? `<img class="thumb" src="${esc(thumb)}" onerror="driveThumbFallback(this,'${esc(rawThumb)}')">`
+        : `<div class="thumb"></div>`}</td>
+      <td style="color:#999;font-weight:600">${i + 1}</td>
+      <td>${esc(pick(l, 'type') || 'Property')}</td>
+      <td>${esc(pick(l, 'location') || '—')}</td>
+      <td>${lot ? lot.toLocaleString() + ' sqm' : '—'}</td>
+      <td>${floor ? floor.toLocaleString() + ' sqm' : '—'}</td>
+      <td class="r" style="font-weight:700">${esc(formatPeso(price))}</td>
+      <td class="r" style="color:#666">${esc(psqm)}</td>
+      <td style="font-size:12px;color:#555;max-width:200px">${esc(pick(l, 'key_details') || '—')}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('table').style.display = 'table';
+}
+
+load();
+</script>
+</body>
+</html>
