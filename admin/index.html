@@ -218,15 +218,16 @@ button{font-family:inherit;cursor:pointer}
 .trip-card-key{margin-top:10px;padding-top:10px;border-top:1px solid #F4F4F6;font-size:12px;color:#555}
 
 @media print {
-  body * { visibility: hidden }
-  #print-area, #print-area *, #trip-print-area, #trip-print-area * { visibility: visible }
-  #print-area, #trip-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 32px }
-  #trip-print-area { padding: 0 }
+  /* Print only the generated report: hide the nav and every control panel,
+     and let the report flow in normal document position (not position:fixed
+     — that re-anchors to every page and was causing the letterhead/header
+     row to re-render on top of later pages, garbling anything past page 1). */
+  .sidebar, .page-hdr, .card, .toast, .no-print { display: none !important }
+  .main { margin: 0 !important; padding: 0 !important; min-height: 0 !important }
   .trip-table-card { display: block !important; overflow: visible !important; border-radius: 0 }
   .trip-cards-mobile { display: none !important }
   .trip-table thead { display: table-header-group }
   .trip-table tr, .trip-client-card, .trip-letterhead { break-inside: avoid; page-break-inside: avoid }
-  .no-print { display: none !important }
 }
 
 /* ig post */
