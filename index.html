@@ -3172,6 +3172,37 @@ async function uploadVideoToCloud(id) {
   }
 }
 
+// Builds an embeddable preview for a pasted video link — YouTube, Facebook,
+// Google Drive, or a direct file URL. Returns '' for anything unrecognized
+// (input stays a plain link with no preview rather than showing a broken one).
+function videoEmbedHtml(url) {
+  url = (url || '').trim();
+  if (!url) return '';
+  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  if (yt) return `<iframe src="https://www.youtube.com/embed/${yt[1]}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px" allowfullscreen></iframe>`;
+  if (/drive\.google\.com/.test(url)) {
+    const m = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (m) return `<iframe src="https://drive.google.com/file/d/${m[1]}/preview" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px" allowfullscreen></iframe>`;
+  }
+  if (/facebook\.com|fb\.watch/.test(url)) return `<iframe src="https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}" style="width:100%;aspect-ratio:16/9;border:none;border-radius:8px" allowfullscreen></iframe>`;
+  if (/\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(url)) return `<video src="${esc(url)}" controls style="width:100%;max-height:220px;border-radius:8px"></video>`;
+  return '';
+}
+
+let videoPreviewDebounce;
+function updateVideoLinkPreview(id) {
+  clearTimeout(videoPreviewDebounce);
+  videoPreviewDebounce = setTimeout(() => {
+    const input = document.getElementById(id + '-link-url');
+    const wrap = document.getElementById(id + '-link-preview');
+    if (!input || !wrap) return;
+    wData['sp-video-link-url'] = input.value;
+    const html = videoEmbedHtml(input.value);
+    wrap.innerHTML = html;
+    wrap.style.display = html ? 'block' : 'none';
+  }, 400);
+}
+
 function setVideoMode(mode) {
   wData['sp-video-mode'] = mode;
   document.querySelectorAll('.amount-unit-btn[data-vmode]').forEach(b => b.classList.toggle('active', b.dataset.vmode === mode));
@@ -3314,8 +3345,9 @@ function renderWizardStep() {
           <button type="button" class="amount-unit-btn ${vmode==='upload'?'active':''}" data-vmode="upload" onclick="setVideoMode('upload')">Upload Video</button>
         </div>
         <div id="${f.id}-link-mode" style="display:${vmode==='link'?'':'none'};margin-top:10px">
-          <input type="text" id="${f.id}-link-url" placeholder="https://youtube.com/watch?v=... or Facebook/Drive link" value="${esc(wData['sp-video-link-url']||'')}" oninput="wData['sp-video-link-url']=this.value">
+          <input type="text" id="${f.id}-link-url" placeholder="https://youtube.com/watch?v=... or Facebook/Drive link" value="${esc(wData['sp-video-link-url']||'')}" oninput="updateVideoLinkPreview('${f.id}')">
           <span class="hint">YouTube, Facebook, or Google Drive video link</span>
+          <div id="${f.id}-link-preview" style="margin-top:10px;display:${videoEmbedHtml(wData['sp-video-link-url'])?'block':'none'}">${videoEmbedHtml(wData['sp-video-link-url'])}</div>
         </div>
         <div id="${f.id}-upload-mode" style="display:${vmode==='upload'?'':'none'};margin-top:10px">
           <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="handleVideoDrop(event,'${f.id}')">
