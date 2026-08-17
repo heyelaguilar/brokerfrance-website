@@ -216,6 +216,9 @@ button{font-family:inherit;cursor:pointer}
 .trip-card-grid div{font-size:12px;font-weight:600;color:#333}
 .trip-card-grid span{display:block;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#999;margin-bottom:2px}
 .trip-card-key{margin-top:10px;padding-top:10px;border-top:1px solid #F4F4F6;font-size:12px;color:#555}
+.trip-table-thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid #EBEBF0;display:block}
+.trip-card-thumb{width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid #EBEBF0;flex-shrink:0}
+.trip-thumb-ph{background:#F4F4F6}
 
 @media print {
   /* Print only the generated report: hide the nav and every control panel,
@@ -1381,13 +1384,16 @@ function generateTripReport() {
     <div class="trip-table-card">
       <table class="trip-table">
         <thead><tr>
-          <th>#</th><th>Type</th><th>Location</th><th>Lot Area</th><th>Floor Area</th>
+          <th>Photo</th><th>#</th><th>Type</th><th>Location</th><th>Lot Area</th><th>Floor Area</th>
           <th class="r">Price</th><th class="r">Price / sqm</th><th>Key Details</th>
         </tr></thead>
         <tbody>
           ${results.map((l, i) => {
             const r = tripRowData(l);
             return `<tr>
+              <td>${r.thumb
+                ? `<img class="trip-table-thumb" src="${esc(r.thumb)}" onerror="driveThumbFallback(this,'${esc(r.rawThumb)}')">`
+                : `<div class="trip-table-thumb trip-thumb-ph"></div>`}</td>
               <td style="color:#999;font-weight:600">${i + 1}</td>
               <td>${esc(r.type)}</td>
               <td>${esc(r.location)}</td>
@@ -1409,6 +1415,9 @@ function generateTripReport() {
         const r = tripRowData(l);
         return `<div class="trip-card">
           <div class="trip-card-hdr">
+            ${r.thumb
+              ? `<img class="trip-card-thumb" src="${esc(r.thumb)}" onerror="driveThumbFallback(this,'${esc(r.rawThumb)}')">`
+              : `<div class="trip-card-thumb trip-thumb-ph"></div>`}
             <span class="trip-card-n">${i + 1}</span>
             <span class="trip-card-type">${esc(r.type)}</span>
             <span class="trip-card-price">${esc(r.priceDisplay)}</span>
@@ -1444,6 +1453,8 @@ function tripRowData(l) {
     priceDisplay: formatPeso(price),
     psqmDisplay: lot && price ? formatPeso(price / lot) + '/sqm' : '—',
     keyDetails: l.key || '—',
+    rawThumb: l.thumbnail || '',
+    thumb: driveThumb(l.thumbnail || ''),
   };
 }
 
