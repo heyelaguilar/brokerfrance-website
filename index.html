@@ -2045,7 +2045,7 @@ function formatPrice(raw, lotArea) {
 // ── TYPE NORMALISER ───────────────────────────────────
 function normaliseType(raw) {
   const v = raw.toLowerCase().trim();
-  if (/h&l|house|residential/.test(v))            return 'residential';
+  if (/h&l|\bhouse\b|residential/.test(v))         return 'residential';
   if (/condo/.test(v))                             return 'condominium';
   if (/warehouse/.test(v))                         return 'warehouse';
   if (/farm|agri|poultry/.test(v))                return 'farm';
