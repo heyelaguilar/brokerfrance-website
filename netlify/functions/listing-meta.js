@@ -104,8 +104,14 @@ exports.handler = async (event) => {
       const thumbnail = String(listing.thumbnail || '').trim();
       const photos = pick(listing, 'photos');
 
-      const title = keyDetails.split('|')[0].trim() || `${type || 'Property'} in ${location}`;
-      const desc = `${price} — ${location}. ${keyDetails.split('|').slice(0, 3).join(' · ')}`.trim();
+      // key_details is inconsistently populated in the sheet — sometimes a
+      // real headline ("Large Residential Home"), sometimes just a status
+      // tag ("Clean Title") that reads oddly as a listing's name. Location
+      // is always meaningful, so lead with that instead and keep
+      // key_details as supporting detail in the description.
+      const title = location || `${type || 'Property'} Listing`;
+      const details = keyDetails.split('|').map(s => s.trim()).filter(Boolean).slice(0, 3).join(' · ');
+      const desc = `${price} — ${type}${details ? '. ' + details : ''}`.trim();
 
       const candidate = thumbnail || photos.split('|')[0] || '';
       let image = `${origin}/image/og-image.png`;
