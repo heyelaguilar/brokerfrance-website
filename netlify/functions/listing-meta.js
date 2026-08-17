@@ -56,7 +56,10 @@ function replaceMeta(html, property, attr, content) {
 }
 
 exports.handler = async (event) => {
-  const id = (event.queryStringParameters && event.queryStringParameters.id) || '';
+  // _redirects routes /listing/:id to /.netlify/functions/listing-meta/:id
+  // (query-string splat substitution isn't supported by the plain-text
+  // _redirects format, so the id travels as a trailing path segment).
+  const id = decodeURIComponent(event.path.split('/').pop() || '');
   const host = event.headers['x-forwarded-host'] || event.headers.host;
   const origin = `https://${host}`;
 
