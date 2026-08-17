@@ -33,9 +33,12 @@ function formatPrice(raw) {
   return '₱' + n.toLocaleString();
 }
 
-// Mirrors driveThumb(): Drive share links get resolved to a file id (for
-// our own image proxy below); anything else (Cloudinary, other direct
-// image URLs) is already crawler-safe and used as-is.
+// Mirrors driveThumb(): Drive share links get resolved to a file id, then
+// pointed at Google's own image CDN (the same host driveThumbFallback()
+// already falls back to client-side) rather than drive.google.com/uc,
+// which 303-redirects and adds ~2s of extra round-trip — link-preview
+// crawlers (WhatsApp/Viber especially) have tight fetch timeouts and were
+// giving up before that redirect chain finished, showing no image at all.
 function driveFileId(url) {
   if (!url) return '';
   const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -92,7 +95,7 @@ exports.handler = async (event) => {
       let image = `${origin}/image/og-image.png`;
       if (isDriveLink(candidate)) {
         const fileId = driveFileId(candidate);
-        if (fileId) image = `${origin}/.netlify/functions/drive-image?id=${fileId}`;
+        if (fileId) image = `https://lh3.googleusercontent.com/d/${fileId}=w1200`;
       } else if (/^https?:\/\//.test(candidate)) {
         image = candidate;
       }
@@ -107,6 +110,19 @@ exports.handler = async (event) => {
       html = replaceMeta(html, 'twitter:title', 'name', title);
       html = replaceMeta(html, 'twitter:description', 'name', desc);
       html = replaceMeta(html, 'twitter:image', 'name', image);
+
+      // og:site_name: some platforms (Facebook/Messenger) show this in place
+      // of the bare domain under the title; others (iMessage, Viber) always
+      // show the raw URL regardless and ignore this tag — no meta tag can
+      // override that on those platforms.
+      if (/<meta property="og:site_name" content=".*?">/.test(html)) {
+        html = replaceMeta(html, 'og:site_name', 'property', title);
+      } else {
+        html = html.replace(
+          /<meta property="og:title"/,
+          `<meta property="og:site_name" content="${esc(title)}">\n<meta property="og:title"`
+        );
+      }
     }
 
     return {
