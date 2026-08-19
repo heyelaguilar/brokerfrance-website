@@ -1,5 +1,6 @@
 /la-residencia  /la-residencia/index.html   200
 /trip-summary   /trip-summary/index.html   200
+/trip-summary-*   /trip-summary/index.html   200
 /residencia     /la-residencia   302
 /listing/*   /.netlify/functions/listing-meta/:splat   200
 /listings    /index.html   200

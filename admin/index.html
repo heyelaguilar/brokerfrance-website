@@ -1501,7 +1501,13 @@ function copyTripLink() {
   const ids = Array.from(tripSelected).join(',');
   if (!ids) { showToast('Select at least one property first'); return; }
 
-  const url = `${location.origin}/trip-summary?buyer=${encodeURIComponent(buyer)}&date=${encodeURIComponent(dateVal)}&ids=${encodeURIComponent(ids)}`;
+  // The slug in the path is cosmetic only — buyer= in the query string is
+  // still what the page actually displays, so exact spelling/casing isn't
+  // lost even though the slug strips punctuation and accents.
+  const slug = buyer.toLowerCase().trim()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'buyer';
+  const url = `${location.origin}/trip-summary-${slug}?buyer=${encodeURIComponent(buyer)}&date=${encodeURIComponent(dateVal)}&ids=${encodeURIComponent(ids)}`;
   navigator.clipboard.writeText(url)
     .then(() => showToast('Link copied!'))
     .catch(() => {
