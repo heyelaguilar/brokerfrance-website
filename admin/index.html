@@ -15,11 +15,12 @@ button{font-family:inherit;cursor:pointer}
 
 /* ── TOKENS ── */
 :root{
-  --green:#1C3F2F;--green-d:#2A6044;--green-l:#F0F7F3;
+  --green:#1C3F2F;--green-d:#2A6044;--green-l:#F0F7F3;--green-m:#D4EAE0;
   --ink:#0E1117;--ink2:#2D3748;--ink3:#4A5568;--ink4:#718096;
   --border:#D1D9E0;--bg:#F4F6F8;--white:#fff;
-  --r:12px;--rs:8px;
+  --r:12px;--rs:8px;--rl:22px;
   --sh:0 1px 3px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.05);
+  --shl:0 16px 48px rgba(0,0,0,.18),0 4px 12px rgba(0,0,0,.08);
 }
 
 /* ── LOGIN SCREEN ── */
@@ -259,6 +260,74 @@ button{font-family:inherit;cursor:pointer}
 .ig-dl-btn svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.5}
 .ig-note{font-size:12px;color:var(--ink4);text-align:center;margin-top:10px}
 .txt-modal-textarea{width:100%;min-height:380px;padding:16px;border-radius:var(--rs);border:1.5px solid var(--border);font-family:inherit;font-size:13px;line-height:1.6;color:var(--ink);resize:vertical;margin-bottom:16px}
+
+/* edit-listing wizard (ported from the public /submit form) */
+@keyframes spin{to{transform:rotate(360deg)}}
+.edit-modal-bg{position:fixed;inset:0;background:rgba(14,17,23,.55);z-index:700;display:flex;align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.wizard-card{background:#fff;border-radius:var(--rl);box-shadow:var(--shl);width:100%;max-width:560px;margin:auto;overflow:hidden}
+.wizard-card-hdr{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0}
+.wizard-card-hdr h3{font-size:15px;font-weight:800;color:var(--ink)}
+.wizard-progress{height:4px;background:var(--border);position:relative;margin-top:16px}
+.wizard-progress-bar{height:100%;background:var(--green);transition:width .4s ease;border-radius:0 99px 99px 0}
+.wizard-step-hdr{padding:28px 36px 0}
+.wizard-step-num{font-size:13px;font-weight:800;color:var(--green-d);letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px}
+.wizard-step-title{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-.02em;margin-bottom:6px}
+.wizard-step-sub{font-size:14px;color:var(--ink3);line-height:1.6}
+.wizard-fields{padding:24px 36px 8px;display:flex;flex-direction:column;gap:18px;max-height:52vh;overflow-y:auto}
+.wf{display:flex;flex-direction:column;gap:6px}
+.wf label{font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em}
+.wf label em{color:var(--green-d);font-style:normal;margin-left:2px}
+.wf input,.wf select,.wf textarea{font-family:'Manrope',sans-serif;font-size:15px;font-weight:500;color:var(--ink);background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:12px 16px;outline:none;transition:all .15s;width:100%}
+.wf input:focus,.wf select:focus,.wf textarea:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(27,58,45,.08)}
+.wf textarea{resize:none;height:90px}
+.wf .hint{font-size:12px;color:var(--ink3);margin-top:2px}
+.wf-check{position:relative;display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;user-select:none}
+.wf-check:hover{border-color:var(--green-m);background:#EEF7F2}
+.wf-check input[type=checkbox]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.wf-check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);background:#fff;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.wf-check:hover .wf-check-box{border-color:var(--green)}
+.wf-check.checked .wf-check-box{background:var(--green);border-color:var(--green)}
+.wf-check.checked .wf-check-box::after{content:'';display:block;width:6px;height:10px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) translateY(-1px)}
+.wf-check.checked{border-color:var(--green);background:#EEF7F2}
+.wf-check-text{font-size:14px;font-weight:600;color:var(--ink)}
+.wizard-nav{padding:20px 36px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.wizard-back{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:600;color:var(--ink3);background:none;border:none;cursor:pointer;transition:color .15s;padding:0}
+.wizard-back:hover{color:var(--ink)}
+.wizard-back svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.5}
+.wizard-next{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--rs);background:var(--green);color:#fff;font-size:14px;font-weight:700;border:none;cursor:pointer;transition:all .2s;margin-left:auto}
+.wizard-next:hover{background:var(--green-d)}
+.wizard-next svg{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5}
+.wizard-next:disabled{background:#9CA3AF;cursor:not-allowed}
+.wizard-dots{display:flex;gap:6px;margin:0 auto}
+.wizard-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all .25s}
+.wizard-dot.done{background:var(--green-m)}
+.wizard-dot.active{background:var(--green);width:20px;border-radius:99px}
+.wizard-review{padding:24px 36px 8px;max-height:52vh;overflow-y:auto}
+.wizard-review-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.wizard-review-row:last-child{border-bottom:none}
+.wizard-review-label{color:var(--ink3);font-weight:600;flex-shrink:0;width:130px}
+.wizard-review-value{color:var(--ink);font-weight:600;text-align:right;word-break:break-all}
+.upload-grid{display:grid;grid-template-columns:repeat(auto-fill,64px);gap:10px;margin-top:12px}
+.upload-thumb{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;background:var(--bg);border:1.5px solid var(--border)}
+.upload-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.upload-thumb-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.55);transition:opacity .2s}
+.upload-thumb-overlay.done{background:rgba(28,63,47,.7)}
+.upload-thumb-overlay.error{background:rgba(180,30,30,.7)}
+.upload-thumb-remove{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.upload-thumb-spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:4px}
+.upload-thumb-check{font-size:18px;color:#fff}
+.upload-thumb-label{font-size:9px;font-weight:700;color:#fff;letter-spacing:.06em;text-transform:uppercase}
+.upload-progress-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:10px}
+.upload-progress-fill{height:100%;background:var(--green);border-radius:99px;transition:width .3s ease;width:0%}
+.amount-unit-toggle{display:flex;gap:8px;margin-top:8px}
+.amount-unit-btn{flex:1;padding:8px 12px;border-radius:var(--rs);border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:700;color:var(--ink3);cursor:pointer;transition:all .15s}
+.amount-unit-btn.active{border-color:var(--green);background:var(--green-l);color:var(--green-d)}
+@media(max-width:600px){
+  .wizard-step-hdr{padding:24px 22px 0}
+  .wizard-fields{padding:18px 22px 8px}
+  .wizard-nav{padding:16px 22px 24px}
+  .wizard-review{padding:18px 22px 8px}
+}
 
 /* transaction detail */
 .txn-detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:24px}
@@ -711,6 +780,18 @@ button{font-family:inherit;cursor:pointer}
   </div>
 </div>
 
+<!-- EDIT LISTING MODAL (reuses the public /submit wizard UI) -->
+<div class="edit-modal-bg" id="edit-modal-bg" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="wizard-card">
+    <div class="wizard-card-hdr">
+      <h3>Edit Listing</h3>
+      <button class="ig-modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="wizard-progress"><div class="wizard-progress-bar" id="eProgressBar" style="width:33%"></div></div>
+    <div id="editWizardContent"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -797,6 +878,7 @@ function renderListingsTable(list) {
       <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink3)">${esc(l.location||'—')}</td>
       <td><div class="tbl-actions">
         <button class="btn-sm btn-view" onclick="viewOnSite('${esc(l.id||'')}')">View</button>
+        <button class="btn-ig" onclick="openEditListing('${esc(l.id||'')}')">✏️ Edit</button>
         <button class="btn-ig" onclick="openIgModal('${esc(l.id||'')}')">📸 Post</button>
         <button class="btn-ig" onclick="openTextModal('${esc(l.id||'')}')">📝 Text</button>
       </div></td>
@@ -1814,6 +1896,413 @@ function copyListingText() {
   navigator.clipboard.writeText(ta.value)
     .then(() => showToast('Copied to clipboard!'))
     .catch(() => showToast('Could not copy — select and copy manually.'));
+}
+
+// ── EDIT LISTING (reuses the public /submit wizard UI/UX) ─────────────
+const CLOUDINARY_UPLOAD_URL = 'https://api.cloudinary.com/v1_1/dg5p9ccnu/image/upload';
+const CLOUDINARY_PRESET = 'francebrokerage';
+
+const EDIT_LISTING_STEPS = [
+  {
+    title: 'Property Basics', sub: 'Core details shown across the site.',
+    fields: [
+      // values match what the Listings sheet already holds, so an untouched field saves back unchanged
+      { id:'el-deal',      label:'Deal Type',      type:'select', opts:[['For Sale','For Sale'],['For Lease','For Lease'],['For Sale, For Lease','For Sale & For Lease'],['For Rent','For Rent'],['On Hold','On Hold'],['Sold','Sold']] },
+      { id:'el-type',      label:'Property Type',  type:'text', list:'el-type-list', hint:'Pick a suggestion or type your own, e.g. Residential H&L, Lot Only, Condominium' },
+      { id:'el-location',  label:'Location',       type:'text' },
+      { id:'el-exclusive', label:'',               type:'checkbox', text:'Mark as an Exclusive listing' },
+    ]
+  },
+  {
+    title: 'Size & Price', sub: 'Scope and value of the property.',
+    fields: [
+      { id:'el-lot',   label:'Lot Area (sqm)',   type:'number' },
+      { id:'el-floor', label:'Floor Area (sqm)', type:'number', hint:'Leave blank if not applicable' },
+      { id:'el-price', label:'Price',            type:'text', hint:'Numbers only, e.g. 5500000 — or 5500/sqm for a per-sqm price' },
+    ]
+  },
+  {
+    title: 'Details & Photos', sub: 'Update key features and swap images.',
+    fields: [
+      { id:'el-key',       label:'Key Features',       type:'textarea', hint:'Separate features with a pipe |' },
+      { id:'el-thumbnail', label:'Main Photo',         type:'file' },
+      { id:'el-photos',    label:'Additional Photos',  type:'multi-file' },
+      { id:'el-video',     label:'Video Link',         type:'text', hint:'YouTube, Facebook, or Google Drive video link' },
+    ]
+  }
+];
+
+let eListing = null;
+let eStep = 0;
+const eData = {};
+let eThumbFile = null;
+let eThumbPreviewUrl = '';
+let eExistingPhotos = [];
+let eNewPhotoFiles = [];
+let eDriveFolder = '';   // listings whose photos come from a Google Drive folder link
+let eOriginal = {};      // values when the editor opened — only changed fields are saved
+
+function splitPhotos(str) { return str ? String(str).split('|').map(s => s.trim()).filter(Boolean) : []; }
+function ePreviewSrc(url) {
+  const id = (String(url||'').match(/\/d\/([a-zA-Z0-9_-]+)/) || String(url||'').match(/[?&]id=([a-zA-Z0-9_-]+)/) || [])[1];
+  return id ? 'https://lh3.googleusercontent.com/d/' + id : (url || '');
+}
+function isDriveFolder(url) { return /drive\.google\.com\/drive\/(u\/\d+\/)?folders\//.test(url || ''); }
+
+// The sheet's raw columns are lot / floor / amount / key; accept the long names too.
+function eListingValues(l) {
+  return {
+    deal:        l.deal || '',
+    type:        l.type || '',
+    location:    l.location || '',
+    exclusive:   String(l.exclusive||'').toUpperCase() === 'TRUE',
+    lot_area:    l.lot ?? l.lot_area ?? '',
+    floor_area:  l.floor ?? l.floor_area ?? '',
+    price:       l.amount ?? l.price ?? '',
+    key_details: l.key ?? l.key_details ?? '',
+    video:       l.video || '',
+    thumbnail:   l.thumbnail || '',
+    photos:      l.photos || '',
+  };
+}
+
+function openEditListing(id) {
+  const l = allListings.find(x => String(x.id) === String(id));
+  if (!l) { showToast('Listing not found'); return; }
+  eListing = l;
+  eStep = 0;
+  const v = eOriginal = eListingValues(l);
+  eData['el-deal']      = v.deal || 'For Sale';
+  eData['el-type']      = v.type;
+  eData['el-location']  = v.location;
+  eData['el-exclusive'] = v.exclusive ? 'Yes' : 'No';
+  eData['el-lot']       = v.lot_area;
+  eData['el-floor']     = v.floor_area;
+  eData['el-price']     = v.price;
+  eData['el-key']       = v.key_details;
+  eData['el-video']     = v.video;
+  eThumbFile = null;
+  eThumbPreviewUrl = ePreviewSrc(v.thumbnail);
+  const photoList = splitPhotos(v.photos);
+  eDriveFolder = photoList.find(isDriveFolder) || '';
+  eExistingPhotos = photoList.filter(p => !isDriveFolder(p));
+  eNewPhotoFiles = [];
+  document.getElementById('edit-modal-bg').style.display = 'flex';
+  renderEditStep();
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal-bg').style.display = 'none';
+  eListing = null;
+}
+
+function eToggleCheck(id) {
+  const inp  = document.getElementById(id);
+  const wrap = document.getElementById(id + '-wrap');
+  inp.checked = !inp.checked;
+  wrap.classList.toggle('checked', inp.checked);
+  eData[id] = inp.checked ? 'Yes' : 'No';
+}
+
+function renderEditStep() {
+  const total = EDIT_LISTING_STEPS.length;
+  document.getElementById('eProgressBar').style.width = (((eStep + 1) / (total + 1)) * 100) + '%';
+
+  const s = EDIT_LISTING_STEPS[eStep];
+  const fieldsHtml = s.fields.map(f => {
+    if (f.type === 'select') {
+      const known = f.opts.some(([v]) => v === eData[f.id]);
+      const opts = (known || !eData[f.id] ? '' : `<option value="${esc(eData[f.id])}" selected>${esc(eData[f.id])}</option>`)
+        + f.opts.map(([v,label]) => `<option value="${esc(v)}" ${eData[f.id]===v?'selected':''}>${label}</option>`).join('');
+      return `<div class="wf"><label>${f.label}</label><select id="${f.id}">${opts}</select></div>`;
+    }
+    if (f.type === 'textarea') {
+      return `<div class="wf"><label>${f.label}</label><textarea id="${f.id}">${esc(eData[f.id]||'')}</textarea>${f.hint?`<span class="hint">${f.hint}</span>`:''}</div>`;
+    }
+    if (f.type === 'checkbox') {
+      const checked = eData[f.id] === 'Yes';
+      return `<div class="wf-check ${checked?'checked':''}" id="${f.id}-wrap" onclick="eToggleCheck('${f.id}')">
+        <input type="checkbox" id="${f.id}" ${checked?'checked':''}>
+        <div class="wf-check-box"></div>
+        <span class="wf-check-text">${f.text}</span>
+      </div>`;
+    }
+    if (f.type === 'file') {
+      return `<div class="wf">
+        <label>${f.label}</label>
+        <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:20px;text-align:center;cursor:pointer;transition:border-color .15s" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="eHandleThumbDrop(event)">
+          <input type="file" id="${f.id}-input" accept="image/*" style="display:none" onchange="eHandleThumbSelect(this)">
+          <div id="${f.id}-preview" style="display:${eThumbPreviewUrl?'block':'none'};margin-bottom:10px"><img id="${f.id}-img" src="${esc(eThumbPreviewUrl)}" style="max-height:130px;border-radius:8px;object-fit:cover"></div>
+          <div id="${f.id}-label" style="color:var(--ink3);font-size:13px;font-weight:600">
+            ${eThumbPreviewUrl ? 'Tap to replace' : 'Tap to upload or drag & drop'}<br><span style="font-size:11px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB</span>
+          </div>
+        </div>
+        <div id="${f.id}-status" style="font-size:12px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+      </div>`;
+    }
+    if (f.type === 'multi-file') {
+      if (eDriveFolder) {
+        return `<div class="wf">
+          <label>${f.label}</label>
+          <div style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--rs);padding:14px 16px;font-size:13px;color:var(--ink3);line-height:1.55">
+            📁 This listing's photos come from a <b>Google Drive folder</b>. Add or remove photos in that folder and the site updates automatically.
+          </div>
+          <input type="text" id="el-drive-folder" value="${esc(eDriveFolder)}" oninput="eDriveFolder=this.value.trim()" style="margin-top:10px">
+          <span class="hint">Drive folder link — change it to point at a different folder.</span>
+          <button type="button" class="btn-sm btn-view" style="margin-top:10px;align-self:flex-start" onclick="eSwitchToUploads()">Upload photos here instead</button>
+        </div>`;
+      }
+      return `<div class="wf">
+        <label>${f.label}</label>
+        <div id="${f.id}-previews" class="upload-grid"></div>
+        <div id="${f.id}-wrap" style="border:2px dashed var(--border);border-radius:var(--rs);padding:18px;text-align:center;cursor:pointer;transition:border-color .15s;margin-top:10px" onclick="document.getElementById('${f.id}-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--green)'" ondragleave="this.style.borderColor=''" ondrop="eHandleMultiFileDrop(event)">
+          <input type="file" id="${f.id}-input" accept="image/*" multiple style="display:none" onchange="eHandleMultiFileSelect(this)">
+          <div style="color:var(--ink3);font-size:13px;font-weight:600">Tap to add photos<br><span style="font-size:11px;color:var(--ink4)">JPG, PNG, WEBP — max 5MB each — up to 10 total</span></div>
+        </div>
+        <div id="${f.id}-status" style="font-size:12px;font-weight:600;margin-top:6px;color:var(--ink3)"></div>
+      </div>`;
+    }
+    // text / number
+    const oninput = ` oninput="eData['${f.id}']=this.value"`;
+    const list = f.list ? ` list="${f.list}"` : '';
+    const datalist = f.list === 'el-type-list'
+      ? `<datalist id="el-type-list">${[...new Set(allListings.map(x => String(x.type||'').trim()).filter(Boolean))].sort().map(t => `<option value="${esc(t)}">`).join('')}</datalist>`
+      : '';
+    return `<div class="wf"><label>${f.label}</label><input type="${f.type}" id="${f.id}" value="${esc(eData[f.id]||'')}"${list}${oninput}>${datalist}${f.hint?`<span class="hint">${f.hint}</span>`:''}</div>`;
+  }).join('');
+
+  const dots = EDIT_LISTING_STEPS.map((_,i) => `<div class="wizard-dot ${i<eStep?'done':i===eStep?'active':''}"></div>`).join('');
+
+  document.getElementById('editWizardContent').innerHTML = `
+    <div class="wizard-step-hdr">
+      <div class="wizard-step-num">Step ${eStep+1} of ${total}</div>
+      <div class="wizard-step-title">${s.title}</div>
+      <div class="wizard-step-sub">${s.sub}</div>
+    </div>
+    <div class="wizard-fields">${fieldsHtml}</div>
+    <div class="wizard-nav">
+      ${eStep > 0 ? `<button class="wizard-back" onclick="editWizardBack()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>` : '<span></span>'}
+      <div class="wizard-dots">${dots}</div>
+      <button class="wizard-next" onclick="editWizardNext()">
+        ${eStep < total - 1 ? 'Continue' : 'Review'} <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>`;
+
+  if (s.fields.some(f => f.type === 'multi-file')) eRenderPhotoPreviews();
+}
+
+function eHandleThumbDrop(e) {
+  e.preventDefault();
+  document.getElementById('el-thumbnail-wrap').style.borderColor = '';
+  const file = e.dataTransfer.files[0];
+  if (file) eProcessThumbFile(file);
+}
+function eHandleThumbSelect(input) {
+  const file = input.files[0];
+  if (file) eProcessThumbFile(file);
+}
+function eProcessThumbFile(file) {
+  if (file.size > 5 * 1024 * 1024) { showToast('Image must be under 5MB'); return; }
+  eThumbFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    eThumbPreviewUrl = e.target.result;
+    const img = document.getElementById('el-thumbnail-img');
+    const preview = document.getElementById('el-thumbnail-preview');
+    const label = document.getElementById('el-thumbnail-label');
+    if (img) img.src = eThumbPreviewUrl;
+    if (preview) preview.style.display = 'block';
+    if (label) label.innerHTML = `<span style="color:var(--green-d);font-weight:700">${esc(file.name)}</span><br><span style="font-size:11px;color:var(--ink4)">Tap to change</span>`;
+  };
+  reader.readAsDataURL(file);
+}
+async function eUploadThumbIfChanged() {
+  if (!eThumbFile) return eListing.thumbnail || '';
+  const formData = new FormData();
+  formData.append('file', eThumbFile);
+  formData.append('upload_preset', CLOUDINARY_PRESET);
+  const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error('Main photo upload failed');
+  return data.secure_url;
+}
+
+function eRenderPhotoPreviews() {
+  const grid = document.getElementById('el-photos-previews');
+  if (!grid) return;
+  let html = '';
+  eExistingPhotos.forEach((url, i) => {
+    const src = ePreviewSrc(url);
+    html += `<div class="upload-thumb"><img src="${esc(src)}" onerror="this.closest('.upload-thumb').remove()"><button class="upload-thumb-remove" onclick="eRemoveExistingPhoto(${i})" title="Remove">✕</button></div>`;
+  });
+  eNewPhotoFiles.forEach((f, i) => {
+    html += `<div class="upload-thumb" id="el-new-thumb-${i}"><img id="el-new-timg-${i}"><button class="upload-thumb-remove" onclick="eRemoveNewPhoto(${i})" title="Remove">✕</button></div>`;
+  });
+  grid.innerHTML = html;
+  eNewPhotoFiles.forEach((f, i) => {
+    const reader = new FileReader();
+    reader.onload = e => { const img = document.getElementById(`el-new-timg-${i}`); if (img) img.src = e.target.result; };
+    reader.readAsDataURL(f);
+  });
+}
+function eSwitchToUploads() {
+  if (!confirm('Stop using the Google Drive folder and upload photos here instead? The folder itself is not changed.')) return;
+  eDriveFolder = '';
+  renderEditStep();
+}
+function eRemoveExistingPhoto(i) { eExistingPhotos.splice(i,1); eRenderPhotoPreviews(); }
+function eRemoveNewPhoto(i) { eNewPhotoFiles.splice(i,1); eRenderPhotoPreviews(); }
+
+function eHandleMultiFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('el-photos-wrap').style.borderColor = '';
+  eProcessMultiFiles(Array.from(e.dataTransfer.files));
+}
+function eHandleMultiFileSelect(input) {
+  eProcessMultiFiles(Array.from(input.files));
+  input.value = '';
+}
+function eProcessMultiFiles(files) {
+  const room = 10 - eExistingPhotos.length - eNewPhotoFiles.length;
+  if (room <= 0) { showToast('Max 10 photos allowed — remove one first'); return; }
+  const valid = files.filter(f => f.type.startsWith('image/') && f.size <= 5 * 1024 * 1024).slice(0, room);
+  if (!valid.length) { showToast('Please select image files under 5MB each'); return; }
+  eNewPhotoFiles = eNewPhotoFiles.concat(valid);
+  eRenderPhotoPreviews();
+}
+async function eUploadNewPhotos() {
+  const urls = [];
+  for (const file of eNewPhotoFiles) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_PRESET);
+    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!data.secure_url) throw new Error('Photo upload failed: ' + file.name);
+    urls.push(data.secure_url);
+  }
+  return urls;
+}
+
+function editWizardNext() {
+  const s = EDIT_LISTING_STEPS[eStep];
+  for (const f of s.fields) {
+    if (f.type === 'file' || f.type === 'multi-file' || f.type === 'checkbox') continue;
+    const el = document.getElementById(f.id);
+    if (el) eData[f.id] = el.value.trim();
+  }
+  if (s.fields.some(f => f.id === 'el-location') && !eData['el-location']) {
+    showToast('Please fill in: Location'); return;
+  }
+  if (eStep < EDIT_LISTING_STEPS.length - 1) { eStep++; renderEditStep(); }
+  else renderEditReview();
+}
+function editWizardBack() { if (eStep > 0) { eStep--; renderEditStep(); } }
+
+// The edit as sheet values; photos/thumbnail are resolved at save time (uploads happen then).
+function eEditedValues() {
+  return {
+    deal:        eData['el-deal'],
+    type:        eData['el-type'],
+    location:    eData['el-location'],
+    exclusive:   eData['el-exclusive'] === 'Yes',
+    lot_area:    eData['el-lot'],
+    floor_area:  eData['el-floor'],
+    price:       String(eData['el-price']||'').replace(/[₱\s]/g, ''),  // the site can't parse a ₱ prefix
+    key_details: eData['el-key'],
+    video:       eData['el-video'],
+  };
+}
+const E_FIELD_LABELS = {
+  deal:'Deal', type:'Type', location:'Location', exclusive:'Exclusive', lot_area:'Lot Area',
+  floor_area:'Floor Area', price:'Price', key_details:'Key Features', video:'Video',
+};
+function eKeptPhotosValue() {
+  return (eDriveFolder ? [eDriveFolder] : []).concat(eExistingPhotos).join(' | ');
+}
+function eChangedFields() {
+  const now = eEditedValues();
+  return Object.keys(now).filter(k => String(now[k]) !== String(eOriginal[k]));
+}
+function ePhotosChanged() {
+  return eNewPhotoFiles.length > 0 || eKeptPhotosValue() !== splitPhotos(eOriginal.photos).join(' | ');
+}
+
+function renderEditReview() {
+  document.getElementById('eProgressBar').style.width = '100%';
+  const now = eEditedValues();
+  const fmt = (k, v) => k === 'exclusive' ? (v ? 'Yes' : 'No') : (String(v) || '—');
+  const rows = eChangedFields().map(k =>
+    `<div class="wizard-review-row"><span class="wizard-review-label">${E_FIELD_LABELS[k]}</span>
+      <span class="wizard-review-value"><s style="color:var(--ink4);font-weight:500">${esc(fmt(k, eOriginal[k]))}</s><br>${esc(fmt(k, now[k]))}</span></div>`);
+  if (eThumbFile) rows.push(`<div class="wizard-review-row"><span class="wizard-review-label">Main Photo</span><span class="wizard-review-value">Replaced with ${esc(eThumbFile.name)}</span></div>`);
+  if (ePhotosChanged()) {
+    const kept = eDriveFolder ? 'Google Drive folder' : `${eExistingPhotos.length} kept`;
+    rows.push(`<div class="wizard-review-row"><span class="wizard-review-label">Photos</span><span class="wizard-review-value">${esc(kept)}${eNewPhotoFiles.length ? ` + ${eNewPhotoFiles.length} new` : ''}</span></div>`);
+  }
+  const nothing = !rows.length;
+
+  document.getElementById('editWizardContent').innerHTML = `
+    <div class="wizard-step-hdr">
+      <div class="wizard-step-num">Review</div>
+      <div class="wizard-step-title">${nothing ? 'No changes yet' : 'Save these changes?'}</div>
+      <div class="wizard-step-sub">${nothing ? 'Go back and edit a field to update this listing.' : 'Only these fields will change on the live listing.'}</div>
+    </div>
+    <div class="wizard-review">${rows.join('')}</div>
+    <div class="wizard-nav">
+      <button class="wizard-back" onclick="eStep=${EDIT_LISTING_STEPS.length-1};renderEditStep()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg> Back</button>
+      <div></div>
+      <button class="wizard-next" id="eSaveBtn" onclick="submitEditListing(this)" ${nothing ? 'disabled' : ''}>Save Changes</button>
+    </div>`;
+}
+
+async function submitEditListing(btn) {
+  btn.textContent = 'Saving…';
+  btn.disabled = true;
+  try {
+    const user = netlifyIdentity.currentUser();
+    if (!user) throw new Error('You have been signed out — please sign in again');
+    const token = await user.jwt();
+
+    const now = eEditedValues();
+    const payload = { id: eListing.id };
+    eChangedFields().forEach(k => { payload[k] = now[k]; });
+    if (eThumbFile) {
+      btn.textContent = 'Uploading main photo…';
+      payload.thumbnail = await eUploadThumbIfChanged();
+    }
+    if (ePhotosChanged()) {
+      if (eNewPhotoFiles.length) btn.textContent = `Uploading ${eNewPhotoFiles.length} photo${eNewPhotoFiles.length > 1 ? 's' : ''}…`;
+      const newUrls = await eUploadNewPhotos();
+      payload.photos = [eKeptPhotosValue(), ...newUrls].filter(Boolean).join(' | ');
+    }
+    btn.textContent = 'Saving…';
+
+    const res = await fetch('/.netlify/functions/update-listing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || 'Failed to save listing (HTTP ' + res.status + ')');
+
+    // mirror the change locally using the sheet's own column names
+    const sheetKey = { lot_area:'lot', floor_area:'floor', price:'amount', key_details:'key' };
+    Object.keys(payload).forEach(k => {
+      if (k === 'id') return;
+      eListing[sheetKey[k] || k] = k === 'exclusive' ? (payload[k] ? 'TRUE' : '') : payload[k];
+      if (sheetKey[k]) eListing[k] = payload[k];
+    });
+    updateStats();
+    renderListingsTable(allListings);
+    showToast('✓ Listing updated — live on the site');
+    closeEditModal();
+  } catch (err) {
+    console.error('Update listing error:', err);
+    showToast('Could not save changes: ' + err.message);
+    btn.textContent = 'Save Changes';
+    btn.disabled = false;
+  }
 }
 
 // ── UTILS ─────────────────────────────────────────────
