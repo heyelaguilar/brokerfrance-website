@@ -1128,7 +1128,7 @@ a{text-decoration:none;color:inherit}
         
         <div class="hero-card-stack">
           <img 
-  src="image/MFRG-img.png" 
+  src="/.netlify/images?url=/image/mfrg-img.png&w=900&fm=webp&q=80" loading="lazy" 
   alt="Broker France"
   style="width:100%; height:auto; object-fit:cover;margin-left:auto;margin-top: -200px;"
 >
@@ -1283,6 +1283,7 @@ a{text-decoration:none;color:inherit}
 
       <div class="section-hdr" style="margin-top:56px">
         <div class="section-hdr-left">
+          <div class="section-eyebrow">Newly listed</div>
           <div class="section-title">Properties For Sale</div>
         </div>
         <button class="section-view-all" onclick="filterAndGo('sale')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
@@ -1291,6 +1292,7 @@ a{text-decoration:none;color:inherit}
 
       <div class="section-hdr" style="margin-top:56px">
         <div class="section-hdr-left">
+          <div class="section-eyebrow">Newly listed</div>
           <div class="section-title">Properties For Lease</div>
         </div>
         <button class="section-view-all" onclick="filterAndGo('lease')">View all <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
@@ -2185,55 +2187,95 @@ let galleryPhotos    = [];
 let galleryIndex     = 0;
 
 // ── FETCH & PARSE ─────────────────────────────────────
-async function init() {
-  showLoadingState();
+const LISTINGS_URL   = '/.netlify/functions/listings';   // CDN-cached copy of the sheet (fast)
+const LISTINGS_CACHE = 'bf_listings_v1';                 // last copy this browser saw
+
+// Sheet JSON → listing objects used throughout the site.
+function parseListings(data) {
+  // Convert JSON objects → [headerRow, ...dataRows] so existing logic works unchanged
+  const headers = Object.keys(data[0]);
+  const rows = [headers, ...data.map(obj => headers.map(h => String(obj[h] ?? '')))];
+  if (rows.length < 2) throw new Error('No data rows');
+  const cm = buildCOL(rows[0]);
+  return rows.slice(1).map((r, i) => {
+    const get      = k => (r[cm[k]] || '').trim();
+    const rawDeal  = get('deal');
+    const deal     = normaliseDeal(rawDeal) || 'sale'; // default to sale if empty
+    const loc      = get('location') || '—';
+    const lotArea  = get('lot_area');
+    const rawPrice = get('price') || get('amount');
+    const priced   = formatPrice(rawPrice, lotArea);
+    const price    = priced.display || 'Price on Request';
+    const type     = normaliseType(get('type') || 'property');
+    const kd       = get('key_details');
+    const isEx     = get('exclusive').toUpperCase() === 'TRUE';
+    const photos   = get('photos');
+    const thumbnail = driveThumb(data[i] ? (String(data[i]['thumbnail'] || '')) : '');
+    // Auto-generate name: key_details first item, or type + location
+    const name     = kd.split('|')[0].trim() || cap(type) + ' in ' + loc;
+    // Auto WhatsApp
+    const wa       = get('whatsapp') || `Hi Broker France! I'm interested in your ${cap(type)} in ${loc} at ${price}. Please send details.`;
+    return {
+      id: get('id') || String(i + 1),
+      deal,
+      type, location: loc,
+      lot_area:   lotArea,
+      floor_area: get('floor_area'),
+      price, priceRaw: rawPrice, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
+      photos, thumbnail, exclusive: isEx,
+      // Drive-folder photos resolved by the listings function (skips a request per listing)
+      ...(Array.isArray(data[i] && data[i].folder_images)
+        ? { folderPhotos: data[i].folder_images.map(id => 'https://lh3.googleusercontent.com/d/' + id) } : {}),
+      badge: get('badge'),
+      whatsapp: wa, name, desc: ''
+    };
+  });
+}
+
+async function fetchListingsData() {
   try {
+    const res = await fetch(LISTINGS_URL);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) return data;
+    throw new Error('Empty response');
+  } catch (e) {
+    console.warn('[BrokerFrance] cached feed failed, using the sheet directly:', e.message);
     const res = await fetch(API_URL, { cache: 'no-store', redirect: 'follow' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (!data || !data.length) throw new Error('Empty response');
-    // Convert JSON objects → [headerRow, ...dataRows] so existing logic works unchanged
-    const headers = Object.keys(data[0]);
-    const rows = [headers, ...data.map(obj => headers.map(h => String(obj[h] ?? '')))];
-    if (rows.length < 2) throw new Error('No data rows');
-    const cm = buildCOL(rows[0]);
-    listings = rows.slice(1).map((r, i) => {
-      const get      = k => (r[cm[k]] || '').trim();
-      const rawDeal  = get('deal');
-      const deal     = normaliseDeal(rawDeal) || 'sale'; // default to sale if empty
-      const loc      = get('location') || '—';
-      const lotArea  = get('lot_area');
-      const rawPrice = get('price') || get('amount');
-      const priced   = formatPrice(rawPrice, lotArea);
-      const price    = priced.display || 'Price on Request';
-      const type     = normaliseType(get('type') || 'property');
-      const kd       = get('key_details');
-      const isEx     = get('exclusive').toUpperCase() === 'TRUE';
-      const photos   = get('photos');
-      const thumbnail = driveThumb(data[i] ? (String(data[i]['thumbnail'] || '')) : '');
-      // Auto-generate name: key_details first item, or type + location
-      const name     = kd.split('|')[0].trim() || cap(type) + ' in ' + loc;
-      // Auto WhatsApp
-      const wa       = get('whatsapp') || `Hi Broker France! I'm interested in your ${cap(type)} in ${loc} at ${price}. Please send details.`;
-      return {
-        id: get('id') || String(i + 1),
-        deal,
-        type, location: loc,
-        lot_area:   lotArea,
-        floor_area: get('floor_area'),
-        price, priceRaw: rawPrice, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
-        photos, thumbnail, exclusive: isEx,
-        badge: get('badge'),
-        whatsapp: wa, name, desc: ''
-      };
-    });
-    if (!listings.length) throw new Error('No valid rows found');
-    document.getElementById('syncBar').classList.add('show');
-    setTimeout(() => document.getElementById('syncBar').classList.remove('show'), 3000);
+    return data;
+  }
+}
+
+function readCachedListings() {
+  try { const d = JSON.parse(localStorage.getItem(LISTINGS_CACHE) || 'null'); return Array.isArray(d) && d.length ? d : null; }
+  catch { return null; }
+}
+function writeCachedListings(data) {
+  try { localStorage.setItem(LISTINGS_CACHE, JSON.stringify(data)); } catch { /* storage full or blocked */ }
+}
+
+async function init() {
+  // Returning visitors see their last copy instantly; fresh data replaces it when it arrives.
+  const cached = readCachedListings();
+  let shown = false;
+  if (cached) {
+    try { listings = parseListings(cached); renderAll(); shown = listings.length > 0; } catch { shown = false; }
+  }
+  if (!shown) showLoadingState();
+
+  let data;
+  try {
+    data = await fetchListingsData();
+    const fresh = parseListings(data);
+    if (!fresh.length) throw new Error('No valid rows found');
+    writeCachedListings(data);
+    listings = fresh;
   } catch(e) {
     console.warn('[BrokerFrance] Data load failed:', e.message);
-    showErrorState(e.message);
-    return;
+    if (!shown) { showErrorState(e.message); return; }
   }
   renderAll();
   fetchLikes();
@@ -2304,10 +2346,12 @@ function renderAll() {
   } else {
     if (exclusiveSection) exclusiveSection.style.display = 'none';
   }
+  // For Sale / For Lease: newest listings first (new sheet rows get the next id)
+  const newestFirst = [...listings].sort((a, b) => (parseInt(b.id) || 0) - (parseInt(a.id) || 0));
   // For Sale: deal is 'sale' or 'both', not exclusive
-  renderSection('home-sale', listings.filter(l => (l.deal === 'sale' || l.deal === 'both') && !l.exclusive).slice(0, 3));
+  renderSection('home-sale', newestFirst.filter(l => (l.deal === 'sale' || l.deal === 'both') && !l.exclusive).slice(0, 6));
   // For Lease: deal is 'lease' or 'both'
-  renderSection('home-lease', listings.filter(l => l.deal === 'lease' || l.deal === 'both').slice(0, 3));
+  renderSection('home-lease', newestFirst.filter(l => l.deal === 'lease' || l.deal === 'both').slice(0, 6));
 
   applyFilters();
 }
@@ -2349,9 +2393,8 @@ function renderCard(l) {
   const photos  = folderId ? (l.folderPhotos || []) : getPhotos(l.photos);
   const thumb   = l.thumbnail || photos[0];
 
-  const rawThumbUrl = esc(l.thumbnail || '');
   const imgHtml = thumb
-    ? `<img src="${esc(thumb)}" alt="${esc(l.name)}" loading="lazy" onerror="driveThumbFallback(this,'${rawThumbUrl}')">`
+    ? `<img src="${esc(sizedImg(thumb, 640))}" alt="${esc(l.name)}" loading="lazy" decoding="async" onerror="driveThumbFallback(this,'${esc(thumb)}')">`
     : '';
   const phDisplay  = thumb ? 'display:none' : '';
   const photoCount = photos.length > 1
@@ -2510,7 +2553,7 @@ function setGalleryImage(url) {
   const img = document.getElementById('galleryMain');
   if (!img) return;
   img.onerror = () => driveThumbFallback(img, url);
-  img.src = url;
+  img.src = sizedImg(url, 1600);
 }
 
 function galleryNav(dir) {
@@ -3661,10 +3704,21 @@ function driveThumb(url) {
   if (openMatch) return 'https://drive.google.com/uc?export=view&id=' + openMatch[1];
   return url; // not a Drive link (e.g. Cloudinary) — use as-is
 }
+// Smaller, compressed version of a listing photo, `w` pixels wide.
+// Drive originals are often 1–2 MB PNGs; Cloudinary uploads are full resolution.
+function sizedImg(url, w) {
+  if (!url) return '';
+  const driveId = (url.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]+)/) || url.match(/drive\.google\.com\/.*(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]+)/) || [])[1];
+  if (driveId) return `https://lh3.googleusercontent.com/d/${driveId}=w${w}-rj`;
+  if (url.includes('res.cloudinary.com/') && url.includes('/image/upload/'))
+    return url.replace('/image/upload/', `/image/upload/f_auto,q_auto,c_limit,w_${w}/`);
+  return url;
+}
 function driveThumbFallback(imgEl, url) {
   const fileMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
   const id = fileMatch ? fileMatch[1] : (url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || [])[1];
   if (id) { imgEl.src = 'https://lh3.googleusercontent.com/d/' + id; imgEl.onerror = null; }
+  else if (!imgEl.dataset.retried && imgEl.src !== url) { imgEl.dataset.retried = '1'; imgEl.src = url; } // resized copy failed — try the original
   else { imgEl.style.display='none'; imgEl.nextElementSibling && (imgEl.nextElementSibling.style.display='flex'); }
 }
 
