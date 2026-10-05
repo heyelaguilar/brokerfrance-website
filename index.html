@@ -1013,6 +1013,37 @@ a{text-decoration:none;color:inherit}
   .search-tabs{flex-direction:row}
   .stab{font-size:13px;padding:13px 12px}
 }
+/* ── Mobile polish ── */
+@media(max-width:768px){
+  /* keep footer content clear of the fixed bottom nav */
+  .footer{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  .footer-bottom{flex-direction:column;align-items:flex-start;gap:6px}
+  /* footer: brand full width, link columns side by side */
+  .footer-inner{grid-template-columns:1fr 1fr;gap:32px 20px;padding-bottom:40px}
+  .footer-inner>:first-child{grid-column:1/-1}
+  .footer-col ul{gap:4px}
+  .footer-col ul li a{display:block;padding:8px 0}
+  /* readable small text */
+  .nav-tagline{font-size:9px;letter-spacing:.06em}
+  .mni{font-size:11px}
+  /* section headers: title and "View all" stay on one line */
+  .section-hdr{align-items:center;margin-bottom:24px}
+  .section-hdr-left .section-title{font-size:22px;line-height:1.2}
+  .section-view-all{flex-shrink:0;padding:10px 0;white-space:nowrap}
+  /* contact card is fixed at 380px on desktop — let it fit the phone width */
+  .dsc{width:auto;max-height:none}
+  /* larger tap targets for search dropdowns */
+  .sf select{min-height:44px}
+  /* homepage listing rows: horizontal swipe instead of a long vertical stack */
+  #home-exclusive .lgrid,#home-sale .lgrid,#home-lease .lgrid{
+    display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+    margin:0 -20px;padding:4px 20px 12px;scroll-padding:0 20px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  #home-exclusive .lgrid::-webkit-scrollbar,#home-sale .lgrid::-webkit-scrollbar,#home-lease .lgrid::-webkit-scrollbar{display:none}
+  #home-exclusive .lcard,#home-sale .lcard,#home-lease .lcard{flex:0 0 84%;max-width:340px;scroll-snap-align:start}
+  #home-exclusive .loading-state,#home-sale .loading-state,#home-lease .loading-state,
+  #home-exclusive .empty-state,#home-sale .empty-state,#home-lease .empty-state{flex:1 0 100%}
+}
 </style>
 </head>
 <body>
