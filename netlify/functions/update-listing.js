@@ -18,11 +18,9 @@ async function callScript(payload) {
     const text = await r1.text();
     return JSON.parse(text);
   }
-  const r2 = await fetch(redirectUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body,
-  });
+  // The script already ran on the POST above; its result is served at the redirect URL via GET.
+  // (POSTing again to that URL returns an HTML error page, not JSON.)
+  const r2 = await fetch(redirectUrl);
   const text = await r2.text();
   return JSON.parse(text);
 }
