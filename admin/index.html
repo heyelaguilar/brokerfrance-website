@@ -1700,15 +1700,17 @@ async function igPhotoSources(l) {
 }
 
 function igLoadImage(sources) {
+  // each source gets a second try — Google's image server sometimes fails a first request
+  const attempts = sources.flatMap(u => [u, u + (u.includes('?') ? '&' : '?') + 'retry=1']);
   return new Promise(resolve => {
     let i = 0;
     const next = () => {
-      if (i >= sources.length) return resolve(null);
+      if (i >= attempts.length) return resolve(null);
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload  = () => resolve(img);
-      img.onerror = next;
-      img.src = sources[i++];
+      img.onerror = () => setTimeout(next, 400);
+      img.src = attempts[i++];
     };
     next();
   });
@@ -1735,7 +1737,7 @@ function igEnhance(ctx, x, y, w, h) {
 let igDrawToken = 0;
 async function drawIgCanvas() {
   const token = ++igDrawToken;
-  if (igMode === 'poster') return drawIgPoster(token);
+  if (igMode === 'poster' || igMode === 'square') return drawIgPoster(token);
   return drawIgCard(token);
 }
 
@@ -1875,7 +1877,8 @@ function igFeatures(l) {
   return String(l.key ?? l.key_details ?? '')
     .split(/\n|\||,(?![^(]*\))/)
     .map(s => s.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N})]+$/u, '').trim())
-    .filter(s => s.length > 1);
+    .filter(s => s.length > 1)
+    .map(s => s[0].toUpperCase() + s.slice(1));
 }
 
 function igCover(ctx, img, x, y, w, h, r = 0) {
@@ -1894,9 +1897,18 @@ function igCheck(ctx, cx, cy, r) {
   ctx.lineCap = 'butt';
 }
 
+// Flyer layout in two sizes: 'poster' (1080×1620) and 'square' (1080×1080 feed).
+const IG_LAYOUTS = {
+  poster: { H: 1620, heroH: 720, footY: 1352, title: 74, sub: 34, price: 66, suffix: 40, priceH: 104,
+            head: 30, item: 28, rowH: 58, check: 17, maxExtras: 4, script: 54, name: 36, info: 24, contact: 26, logo: 1 },
+  square: { H: 1080, heroH: 560, footY: 892, title: 58, sub: 27, price: 54, suffix: 32, priceH: 86,
+            head: 24, item: 23, rowH: 41, check: 14, maxExtras: 2, script: 40, name: 28, info: 19, contact: 21, logo: 0.75 },
+};
+
 async function drawIgPoster(token) {
   const l = igListing;
-  const W = 1080, H = 1620;
+  const L = IG_LAYOUTS[igMode === 'square' ? 'square' : 'poster'];
+  const W = 1080, H = L.H;
   const canvas = document.getElementById('ig-canvas');
   canvas.width = W; canvas.height = H;
   canvas.style.width = '100%'; canvas.style.height = 'auto';
@@ -1905,16 +1917,16 @@ async function drawIgPoster(token) {
 
   const raws = await igRawPhotos(l);
   const [imgs] = await Promise.all([
-    Promise.all(raws.slice(0, 5).map((r, i) => igLoadImage(igSourcesFor(r, i ? 900 : 1600)))),
+    Promise.all(raws.slice(0, L.maxExtras + 1).map((r, i) => igLoadImage(igSourcesFor(r, i ? 900 : 1600)))),
     document.fonts ? Promise.all([
-      document.fonts.load('700 80px "Playfair Display"'), document.fonts.load('italic 600 40px "Playfair Display"'),
+      document.fonts.load('700 80px "Playfair Display"'), document.fonts.load('800 80px "Playfair Display"'),
       document.fonts.load('400 50px "Great Vibes"'), document.fonts.load('800 30px Manrope'), document.fonts.load('600 30px Manrope'),
     ]).catch(() => {}) : null,
   ]);
   if (token !== igDrawToken) return;
   const hero = imgs[0];
-  const extras = imgs.slice(1).filter(Boolean).slice(0, 4);
-  const SERIF = (w, px, it = '') => `${it} ${w} ${px}px "Playfair Display", Georgia, serif`;
+  const extras = imgs.slice(1).filter(Boolean).slice(0, L.maxExtras);
+  const SERIF = (w, px) => `${w} ${px}px "Playfair Display", Georgia, serif`;
   const SANS  = (w, px) => `${w} ${px}px Manrope, Arial, sans-serif`;
   const GREEN = '#1C3F2F', GOLD = '#C9A227', GOLD_L = '#E8C766';
   const pad = 46;
@@ -1924,74 +1936,78 @@ async function drawIgPoster(token) {
   if (lot) lines.push('Lot Area: ' + lot);
   if (floor) lines.push('Floor Area: ' + floor);
   igFeatures(l).forEach(f => lines.push(f));
-  const footY = 1352, rowH = 58;
+  const footY = L.footY, rowH = L.rowH;
 
   // ── HERO PHOTO — grows when there's no collage and few details, so no empty space ──
-  const heroH = extras.length ? 720 : Math.max(720, footY - 8 - (150 + Math.max(lines.length, 2) * rowH));
+  const heroH = extras.length ? L.heroH
+    : Math.max(L.heroH, footY - 8 - (L.head * 2 + rowH + Math.max(lines.length, 1) * rowH + 24));
   if (hero) { igCover(ctx, hero, 0, 0, W, heroH); igEnhance(ctx, 0, 0, W, heroH); }
   else { const g = ctx.createLinearGradient(0, 0, W, heroH); g.addColorStop(0, '#2A6044'); g.addColorStop(1, GREEN); ctx.fillStyle = g; ctx.fillRect(0, 0, W, heroH); }
 
   // ── TITLE BANNER (angled right edge) ──
   const title = igPosterTitle(l);
   const sub = 'IN ' + String(l.location || '').toUpperCase();
-  let tSize = 74;
+  let tSize = L.title;
   ctx.font = SERIF(700, tSize);
-  while (ctx.measureText(title).width > 820 && tSize > 44) ctx.font = SERIF(700, --tSize);
+  while (ctx.measureText(title).width > 820 && tSize > 40) ctx.font = SERIF(700, --tSize);
   const titleW = ctx.measureText(title).width;
-  let sSize = 34;
+  let sSize = L.sub;
   ctx.font = SANS(700, sSize);
-  while (ctx.measureText(sub).width > 780 && sSize > 22) ctx.font = SANS(700, --sSize);
+  while (ctx.measureText(sub).width > 780 && sSize > 20) ctx.font = SANS(700, --sSize);
   const subW = Math.min(ctx.measureText(sub).width, 780);
   const bannerW = Math.min(W - 60, Math.max(titleW, subW + 70) + pad * 2 + 40);
-  const by = 26, bh = tSize + sSize + 78;
+  const by = Math.round(L.title * 0.35), bh = tSize + sSize + Math.round(L.title * 1.05);
   ctx.fillStyle = 'rgba(19,43,32,0.94)';
   ctx.beginPath(); ctx.moveTo(0, by); ctx.lineTo(bannerW, by); ctx.lineTo(bannerW - 46, by + bh); ctx.lineTo(0, by + bh); ctx.closePath(); ctx.fill();
   ctx.fillStyle = GOLD; ctx.fillRect(0, by + bh - 4, bannerW - 44, 4);
   ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  const tTop = by + Math.round(L.title * 0.3);
   ctx.font = SERIF(700, tSize); ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(title, pad, by + 22 + tSize * 0.85);
+  ctx.fillText(title, pad, tTop + tSize * 0.85);
   ctx.font = SANS(700, sSize); ctx.fillStyle = GOLD_L;
-  const subY = by + 22 + tSize + 20 + sSize * 0.85;
+  const subY = tTop + tSize + Math.round(L.title * 0.27) + sSize * 0.85;
   ctx.fillRect(pad, subY - sSize * 0.32, 46, 3);
   ctx.fillText(igTruncate(ctx, sub, bannerW - pad - 110), pad + 62, subY);
 
-  // ── PRICE BANNER on the bottom edge of the photo ──
+  // ── PRICE RIBBON on the bottom edge of the photo ──
   const isLeaseOnly = igDealLabels(l.deal).join() === 'FOR LEASE';
   const amount = igTotalPrice(l);
   const suffix = isLeaseOnly && amount.startsWith('₱') && !amount.includes('sqm') ? '/month' : '';
-  ctx.font = SERIF(800, 66);
+  ctx.font = SERIF(800, L.price);
   const amtW = ctx.measureText(amount).width;
-  ctx.font = SERIF(700, 40);
+  ctx.font = SERIF(700, L.suffix);
   const sufW = suffix ? ctx.measureText(suffix).width + 6 : 0;
-  const pw = pad + amtW + sufW + 70, ph = 104, py = heroH - ph + 8;
+  const ph = L.priceH, pw = pad + amtW + sufW + 70, py = heroH - ph + 8;
   ctx.fillStyle = 'rgba(19,43,32,0.95)';
   ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(pw, py); ctx.lineTo(pw - 40, py + ph); ctx.lineTo(0, py + ph); ctx.closePath(); ctx.fill();
   ctx.fillStyle = GOLD; ctx.fillRect(0, py, pw, 3);
-  ctx.font = SERIF(800, 66); ctx.fillStyle = '#F3E3B5';
-  ctx.fillText(amount, pad, py + 74);
-  if (suffix) { ctx.font = SERIF(700, 40); ctx.fillText(suffix, pad + amtW + 6, py + 74); }
+  const baseY = py + Math.round(ph * 0.71);
+  ctx.font = SERIF(800, L.price); ctx.fillStyle = '#F3E3B5';
+  ctx.fillText(amount, pad, baseY);
+  if (suffix) { ctx.font = SERIF(700, L.suffix); ctx.fillText(suffix, pad + amtW + 6, baseY); }
 
   // ── DETAILS + PHOTO COLLAGE ──
   const secY = heroH + 8;
   const colW = extras.length ? 430 : W - pad * 2;
-  ctx.font = SANS(800, 30); ctx.fillStyle = GREEN;
-  ctx.fillText('PROPERTY DETAILS', pad, secY + 62);
-  const maxRows = Math.floor((footY - (secY + 100) - 20) / rowH);
-  ctx.font = SANS(600, 28);
-  let ly = secY + 120, shown = 0;
+  ctx.font = SANS(800, L.head); ctx.fillStyle = GREEN;
+  ctx.fillText('PROPERTY DETAILS', pad, secY + L.head * 2);
+  const listTop = secY + L.head * 2 + Math.round(rowH * 1.0);
+  const maxRows = Math.max(1, Math.floor((footY - 22 - listTop) / rowH) + 1); // keep clear of the footer
+  let ly = listTop, shown = 0;
   for (const line of lines) {
     if (shown >= maxRows) break;
-    igCheck(ctx, pad + 17, ly - 9, 17);
-    ctx.fillStyle = '#2D3748'; ctx.font = SANS(600, 28);
-    ctx.fillText(igTruncate(ctx, line, colW - 56), pad + 50, ly);
+    igCheck(ctx, pad + L.check, ly - L.item * 0.32, L.check);
+    ctx.fillStyle = '#2D3748'; ctx.font = SANS(600, L.item);
+    ctx.fillText(igTruncate(ctx, line, colW - L.check * 3), pad + L.check * 3, ly);
     ly += rowH; shown++;
   }
 
   if (extras.length) {
-    const gx = pad + colW + 24, gw = W - gx - pad, gy = secY + 30, gh = footY - gy - 34, gap = 14;
+    const gx = pad + colW + 24, gw = W - gx - pad, gy = secY + Math.round(L.head * 1.0), gh = footY - gy - Math.round(L.head * 1.1), gap = 14;
+    const square = igMode === 'square';
     const tiles =
       extras.length === 1 ? [[0, 0, 1, 1]] :
-      extras.length === 2 ? [[0, 0, 1, .5], [0, .5, 1, .5]] :
+      extras.length === 2 ? (square ? [[0, 0, .5, 1], [.5, 0, .5, 1]] : [[0, 0, 1, .5], [0, .5, 1, .5]]) :
       extras.length === 3 ? [[0, 0, 1, .5], [0, .5, .5, .5], [.5, .5, .5, .5]] :
                             [[0, 0, .5, .5], [.5, 0, .5, .5], [0, .5, .5, .5], [.5, .5, .5, .5]];
     tiles.forEach(([tx, ty, tw, th], i) => {
@@ -2009,29 +2025,32 @@ async function drawIgPoster(token) {
   ctx.fillStyle = fg; ctx.fillRect(0, footY, W, fh);
   ctx.fillStyle = GOLD; ctx.fillRect(0, footY, W, 4);
 
+  // four text lines spread evenly through the footer
+  const step = fh / 4.6;
   ctx.textAlign = 'left';
-  ctx.font = '400 54px "Great Vibes", cursive'; ctx.fillStyle = GOLD_L;
-  ctx.fillText("Let's close a deal together!", pad, footY + 72);
-  ctx.font = SERIF(700, 36); ctx.fillStyle = '#FFFFFF';
-  ctx.fillText(IG_BROKER.toUpperCase(), pad, footY + 126);
-  ctx.font = SANS(600, 24); ctx.fillStyle = 'rgba(255,255,255,0.82)';
-  ctx.fillText('Real Estate Broker  ·  PRC# 0020049', pad, footY + 166);
-  ctx.font = SANS(800, 26); ctx.fillStyle = GOLD_L;
-  ctx.fillText('0977 829 0053', pad, footY + 214);
+  ctx.font = `400 ${L.script}px "Great Vibes", cursive`; ctx.fillStyle = GOLD_L;
+  ctx.fillText("Let's close a deal together!", pad, footY + step * 1.15);
+  ctx.font = SERIF(700, L.name); ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(IG_BROKER.toUpperCase(), pad, footY + step * 2.1);
+  ctx.font = SANS(600, L.info); ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillText('Real Estate Broker  ·  PRC# 0020049', pad, footY + step * 2.95);
+  ctx.font = SANS(800, L.contact); ctx.fillStyle = GOLD_L;
+  ctx.fillText('0977 829 0053', pad, footY + step * 3.95);
   const phoneW = ctx.measureText('0977 829 0053').width;
-  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText('|', pad + phoneW + 18, footY + 214);
-  ctx.fillStyle = '#FFFFFF'; ctx.fillText(IG_SITE, pad + phoneW + 42, footY + 214);
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText('|', pad + phoneW + 18, footY + step * 3.95);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillText(IG_SITE, pad + phoneW + 42, footY + step * 3.95);
 
   // logo: roof outline + FRANCE / BROKERAGE
-  const lx = W - pad - 150, lyy = footY + 64;
-  ctx.strokeStyle = GOLD; ctx.lineWidth = 4; ctx.lineJoin = 'miter';
-  ctx.beginPath(); ctx.moveTo(lx - 62, lyy + 30); ctx.lineTo(lx, lyy - 16); ctx.lineTo(lx + 62, lyy + 30); ctx.stroke();
-  ctx.fillStyle = GOLD; ctx.fillRect(lx - 9, lyy + 6, 8, 8); ctx.fillRect(lx + 1, lyy + 6, 8, 8); ctx.fillRect(lx - 9, lyy + 16, 8, 8); ctx.fillRect(lx + 1, lyy + 16, 8, 8);
+  const s = L.logo, lx = W - pad - 150 * s, lyy = footY + fh * 0.5 - 62 * s;
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 4 * s; ctx.lineJoin = 'miter';
+  ctx.beginPath(); ctx.moveTo(lx - 62 * s, lyy + 30 * s); ctx.lineTo(lx, lyy - 16 * s); ctx.lineTo(lx + 62 * s, lyy + 30 * s); ctx.stroke();
+  ctx.fillStyle = GOLD;
+  [[-9, 6], [1, 6], [-9, 16], [1, 16]].forEach(([dx, dy]) => ctx.fillRect(lx + dx * s, lyy + dy * s, 8 * s, 8 * s));
   ctx.textAlign = 'center';
-  ctx.font = SERIF(700, 50); ctx.fillStyle = GOLD_L;
-  ctx.fillText('FRANCE', lx, lyy + 92);
-  ctx.font = SANS(700, 19); ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('B  R  O  K  E  R  A  G  E', lx, lyy + 124);
+  ctx.font = SERIF(700, 50 * s); ctx.fillStyle = GOLD_L;
+  ctx.fillText('FRANCE', lx, lyy + 92 * s);
+  ctx.font = SANS(700, 19 * s); ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('B  R  O  K  E  R  A  G  E', lx, lyy + 124 * s);
   ctx.textAlign = 'left';
 }
 
