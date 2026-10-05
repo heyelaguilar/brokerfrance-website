@@ -2214,7 +2214,10 @@ function parseListings(data) {
     const kd       = get('key_details');
     const isEx     = get('exclusive').toUpperCase() === 'TRUE';
     const photos   = get('photos');
-    const thumbnail = driveThumb(data[i] ? (String(data[i]['thumbnail'] || '')) : '');
+    const folderImgs = Array.isArray(data[i] && data[i].folder_images) ? data[i].folder_images : null;
+    // no main photo set: use the first photo in the listing's Drive folder (listings without any photo stay hidden)
+    const thumbnail = driveThumb(data[i] ? (String(data[i]['thumbnail'] || '')) : '')
+      || (folderImgs && folderImgs[0] ? 'https://lh3.googleusercontent.com/d/' + folderImgs[0] : '');
     // Auto-generate name: key_details first item, or type + location
     const name     = kd.split('|')[0].trim() || cap(type) + ' in ' + loc;
     // Auto WhatsApp
@@ -2228,8 +2231,7 @@ function parseListings(data) {
       price, priceRaw: rawPrice, rawPrice: isNaN(priced.numeric) ? rawPrice : String(priced.numeric), key_details: kd,
       photos, thumbnail, exclusive: isEx,
       // Drive-folder photos resolved by the listings function (skips a request per listing)
-      ...(Array.isArray(data[i] && data[i].folder_images)
-        ? { folderPhotos: data[i].folder_images.map(id => 'https://lh3.googleusercontent.com/d/' + id) } : {}),
+      ...(folderImgs ? { folderPhotos: folderImgs.map(id => 'https://lh3.googleusercontent.com/d/' + id) } : {}),
       badge: get('badge'),
       whatsapp: wa, name, desc: ''
     };

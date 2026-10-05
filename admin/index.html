@@ -6,7 +6,7 @@
 <title>Admin — Broker France</title>
 <meta name="robots" content="noindex, nofollow">
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Manrope',sans-serif;background:#F4F6F8;color:#0E1117;-webkit-font-smoothing:antialiased}
@@ -747,11 +747,12 @@ button{font-family:inherit;cursor:pointer}
 <div class="ig-modal-bg" id="ig-modal-bg" style="display:none" onclick="if(event.target===this)closeIgModal()">
   <div class="ig-modal">
     <div class="ig-modal-hdr">
-      <h3>📸 Create Instagram Post</h3>
+      <h3>📸 Create Listing Post</h3>
       <button class="ig-modal-close" onclick="closeIgModal()">✕</button>
     </div>
     <div class="ig-tabs">
-      <button class="ig-tab on" onclick="switchIgTab('square',this)">Feed 1:1</button>
+      <button class="ig-tab on" onclick="switchIgTab('poster',this)">Poster 2:3</button>
+      <button class="ig-tab" onclick="switchIgTab('square',this)">Feed 1:1</button>
       <button class="ig-tab" onclick="switchIgTab('story',this)">Story 9:16</button>
     </div>
     <div class="ig-canvas-wrap" id="ig-canvas-wrap">
@@ -761,7 +762,7 @@ button{font-family:inherit;cursor:pointer}
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Download PNG
     </button>
-    <p class="ig-note">1080×1080 for Feed · 1080×1920 for Story</p>
+    <p class="ig-note">1080×1620 Poster · 1080×1080 Feed · 1080×1920 Story</p>
   </div>
 </div>
 
@@ -1609,12 +1610,12 @@ function copyTripLink() {
 
 // ── IG POST GENERATOR ─────────────────────────────────
 let igListing   = null;
-let igMode      = 'square'; // 'square' | 'story'
+let igMode      = 'poster'; // 'poster' | 'square' | 'story'
 
 function openIgModal(id) {
   igListing = allListings.find(l => String(l.id) === String(id));
   if (!igListing) { showToast('Listing not found'); return; }
-  igMode = 'square';
+  igMode = 'poster';
   document.querySelectorAll('.ig-tab').forEach((t,i) => t.classList.toggle('on', i===0));
   document.getElementById('ig-modal-bg').style.display = 'flex';
   drawIgCanvas();
@@ -1631,143 +1632,407 @@ function switchIgTab(mode, btn) {
   drawIgCanvas();
 }
 
-function drawIgCanvas() {
-  const l   = igListing;
-  const W   = 1080;
-  const H   = igMode === 'story' ? 1920 : 1080; // square feed
-  const canvas = document.getElementById('ig-canvas');
-  canvas.width  = W;
-  canvas.height = H;
-  // scale preview so it fits in modal
-  canvas.style.width  = '100%';
-  canvas.style.height = 'auto';
+// ── Post content ──
+const IG_BROKER  = 'May France R. Gonzales';
+const IG_LICENSE = 'REB · PRC 0020049';
+const IG_SITE    = 'francebrokerage.com';
 
-  const ctx = canvas.getContext('2d');
+// "For Sale" / "For Lease" / both, from the sheet's free-text deal column
+function igDealLabels(deal) {
+  const v = String(deal || '').toLowerCase();
+  if (v.includes('sold')) return ['SOLD'];
+  if (v.includes('hold')) return ['ON HOLD'];
+  const out = [];
+  if (v.includes('sale') || !v) out.push('FOR SALE');
+  if (v.includes('lease') || v.includes('rent')) out.push('FOR LEASE');
+  return out.length ? out : ['FOR SALE'];
+}
 
-  function render(img) {
-    const pad = 72;
-    const fs  = igMode === 'story';
-    const bot = H - 60;
-
-    // ── FULL IMAGE BACKGROUND ──
-    if (img) {
-      const s = Math.max(W/img.width, H/img.height);
-      ctx.drawImage(img, (W-img.width*s)/2, (H-img.height*s)/2, img.width*s, img.height*s);
-    } else {
-      ctx.fillStyle = '#1C3F2F'; ctx.fillRect(0,0,W,H);
-    }
-    // dark gradient — bottom heavy
-    const grad = ctx.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0,    'rgba(0,0,0,0.04)');
-    grad.addColorStop(0.48, 'rgba(0,0,0,0.04)');
-    grad.addColorStop(1,    'rgba(0,0,0,0.87)');
-    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
-
-    // ── TOP LEFT — deal badge ──
-    const deal    = (l.deal||'').toLowerCase();
-    const isLease = deal.includes('lease') || deal.includes('rent');
-    const isEx    = String(l.exclusive||'').toUpperCase() === 'TRUE';
-    ctx.font = `700 ${fs?28:26}px Arial, sans-serif`;
-    let bx = pad;
-    const dealLbl = isLease ? 'For Lease' : 'For Sale';
-    const dealW   = ctx.measureText(dealLbl).width + 44;
-    ctx.fillStyle = '#1C3F2F';
-    igRoundRect(ctx, bx, pad, dealW, 56, 28); ctx.fill();
-    ctx.fillStyle = '#fff'; ctx.textAlign = 'left';
-    ctx.fillText(dealLbl, bx+22, pad+39); bx += dealW + 12;
-    if (isEx) {
-      const exLbl = '✦ Exclusive';
-      const exW   = ctx.measureText(exLbl).width + 44;
-      const eg    = ctx.createLinearGradient(bx,0,bx+exW,0);
-      eg.addColorStop(0,'#92700A'); eg.addColorStop(1,'#C9960C');
-      ctx.fillStyle = eg;
-      igRoundRect(ctx, bx, pad, exW, 56, 28); ctx.fill();
-      ctx.fillStyle = '#fff'; ctx.fillText(exLbl, bx+22, pad+39);
-    }
-
-    // ── TOP RIGHT — website ──
-    ctx.font = `500 ${fs?25:23}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.88)';
-    ctx.textAlign = 'right';
-    ctx.fillText('francebrokerage.com', W - pad, pad + 36);
-
-    // ── BOTTOM CONTENT ──
-    const rawAmt = l.price || l.amount || '';
-    const price  = rawAmt
-      ? '₱' + Number(String(rawAmt).replace(/[^0-9.]/g,'')).toLocaleString('en-PH')
-      : 'Price on Request';
-    const loc   = l.location || '';
-    const type  = l.type  || '';
-    const lot   = l.lot_area   ? l.lot_area + ' sqm lot'   : '';
-    const floor = l.floor_area ? l.floor_area + ' sqm floor' : '';
-    const specs = [type, lot, floor].filter(Boolean).join('  ·  ');
-
-    // line 3 — specs
-    if (specs) {
-      ctx.font = `400 ${fs?33:29}px Arial, sans-serif`;
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.textAlign = 'left';
-      ctx.fillText(igTruncate(ctx, specs, W - pad*2), pad, bot - 152);
-    }
-
-    // line 2 — location (replaces property name — same size)
-    ctx.font = `700 ${fs?52:48}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.textAlign = 'left';
-    ctx.fillText(igTruncate(ctx, loc, W - pad*2), pad, bot - 224);
-
-    // line 1 — price (big hero)
-    ctx.font = `800 ${fs?92:86}px Arial, sans-serif`;
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.fillText(igTruncate(ctx, price, W - pad*2), pad, bot - 302);
-
-    // ── FOOTER ──
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
-    ctx.fillRect(pad, bot - 108, W - pad*2, 1.5);
-
-    ctx.font = `700 ${fs?30:27}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.95)';
-    ctx.textAlign = 'left';
-    ctx.fillText('May Francia Rivares-Gonzales', pad, bot - 64);
-
-    ctx.font = `400 ${fs?26:23}px Arial, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.textAlign = 'right';
-    ctx.fillText('PRC Lic. 020049', W - pad, bot - 64);
+// Total contract price; per-sqm prices are multiplied by the lot area (same as the site)
+function igTotalPrice(l) {
+  const raw = String(l.amount ?? l.price ?? '');
+  const n = parseFloat(raw.replace(/[₱,\s]/g, ''));
+  if (isNaN(n) || n <= 0) return 'Price on Request';
+  const lot = parseFloat(String(l.lot ?? l.lot_area ?? '').replace(/,/g, ''));
+  if (/\/\s*sqm\b/i.test(raw)) {
+    return lot > 0 ? '₱' + Math.round(n * lot).toLocaleString('en-PH') : '₱' + n.toLocaleString('en-PH') + ' / sqm';
   }
+  return '₱' + Math.round(n).toLocaleString('en-PH');
+}
 
-  // extract Drive file ID and load via CORS proxy
-  const raw = l.thumbnail || '';
-  const driveId = raw.match(/\/d\/([a-zA-Z0-9_-]{10,})/)?.[1]
-               || raw.match(/id=([a-zA-Z0-9_-]{10,})/)?.[1];
+function igSqm(v) {
+  const n = parseFloat(String(v ?? '').replace(/,/g, ''));
+  return n > 0 ? n.toLocaleString('en-PH') + ' sqm' : '';
+}
 
-  if (driveId) {
-    // try multiple sources in order
-    const sources = [
-      'https://corsproxy.io/?' + encodeURIComponent('https://lh3.googleusercontent.com/d/' + driveId),
-      'https://corsproxy.io/?' + encodeURIComponent('https://drive.google.com/uc?export=view&id=' + driveId),
-      'https://lh3.googleusercontent.com/d/' + driveId,
-    ];
-    let tried = 0;
-    function tryNext() {
-      if (tried >= sources.length) { render(null); return; }
+// All photo URLs for a listing, main photo first (Drive folders are listed via drive-folder)
+async function igRawPhotos(l) {
+  const list = String(l.photos || '').split('|').map(s => s.trim()).filter(Boolean);
+  let photos = [];
+  const folder = list.map(p => p.match(/\/folders\/([a-zA-Z0-9_-]+)/)).find(Boolean);
+  if (folder) {
+    try {
+      const data = await fetch('/.netlify/functions/drive-folder?id=' + folder[1]).then(r => r.json());
+      photos = (data.images || []).map(img => 'https://lh3.googleusercontent.com/d/' + img.id);
+    } catch { /* folder unavailable */ }
+  } else {
+    photos = list.filter(p => /^https?:\/\//i.test(p));
+  }
+  const main = l.thumbnail || photos[0] || '';
+  return [main, ...photos.filter(p => p !== main)].filter(Boolean);
+}
+
+// Candidate image URLs (CORS-friendly first) for one photo
+function igSourcesFor(raw, w = 1600) {
+  if (!raw) return [];
+  const driveId = (raw.match(/googleusercontent\.com\/d\/([a-zA-Z0-9_-]{10,})/) || raw.match(/\/d\/([a-zA-Z0-9_-]{10,})/) || raw.match(/[?&]id=([a-zA-Z0-9_-]{10,})/) || [])[1];
+  if (driveId) return [
+    `https://lh3.googleusercontent.com/d/${driveId}=w${w}-rj`,
+    'https://corsproxy.io/?' + encodeURIComponent('https://lh3.googleusercontent.com/d/' + driveId),
+  ];
+  if (raw.includes('res.cloudinary.com/') && raw.includes('/image/upload/'))
+    return [raw.replace('/image/upload/', `/image/upload/c_limit,w_${w},q_90/`), raw];
+  return [raw];
+}
+
+async function igPhotoSources(l) {
+  return igSourcesFor((await igRawPhotos(l))[0]);
+}
+
+function igLoadImage(sources) {
+  return new Promise(resolve => {
+    let i = 0;
+    const next = () => {
+      if (i >= sources.length) return resolve(null);
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.onload  = () => render(img);
-      img.onerror = () => { tried++; tryNext(); };
-      img.src = sources[tried++];
+      img.onload  = () => resolve(img);
+      img.onerror = next;
+      img.src = sources[i++];
+    };
+    next();
+  });
+}
+
+// Livelier colours: saturation, contrast and a touch of brightness on the photo area
+function igEnhance(ctx, x, y, w, h) {
+  try {
+    const d = ctx.getImageData(x, y, w, h), p = d.data;
+    const sat = 1.22, con = 1.08, bri = 6;
+    for (let i = 0; i < p.length; i += 4) {
+      let r = p[i], g = p[i+1], b = p[i+2];
+      const lum = 0.299*r + 0.587*g + 0.114*b;
+      r = lum + (r - lum) * sat; g = lum + (g - lum) * sat; b = lum + (b - lum) * sat;
+      r = (r - 128) * con + 128 + bri; g = (g - 128) * con + 128 + bri; b = (b - 128) * con + 128 + bri;
+      p[i] = r < 0 ? 0 : r > 255 ? 255 : r;
+      p[i+1] = g < 0 ? 0 : g > 255 ? 255 : g;
+      p[i+2] = b < 0 ? 0 : b > 255 ? 255 : b;
     }
-    tryNext();
-  } else if (raw) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload  = () => render(img);
-    img.onerror = () => render(null);
-    img.src = raw;
+    ctx.putImageData(d, x, y);
+  } catch { /* photo without CORS — leave as is */ }
+}
+
+let igDrawToken = 0;
+async function drawIgCanvas() {
+  const token = ++igDrawToken;
+  if (igMode === 'poster') return drawIgPoster(token);
+  return drawIgCard(token);
+}
+
+async function drawIgCard(token) {
+  const l = igListing;
+  const story = igMode === 'story';
+  const W = 1080, H = story ? 1920 : 1080;
+  const canvas = document.getElementById('ig-canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = '100%'; canvas.style.height = 'auto';
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#1C3F2F'; ctx.fillRect(0, 0, W, H);
+
+  const [img] = await Promise.all([
+    igPhotoSources(l).then(igLoadImage),
+    document.fonts ? document.fonts.load('800 80px Manrope').catch(() => {}) : null,
+  ]);
+  if (token !== igDrawToken) return; // a newer draw (tab switch) took over
+  const F = (w, px) => `${w} ${px}px Manrope, Arial, sans-serif`;
+
+  // ── PHOTO (top part, colour-enhanced) ──
+  const photoH = story ? 1260 : 600;
+  if (img) {
+    const s = Math.max(W / img.width, photoH / img.height);
+    ctx.drawImage(img, (W - img.width * s) / 2, (photoH - img.height * s) / 2, img.width * s, img.height * s);
+    igEnhance(ctx, 0, 0, W, photoH);
   } else {
-    render(null);
+    const g = ctx.createLinearGradient(0, 0, W, photoH);
+    g.addColorStop(0, '#2A6044'); g.addColorStop(1, '#1C3F2F');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, photoH);
   }
+
+  // ── DETAILS PANEL — curved shape over the bottom of the photo ──
+  const top = photoH - (story ? 70 : 60);
+  ctx.fillStyle = '#1C3F2F';
+  ctx.beginPath();
+  ctx.moveTo(0, top + 40);
+  ctx.bezierCurveTo(W * 0.3, top - 30, W * 0.62, top + 70, W, top);
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
+  // gold accent following the curve
+  ctx.strokeStyle = '#C9A227'; ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(0, top + 40);
+  ctx.bezierCurveTo(W * 0.3, top - 30, W * 0.62, top + 70, W, top);
+  ctx.stroke();
+
+  const pad = 72;
+  const k = story ? 1.25 : 1; // story has more room — scale text and spacing up
+  let y = top + (story ? 110 : 78);
+
+  // deal pills
+  ctx.font = F(800, 24 * k); ctx.textBaseline = 'middle';
+  let x = pad;
+  const pillH = 48 * k;
+  igDealLabels(l.deal).forEach((lbl, i) => {
+    const w = ctx.measureText(lbl).width + 40 * k;
+    ctx.fillStyle = i === 0 ? '#C9A227' : '#FFFFFF';
+    igRoundRect(ctx, x, y, w, pillH, pillH / 2);
+    ctx.fillStyle = '#1C3F2F';
+    ctx.fillText(lbl, x + 20 * k, y + pillH / 2 + 1);
+    x += w + 12;
+  });
+  if (String(l.exclusive || '').toUpperCase() === 'TRUE') {
+    const lbl = '✦ EXCLUSIVE', w = ctx.measureText(lbl).width + 40 * k;
+    ctx.strokeStyle = '#C9A227'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, pillH, pillH / 2) : ctx.rect(x, y, w, pillH); ctx.stroke();
+    ctx.fillStyle = '#E8C766'; ctx.fillText(lbl, x + 20 * k, y + pillH / 2 + 1);
+  }
+  y += pillH + 26 * k;
+
+  // total amount
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.font = F(800, 80 * k); ctx.fillStyle = '#FFFFFF';
+  y += 66 * k;
+  ctx.fillText(igTruncate(ctx, igTotalPrice(l), W - pad * 2), pad, y);
+
+  // location with a pin
+  y += 56 * k;
+  const pinX = pad + 13 * k, pinY = y - 14 * k;
+  ctx.fillStyle = '#C9A227';
+  ctx.beginPath(); ctx.arc(pinX, pinY - 6 * k, 13 * k, Math.PI, 0);
+  ctx.lineTo(pinX, pinY + 18 * k); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#1C3F2F'; ctx.beginPath(); ctx.arc(pinX, pinY - 6 * k, 5 * k, 0, Math.PI * 2); ctx.fill();
+  ctx.font = F(600, 36 * k); ctx.fillStyle = 'rgba(255,255,255,0.92)';
+  ctx.fillText(igTruncate(ctx, l.location || '', W - pad * 2 - 42 * k), pad + 42 * k, y);
+
+  // lot / floor area boxes
+  const specs = [['LOT AREA', igSqm(l.lot ?? l.lot_area)], ['FLOOR AREA', igSqm(l.floor ?? l.floor_area)]].filter(s => s[1]);
+  if (specs.length) {
+    y += 34 * k;
+    const gap = 18, boxH = 96 * k, boxW = (W - pad * 2 - gap) / 2;
+    specs.forEach(([label, val], i) => {
+      const bx = pad + i * (boxW + gap);
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      igRoundRect(ctx, bx, y, boxW, boxH, 16);
+      ctx.font = F(700, 19 * k); ctx.fillStyle = '#E8C766';
+      ctx.fillText(label, bx + 26, y + 36 * k);
+      ctx.font = F(800, 34 * k); ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(val, bx + 26, y + 78 * k);
+    });
+  }
+
+  // ── FOOTER — broker and website ──
+  const footH = story ? 150 : 104;
+  ctx.fillStyle = '#132B20'; ctx.fillRect(0, H - footH, W, footH);
+  const fy = H - footH / 2;
+  ctx.textBaseline = 'middle';
+  ctx.font = F(800, 28 * k); ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'left';
+  ctx.fillText(IG_BROKER, pad, fy - 16 * k);
+  ctx.font = F(600, 21 * k); ctx.fillStyle = '#E8C766';
+  ctx.fillText(IG_LICENSE, pad, fy + 20 * k);
+  ctx.font = F(800, 28 * k); ctx.fillStyle = '#FFFFFF'; ctx.textAlign = 'right';
+  ctx.fillText(IG_SITE, W - pad, fy);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+
+// ── POSTER 2:3 (flyer layout: photo, title banner, price, details + photo collage, broker footer) ──
+function igPosterTitle(l) {
+  const t = String(l.type || '').toLowerCase();
+  const kind =
+    /condo/.test(t) ? 'CONDO' :
+    /office/.test(t) ? 'OFFICE SPACE' :
+    /hotel/.test(t) ? 'HOTEL' :
+    /warehouse|industrial/.test(t) ? 'WAREHOUSE' :
+    /commercial.*(bldg|building|complex|unit)/.test(t) ? 'COMMERCIAL BUILDING' :
+    /commercial/.test(t) ? 'COMMERCIAL LOT' :
+    /beach|resort/.test(t) ? 'BEACH PROPERTY' :
+    /farm|agri/.test(t) ? 'FARM LOT' :
+    /lot/.test(t) ? 'LOT' :
+    /resid|house|h&l/.test(t) ? 'HOUSE' : 'PROPERTY';
+  const deal = igDealLabels(l.deal).join(' / ').replace('FOR SALE / FOR LEASE', 'FOR SALE / LEASE');
+  return `${kind} ${deal}`;
+}
+
+// Short feature lines from the key-details column (commas, new lines or |), emoji/bullets trimmed
+function igFeatures(l) {
+  return String(l.key ?? l.key_details ?? '')
+    .split(/\n|\||,(?![^(]*\))/)
+    .map(s => s.replace(/^[^\p{L}\p{N}]+/u, '').replace(/[^\p{L}\p{N})]+$/u, '').trim())
+    .filter(s => s.length > 1);
+}
+
+function igCover(ctx, img, x, y, w, h, r = 0) {
+  ctx.save();
+  if (r) igClip(ctx, x, y, w, h, r); else { ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip(); }
+  const s = Math.max(w / img.width, h / img.height);
+  ctx.drawImage(img, x + (w - img.width * s) / 2, y + (h - img.height * s) / 2, img.width * s, img.height * s);
+  ctx.restore();
+}
+
+function igCheck(ctx, cx, cy, r) {
+  ctx.fillStyle = '#1C3F2F';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#E8C766'; ctx.lineWidth = r * 0.28; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(cx - r * 0.42, cy + r * 0.02); ctx.lineTo(cx - r * 0.1, cy + r * 0.34); ctx.lineTo(cx + r * 0.45, cy - r * 0.3); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+async function drawIgPoster(token) {
+  const l = igListing;
+  const W = 1080, H = 1620;
+  const canvas = document.getElementById('ig-canvas');
+  canvas.width = W; canvas.height = H;
+  canvas.style.width = '100%'; canvas.style.height = 'auto';
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#F6F2E9'; ctx.fillRect(0, 0, W, H);
+
+  const raws = await igRawPhotos(l);
+  const [imgs] = await Promise.all([
+    Promise.all(raws.slice(0, 5).map((r, i) => igLoadImage(igSourcesFor(r, i ? 900 : 1600)))),
+    document.fonts ? Promise.all([
+      document.fonts.load('700 80px "Playfair Display"'), document.fonts.load('italic 600 40px "Playfair Display"'),
+      document.fonts.load('400 50px "Great Vibes"'), document.fonts.load('800 30px Manrope'), document.fonts.load('600 30px Manrope'),
+    ]).catch(() => {}) : null,
+  ]);
+  if (token !== igDrawToken) return;
+  const hero = imgs[0];
+  const extras = imgs.slice(1).filter(Boolean).slice(0, 4);
+  const SERIF = (w, px, it = '') => `${it} ${w} ${px}px "Playfair Display", Georgia, serif`;
+  const SANS  = (w, px) => `${w} ${px}px Manrope, Arial, sans-serif`;
+  const GREEN = '#1C3F2F', GOLD = '#C9A227', GOLD_L = '#E8C766';
+  const pad = 46;
+
+  const lines = [];
+  const lot = igSqm(l.lot ?? l.lot_area), floor = igSqm(l.floor ?? l.floor_area);
+  if (lot) lines.push('Lot Area: ' + lot);
+  if (floor) lines.push('Floor Area: ' + floor);
+  igFeatures(l).forEach(f => lines.push(f));
+  const footY = 1352, rowH = 58;
+
+  // ── HERO PHOTO — grows when there's no collage and few details, so no empty space ──
+  const heroH = extras.length ? 720 : Math.max(720, footY - 8 - (150 + Math.max(lines.length, 2) * rowH));
+  if (hero) { igCover(ctx, hero, 0, 0, W, heroH); igEnhance(ctx, 0, 0, W, heroH); }
+  else { const g = ctx.createLinearGradient(0, 0, W, heroH); g.addColorStop(0, '#2A6044'); g.addColorStop(1, GREEN); ctx.fillStyle = g; ctx.fillRect(0, 0, W, heroH); }
+
+  // ── TITLE BANNER (angled right edge) ──
+  const title = igPosterTitle(l);
+  const sub = 'IN ' + String(l.location || '').toUpperCase();
+  let tSize = 74;
+  ctx.font = SERIF(700, tSize);
+  while (ctx.measureText(title).width > 820 && tSize > 44) ctx.font = SERIF(700, --tSize);
+  const titleW = ctx.measureText(title).width;
+  let sSize = 34;
+  ctx.font = SANS(700, sSize);
+  while (ctx.measureText(sub).width > 780 && sSize > 22) ctx.font = SANS(700, --sSize);
+  const subW = Math.min(ctx.measureText(sub).width, 780);
+  const bannerW = Math.min(W - 60, Math.max(titleW, subW + 70) + pad * 2 + 40);
+  const by = 26, bh = tSize + sSize + 78;
+  ctx.fillStyle = 'rgba(19,43,32,0.94)';
+  ctx.beginPath(); ctx.moveTo(0, by); ctx.lineTo(bannerW, by); ctx.lineTo(bannerW - 46, by + bh); ctx.lineTo(0, by + bh); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = GOLD; ctx.fillRect(0, by + bh - 4, bannerW - 44, 4);
+  ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  ctx.font = SERIF(700, tSize); ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(title, pad, by + 22 + tSize * 0.85);
+  ctx.font = SANS(700, sSize); ctx.fillStyle = GOLD_L;
+  const subY = by + 22 + tSize + 20 + sSize * 0.85;
+  ctx.fillRect(pad, subY - sSize * 0.32, 46, 3);
+  ctx.fillText(igTruncate(ctx, sub, bannerW - pad - 110), pad + 62, subY);
+
+  // ── PRICE BANNER on the bottom edge of the photo ──
+  const isLeaseOnly = igDealLabels(l.deal).join() === 'FOR LEASE';
+  const amount = igTotalPrice(l);
+  const suffix = isLeaseOnly && amount.startsWith('₱') && !amount.includes('sqm') ? '/month' : '';
+  ctx.font = SERIF(800, 66);
+  const amtW = ctx.measureText(amount).width;
+  ctx.font = SERIF(700, 40);
+  const sufW = suffix ? ctx.measureText(suffix).width + 6 : 0;
+  const pw = pad + amtW + sufW + 70, ph = 104, py = heroH - ph + 8;
+  ctx.fillStyle = 'rgba(19,43,32,0.95)';
+  ctx.beginPath(); ctx.moveTo(0, py); ctx.lineTo(pw, py); ctx.lineTo(pw - 40, py + ph); ctx.lineTo(0, py + ph); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = GOLD; ctx.fillRect(0, py, pw, 3);
+  ctx.font = SERIF(800, 66); ctx.fillStyle = '#F3E3B5';
+  ctx.fillText(amount, pad, py + 74);
+  if (suffix) { ctx.font = SERIF(700, 40); ctx.fillText(suffix, pad + amtW + 6, py + 74); }
+
+  // ── DETAILS + PHOTO COLLAGE ──
+  const secY = heroH + 8;
+  const colW = extras.length ? 430 : W - pad * 2;
+  ctx.font = SANS(800, 30); ctx.fillStyle = GREEN;
+  ctx.fillText('PROPERTY DETAILS', pad, secY + 62);
+  const maxRows = Math.floor((footY - (secY + 100) - 20) / rowH);
+  ctx.font = SANS(600, 28);
+  let ly = secY + 120, shown = 0;
+  for (const line of lines) {
+    if (shown >= maxRows) break;
+    igCheck(ctx, pad + 17, ly - 9, 17);
+    ctx.fillStyle = '#2D3748'; ctx.font = SANS(600, 28);
+    ctx.fillText(igTruncate(ctx, line, colW - 56), pad + 50, ly);
+    ly += rowH; shown++;
+  }
+
+  if (extras.length) {
+    const gx = pad + colW + 24, gw = W - gx - pad, gy = secY + 30, gh = footY - gy - 34, gap = 14;
+    const tiles =
+      extras.length === 1 ? [[0, 0, 1, 1]] :
+      extras.length === 2 ? [[0, 0, 1, .5], [0, .5, 1, .5]] :
+      extras.length === 3 ? [[0, 0, 1, .5], [0, .5, .5, .5], [.5, .5, .5, .5]] :
+                            [[0, 0, .5, .5], [.5, 0, .5, .5], [0, .5, .5, .5], [.5, .5, .5, .5]];
+    tiles.forEach(([tx, ty, tw, th], i) => {
+      const x = gx + tx * gw + (tx ? gap / 2 : 0), y = gy + ty * gh + (ty ? gap / 2 : 0);
+      const w = tw * gw - (tw < 1 ? gap / 2 : 0), h = th * gh - (th < 1 ? gap / 2 : 0);
+      igCover(ctx, extras[i], x, y, w, h, 10);
+      igEnhance(ctx, Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    });
+  }
+
+  // ── FOOTER — broker (no photo), logo ──
+  const fh = H - footY;
+  const fg = ctx.createLinearGradient(0, footY, 0, H);
+  fg.addColorStop(0, '#1C3F2F'); fg.addColorStop(1, '#10251B');
+  ctx.fillStyle = fg; ctx.fillRect(0, footY, W, fh);
+  ctx.fillStyle = GOLD; ctx.fillRect(0, footY, W, 4);
+
+  ctx.textAlign = 'left';
+  ctx.font = '400 54px "Great Vibes", cursive'; ctx.fillStyle = GOLD_L;
+  ctx.fillText("Let's close a deal together!", pad, footY + 72);
+  ctx.font = SERIF(700, 36); ctx.fillStyle = '#FFFFFF';
+  ctx.fillText(IG_BROKER.toUpperCase(), pad, footY + 126);
+  ctx.font = SANS(600, 24); ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.fillText('Real Estate Broker  ·  PRC# 0020049', pad, footY + 166);
+  ctx.font = SANS(800, 26); ctx.fillStyle = GOLD_L;
+  ctx.fillText('0977 829 0053', pad, footY + 214);
+  const phoneW = ctx.measureText('0977 829 0053').width;
+  ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fillText('|', pad + phoneW + 18, footY + 214);
+  ctx.fillStyle = '#FFFFFF'; ctx.fillText(IG_SITE, pad + phoneW + 42, footY + 214);
+
+  // logo: roof outline + FRANCE / BROKERAGE
+  const lx = W - pad - 150, lyy = footY + 64;
+  ctx.strokeStyle = GOLD; ctx.lineWidth = 4; ctx.lineJoin = 'miter';
+  ctx.beginPath(); ctx.moveTo(lx - 62, lyy + 30); ctx.lineTo(lx, lyy - 16); ctx.lineTo(lx + 62, lyy + 30); ctx.stroke();
+  ctx.fillStyle = GOLD; ctx.fillRect(lx - 9, lyy + 6, 8, 8); ctx.fillRect(lx + 1, lyy + 6, 8, 8); ctx.fillRect(lx - 9, lyy + 16, 8, 8); ctx.fillRect(lx + 1, lyy + 16, 8, 8);
+  ctx.textAlign = 'center';
+  ctx.font = SERIF(700, 50); ctx.fillStyle = GOLD_L;
+  ctx.fillText('FRANCE', lx, lyy + 92);
+  ctx.font = SANS(700, 19); ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('B  R  O  K  E  R  A  G  E', lx, lyy + 124);
+  ctx.textAlign = 'left';
 }
 
 function igClip(ctx, x, y, w, h, r) {
