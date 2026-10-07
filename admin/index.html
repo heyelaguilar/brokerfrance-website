@@ -754,15 +754,16 @@ button{font-family:inherit;cursor:pointer}
       <button class="ig-tab on" onclick="switchIgTab('poster',this)">Poster 2:3</button>
       <button class="ig-tab" onclick="switchIgTab('square',this)">Feed 1:1</button>
       <button class="ig-tab" onclick="switchIgTab('story',this)">Story 9:16</button>
+      <button class="ig-tab" onclick="switchIgTab('a4',this)">A4 PDF</button>
     </div>
     <div class="ig-canvas-wrap" id="ig-canvas-wrap">
       <canvas id="ig-canvas"></canvas>
     </div>
     <button class="ig-dl-btn" onclick="downloadIgPost()">
       <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download PNG
+      <span id="ig-dl-label">Download PNG</span>
     </button>
-    <p class="ig-note">1080×1620 Poster · 1080×1080 Feed · 1080×1920 Story</p>
+    <p class="ig-note">1080×1620 Poster · 1080×1080 Feed · 1080×1920 Story · A4 print PDF</p>
   </div>
 </div>
 
@@ -1610,13 +1611,14 @@ function copyTripLink() {
 
 // ── IG POST GENERATOR ─────────────────────────────────
 let igListing   = null;
-let igMode      = 'poster'; // 'poster' | 'square' | 'story'
+let igMode      = 'poster'; // 'poster' | 'square' | 'story' | 'a4'
 
 function openIgModal(id) {
   igListing = allListings.find(l => String(l.id) === String(id));
   if (!igListing) { showToast('Listing not found'); return; }
   igMode = 'poster';
   document.querySelectorAll('.ig-tab').forEach((t,i) => t.classList.toggle('on', i===0));
+  document.getElementById('ig-dl-label').textContent = 'Download PNG';
   document.getElementById('ig-modal-bg').style.display = 'flex';
   drawIgCanvas();
 }
@@ -1629,6 +1631,7 @@ function switchIgTab(mode, btn) {
   igMode = mode;
   document.querySelectorAll('.ig-tab').forEach(t => t.classList.remove('on'));
   btn.classList.add('on');
+  document.getElementById('ig-dl-label').textContent = mode === 'a4' ? 'Download PDF' : 'Download PNG';
   drawIgCanvas();
 }
 
@@ -1719,6 +1722,8 @@ function igLoadImage(sources) {
 // Livelier colours: saturation, contrast and a touch of brightness on the photo area
 function igEnhance(ctx, x, y, w, h) {
   try {
+    const k = ctx.getTransform().a; // A4 draws on a scaled-up canvas
+    x = Math.round(x * k); y = Math.round(y * k); w = Math.round(w * k); h = Math.round(h * k);
     const d = ctx.getImageData(x, y, w, h), p = d.data;
     const sat = 1.22, con = 1.08, bri = 6;
     for (let i = 0; i < p.length; i += 4) {
@@ -1737,7 +1742,7 @@ function igEnhance(ctx, x, y, w, h) {
 let igDrawToken = 0;
 async function drawIgCanvas() {
   const token = ++igDrawToken;
-  if (igMode === 'poster' || igMode === 'square') return drawIgPoster(token);
+  if (igMode === 'poster' || igMode === 'square' || igMode === 'a4') return drawIgPoster(token);
   return drawIgCard(token);
 }
 
@@ -1897,27 +1902,32 @@ function igCheck(ctx, cx, cy, r) {
   ctx.lineCap = 'butt';
 }
 
-// Flyer layout in two sizes: 'poster' (1080×1620) and 'square' (1080×1080 feed).
+// Flyer layout in three sizes: 'poster' (1080×1620), 'square' (1080×1080 feed)
+// and 'a4' (1080×1527, A4 proportions, drawn at IG_A4_SCALE× for print).
 const IG_LAYOUTS = {
   poster: { H: 1620, heroH: 720, footY: 1352, title: 74, sub: 34, price: 66, suffix: 40, priceH: 104,
             head: 30, item: 28, rowH: 58, check: 17, maxExtras: 4, script: 54, name: 36, info: 24, contact: 26, logo: 1 },
   square: { H: 1080, heroH: 560, footY: 892, title: 58, sub: 27, price: 54, suffix: 32, priceH: 86,
             head: 24, item: 23, rowH: 41, check: 14, maxExtras: 2, script: 40, name: 28, info: 19, contact: 21, logo: 0.75 },
+  a4:     { H: 1527, heroH: 680, footY: 1272, title: 74, sub: 34, price: 66, suffix: 40, priceH: 104,
+            head: 30, item: 28, rowH: 56, check: 17, maxExtras: 4, script: 50, name: 34, info: 23, contact: 25, logo: 0.95 },
 };
+const IG_A4_SCALE = 2.3; // ≈ 2480×3508 px, 300 dpi on A4
 
 async function drawIgPoster(token) {
   const l = igListing;
-  const L = IG_LAYOUTS[igMode === 'square' ? 'square' : 'poster'];
-  const W = 1080, H = L.H;
+  const L = IG_LAYOUTS[igMode] || IG_LAYOUTS.poster;
+  const W = 1080, H = L.H, S = igMode === 'a4' ? IG_A4_SCALE : 1;
   const canvas = document.getElementById('ig-canvas');
-  canvas.width = W; canvas.height = H;
+  canvas.width = Math.round(W * S); canvas.height = Math.round(H * S);
   canvas.style.width = '100%'; canvas.style.height = 'auto';
   const ctx = canvas.getContext('2d');
+  ctx.setTransform(S, 0, 0, S, 0, 0);
   ctx.fillStyle = '#F6F2E9'; ctx.fillRect(0, 0, W, H);
 
   const raws = await igRawPhotos(l);
   const [imgs] = await Promise.all([
-    Promise.all(raws.slice(0, L.maxExtras + 1).map((r, i) => igLoadImage(igSourcesFor(r, i ? 900 : 1600)))),
+    Promise.all(raws.slice(0, L.maxExtras + 1).map((r, i) => igLoadImage(igSourcesFor(r, (i ? 900 : 1600) * (S > 1 ? 2 : 1))))),
     document.fonts ? Promise.all([
       document.fonts.load('700 80px "Playfair Display"'), document.fonts.load('800 80px "Playfair Display"'),
       document.fonts.load('400 50px "Great Vibes"'), document.fonts.load('800 30px Manrope'), document.fonts.load('600 30px Manrope'),
@@ -2101,8 +2111,36 @@ function igTruncate(ctx, text, maxW) {
   return text + '…';
 }
 
+// jsPDF is only needed for the A4 export, so it's loaded on first use
+let igJsPdf = null;
+function igLoadJsPdf() {
+  return igJsPdf ||= new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => resolve(window.jspdf.jsPDF);
+    s.onerror = () => { igJsPdf = null; reject(new Error('jsPDF failed to load')); };
+    document.head.appendChild(s);
+  });
+}
+
+async function downloadIgPdf() {
+  const canvas = document.getElementById('ig-canvas');
+  try {
+    const jsPDF = await igLoadJsPdf();
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+    pdf.setProperties({ title: igPosterTitle(igListing) + ' — ' + (igListing.location || ''), author: IG_BROKER });
+    // full-bleed: canvas is A4-proportioned, so it fills 210×297 mm exactly
+    pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+    pdf.save(`broker-france-${igListing.id||'listing'}-a4.pdf`);
+    showToast('Downloaded!');
+  } catch {
+    showToast('Could not create PDF — check your connection');
+  }
+}
+
 function downloadIgPost() {
   if (!igListing) return;
+  if (igMode === 'a4') return downloadIgPdf();
   const canvas = document.getElementById('ig-canvas');
   const a = document.createElement('a');
   a.download = `broker-france-${igListing.id||'listing'}-${igMode}.png`;
