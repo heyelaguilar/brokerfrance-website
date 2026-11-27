@@ -566,6 +566,34 @@ async function pdcNotes(){
     S.mig_pdc_notes_2026_11 = '1';
   } catch(e){ console.error('pdc notes failed', e); }
 }
+// ELA, 27 Nov 2026: November paid as per PDC → clear these checks and post the payments
+const PAID_PDC_2026_11 = [
+  ['beautiful life', '1000050880', null],
+  ['v52',            '0005191889', null],
+  ['enerp',          null,         13910.00],   // no November check on file — record it as paid by PDC
+  ['ashcol',         '0020293356', null],
+  ['neuera',         '0000447966', null],
+];
+async function markNovPdcPaid(){
+  if (DEMO || S.mig_paid_pdc_2026_11) return;
+  const done = [];
+  try {
+    for (const [key, no, amount] of PAID_PDC_2026_11) {
+      const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key));
+      if (!t) continue;
+      let ck = no ? DB.PDCs.find(p => p.tenant_id === t.id && p.check_no === no) : DB.PDCs.find(p => p.tenant_id === t.id && String(p.check_date).slice(0,7) === '2026-11');
+      if (ck && ck.status === 'Cleared' && ck.payment_id) continue;
+      if (!ck) ck = await save('PDCs', { tenant_id:t.id, bank:'', check_no:'', amount, check_date:dayOf('2026-11', t.due_day || 1), for_period:'2026-11', status:'On hand', notes:'November 2026 — paid as per PDC (check copy not on file)' });
+      const date = ck.check_date && ck.check_date.slice(0,7) === '2026-11' ? ck.check_date : today();
+      const pay = await save('Payments', { tenant_id:t.id, date, amount:ck.amount, method:'PDC', bank:ck.bank, reference:ck.check_no, pdc_id:ck.id, notes:'November 2026 — paid as per PDC', by:ME });
+      await save('PDCs', { ...ck, status:'Cleared', deposited_date: ck.deposited_date || date, cleared_date: date, payment_id: pay.id });
+      done.push(t.tenant_name);
+    }
+    await save('Settings', { id:'mig_paid_pdc_2026_11', value: new Date().toISOString() + ' · ' + done.join(', ') });
+    S.mig_paid_pdc_2026_11 = '1';
+    if (done.length) toast(`Marked paid (PDC): ${done.length} tenant(s)`);
+  } catch(e){ console.error('mark paid failed', e); toast('Marking PDCs paid failed: ' + e.message); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -575,6 +603,7 @@ async function reload(){
     await fixBedooCusa();
     await importPdcs();
     await pdcNotes();
+    await markNovPdcPaid();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -787,7 +816,7 @@ function rCollectibles(m){
   // the bar on top follows the same numbers: collected this month vs total to collect
   const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
   $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
-  const colSum = ST.pdcPaid + ST.btPaid;
+  const colSum = Math.min(got, due);   // actual payments received this month (same as the Collected card)
   $('t-roll').textContent = peso0(colSum); $('t-target').textContent = peso0(due);
   const segs = [
     ['Collected', colSum, '#1C3F2F'],
