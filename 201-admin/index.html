@@ -370,6 +370,12 @@ const dayOf = (m, d) => `${m}-${String(Math.min(lastDay(m), Math.max(1, num(d) |
 const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
 const dueLabel = t => (t.rent_frequency && t.rent_frequency !== 'Monthly') ? t.rent_frequency.toLowerCase() : !num(t.due_day) ? '' : num(t.due_day) >= 30 ? 'EOM' : ordinal(num(t.due_day));
 const isCheck = mode => mode === 'PDC' || mode === 'Check';
+// Parts of a tenant's monthly dues that are NOT covered by a check → these need an SOA
+function soaParts(t, cusa){
+  const rentBT = !isCheck(t.rent_payment || t.payment_mode);
+  const cusaBT = cusa > 0 && t.cusa_payment !== 'Combined with rent' && (rentBT || !isCheck(t.cusa_payment));
+  return [rentBT && num(t.monthly_rent) ? 'Rent' : '', cusaBT ? 'CUSA' : ''].filter(Boolean);
+}
 const daysUntil = d => d ? Math.round((new Date(d) - new Date(today())) / 864e5) : null;
 const fmtDate = d => d ? new Date(d.slice(0,10) + 'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
 const fmtMonth = m => m ? new Date(m + '-01T00:00:00').toLocaleDateString('en-PH',{month:'long',year:'numeric'}) : '—';
@@ -639,11 +645,19 @@ function rCollectibles(m){
   let ta = 0, tr = 0, tc = 0;
   const modeOf = t => { const r = t.rent_payment || t.payment_mode || ''; return isCheck(r) ? 'Check' : r; };
   $('rc-note').textContent = all.length ? `· ${all.length} · click a row to edit` : '';
-  $('rc-tbl').innerHTML = all.length ? `<tr><th>Level</th><th>Business name</th><th>Mode of payment</th><th>Due date</th><th class="num">Area (sqm)</th><th class="num">Monthly rental</th><th class="num">CUSA</th></tr>` + all.map(t => {
+  $('rc-tbl').innerHTML = all.length ? `<tr><th>Level</th><th>Business name</th><th>Mode of payment</th><th>Due date</th><th class="num">Area (sqm)</th><th class="num">Monthly rental</th><th class="num">CUSA</th><th>SOA · ${fmtMonth(m).split(' ')[0]}</th></tr>` + all.map(t => {
       const area = num(t.area_sqm), rent = num(t.monthly_rent), cusa = cusaOf(t);
       ta += area; tr += rent; tc += cusa;
-      return `<tr class="click" onclick="openTenant('${t.id}')"><td>${esc(t.floor)}</td><td><b>${esc(t.tenant_name)}</b></td><td>${esc(modeOf(t))}</td><td>${esc(dueLabel(t))}</td><td class="num">${area || ''}</td><td class="num">${rent ? peso(rent).slice(1) : '—'}</td><td class="num">${cusa ? peso(cusa).slice(1) : '-'}</td></tr>`;
-    }).join('') + `<tr style="background:var(--green-l)"><td colspan="4"><b>ACTUAL RENTAL INCOME</b></td><td class="num"><b>${ta.toLocaleString()}</b></td><td class="num"><b>${peso(tr).slice(1)}</b></td><td class="num"><b>${peso(tc).slice(1)}</b></td></tr>`
+      const parts = soaParts(t, cusa), b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
+      const modeCell = isCheck(t.rent_payment || t.payment_mode)
+        ? `<span class="pill p-blue">Check</span>${parts.length ? ' <span class="pill p-amber">CUSA: Bank transfer</span>' : ''}`
+        : `<span class="pill p-amber">Bank transfer</span>`;
+      const soaCell = !parts.length ? '<span class="muted">No SOA · check</span>'
+        : soaHold(t) ? '<span class="pill">On hold</span>'
+        : b && b.status === 'Sent' ? `${pill('Sent')} <span class="muted">${parts.join(' + ')}</span>`
+        : `<span class="pill p-red">Needs SOA</span> <span class="muted">${parts.join(' + ')}</span>`;
+      return `<tr class="click" onclick="openTenant('${t.id}')"><td style="white-space:nowrap">${esc(t.floor)}</td><td><b>${esc(t.tenant_name)}</b></td><td>${modeCell}</td><td>${esc(dueLabel(t))}</td><td class="num">${area || ''}</td><td class="num">${rent ? peso(rent).slice(1) : '—'}</td><td class="num">${cusa ? peso(cusa).slice(1) : '-'}</td><td style="white-space:nowrap">${soaCell}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td colspan="4"><b>ACTUAL RENTAL INCOME</b></td><td class="num"><b>${ta.toLocaleString()}</b></td><td class="num"><b>${peso(tr).slice(1)}</b></td><td class="num"><b>${peso(tc).slice(1)}</b></td><td class="muted">${all.filter(t => soaParts(t, cusaOf(t)).length && !soaHold(t)).length} need SOA · ${all.filter(t => !soaParts(t, cusaOf(t)).length).length} check only</td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
 
   // 2) PDC / check: amount per check = rent (+ CUSA when combined)
@@ -659,9 +673,8 @@ function rCollectibles(m){
 
   // 3) Bank transfer — anything not covered by a check needs an SOA
   const btRows = all.map(t => {
-      const rentBT = !isCheck(t.rent_payment || t.payment_mode), cusa = cusaOf(t);
-      const cusaBT = cusa > 0 && t.cusa_payment !== 'Combined with rent' && (rentBT || !isCheck(t.cusa_payment));
-      const parts = [rentBT && num(t.monthly_rent) ? 'Rent' : '', cusaBT ? 'CUSA' : ''].filter(Boolean);
+      const cusa = cusaOf(t), parts = soaParts(t, cusa);
+      const rentBT = parts.includes('Rent'), cusaBT = parts.includes('CUSA');
       if (!parts.length) return null;
       return { t, parts, amt: (rentBT ? num(t.monthly_rent) : 0) + (cusaBT ? cusa : 0) };
     }).filter(Boolean);
