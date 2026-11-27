@@ -77,8 +77,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
 .grid2>*{min-width:0}
-.grid2.even{grid-template-columns:1fr 1fr}
-div.name{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grid2.even{grid-template-columns:0.85fr 1.15fr}
+div.name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .box{padding:18px 20px}
 .box h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 table{width:100%;border-collapse:collapse}
@@ -675,16 +675,15 @@ function rCollectibles(m){
     tr += rent; tc += cusa; tp += pdc; tb += bt;
     const nm = `<td title="${esc(t.tenant_name)}"><div class="name">${esc(t.tenant_name)}</div></td>`;
     income.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td class="num">${amt(rent + cusa)}</td></tr>`);
-    coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td></tr>`);
+    coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(pdc + bt)}</b></td></tr>`);
   });
   $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
   $('mc-title').textContent = `Monthly collections · ${fmtMonth(m)}`;
   $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td class="num"><b>${amt(tr + tc)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
-  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th></tr>${coll.join('')}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td></tr>
-    <tr style="background:var(--green-l)"><td colspan="2"><b>Total to collect</b></td><td colspan="2" class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
+  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
   // the bar on top follows the same numbers: collected this month vs total to collect
   const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
   $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
