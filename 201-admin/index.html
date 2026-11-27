@@ -327,6 +327,7 @@ const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','
 const TENANT_STATUS = ['Active','Notice to Vacate','Moved Out'];
 const PAY_METHODS = ['Bank transfer','Cash','GCash','Maya','Check','PDC','BIR 2307 (EWT)','Other'];
 const PAY_FOR = ['Rent & CUSA','Utilities','Other'];
+const PAID_TO = ['Security Bank (BVI)','GCash (MFRG)'];
 const PAY_MODES = ['PDC','Bank transfer','Check','Cash','GCash / Maya'];
 const CUSA_PAY = ['Combined with rent','Bank transfer','PDC','Check','Cash','GCash / Maya','No CUSA'];
 const RENT_FREQ = ['Monthly','Bi-annual','Annual'];
@@ -1195,17 +1196,17 @@ function elView(per, rate, tenantM, bldgM){
     const units = [...new Set(g.ms.map(mt => mt.unit))].join(', ');
     const meters = cs.length > 1 ? cs.map(y => `${esc(meterLabel(y.mt) || y.mt.unit)} ${kwh(y.c.usage)}`).join(' · ') : kwh(cs[0].c.usage);
     const warn = bills.some(b => b.needs_reading === 'Yes') ? '<div class="warn">⚠ Needs actual reading</div>' : '';
-    const st = paidAll ? `<span class="paid">Paid ✓</span> <span class="muted">${fmtDate(pb.paid_date).replace(/, \d{4}$/, '')}</span>`
+    const st = paidAll ? `<a href="#" class="paid" style="text-decoration:none" onclick="elPay('${pb.id}');return false" title="Edit payment">Paid ✓</a>`
       : firstUnpaid ? `${paidSome ? '<span class="muted">part paid · </span>' : ''}<button class="btn sm" onclick="elPay('${firstUnpaid.id}')">Mark paid</button>` : '<span class="muted">no reading</span>';
     const proof = pb ? proofThumb(pb.proof_url, `elPay('${pb.id}')`) : '';
-    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td>${proof}</td></tr>`;
+    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${pb ? esc(pb.paid_to || '') || '<span class="muted">—</span>' : ''}</td><td>${proof}</td></tr>`;
   }).join('');
-  const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td></td><td></td></tr>`; }).join('');
-  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Proof</th></tr>${rows}
-    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td><td></td></tr>
-    <tr><td colspan="4" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
-    <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td></td><td></td></tr>
-    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td><td></td></tr></table>`;
+  const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td colspan="4"></td></tr>`; }).join('');
+  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>${rows}
+    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td colspan="4"></td></tr>
+    <tr><td colspan="6" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
+    <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td colspan="4"></td></tr>
+    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td colspan="4"></td></tr></table>`;
 }
 function elUpdateAll(){
   const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
@@ -1257,6 +1258,7 @@ function elPay(id){
   $('m-body').innerHTML = (sib.length ? `<div class="fld wide"><label>Meters covered by this payment</label>${line(b, true, true)}${sib.map(x => line(x, true, false)).join('')}</div>` : '')
     + `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
     <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" id="el-pay-amt" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
+    <div class="fld"><label>Paid to</label><select name="paid_to">${opts(PAID_TO, b.paid_to || '', '—')}</select></div>
     <div class="fld"><label>Method</label><select name="method">${opts(['Bank transfer','GCash','Maya','Cash','Check'], b.method || 'Bank transfer')}</select></div>
     <div class="fld"><label>Reference no.</label><input name="reference" value="${esc(b.reference || '')}"></div>
     <div class="fld wide"><label>Proof of payment</label>${proofZone(b.proof_url)}</div>`;
