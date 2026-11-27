@@ -199,6 +199,7 @@ table.condensed .muted{font-size:11px}
     <button class="nav" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
     <button class="nav" data-tab="pdcs"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 14h5M15 10h3"/></svg>PDCs<span class="badge" id="b-pdc" hidden></span></button>
     <button class="nav" data-tab="tenants"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Tenants</button>
+    <button class="nav" data-tab="meralco"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Meralco<span class="badge" id="b-el" hidden></span></button>
     <button class="nav" data-tab="emails"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email Log</button>
     <button class="nav" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     <div class="side-bottom">
@@ -264,6 +265,14 @@ table.condensed .muted{font-size:11px}
       <div class="hdr"><div><h1>Tenants</h1><p>Billing setup per tenant: rent, CUSA, EWT, utility rates and email recipients.</p></div>
         <div class="tools"><input id="f-tn-q" placeholder="Search tenant…"><select id="f-tn-status"></select><button class="btn" onclick="openForm('Tenants')">+ Add tenant</button></div></div>
       <div class="card tbl" id="tn-wrap"></div>
+    </section>
+
+    <section class="pane" id="p-meralco">
+      <div class="hdr"><div><h1>Meralco</h1><p>Submeter readings per tenant, amount due, and who has paid.</p></div>
+        <div class="tools"><input type="month" id="f-el-period"><button class="btn ghost" id="btn-el-save" onclick="saveElec()">Save readings</button></div></div>
+      <div class="kpis" id="el-kpis"></div>
+      <div class="card rates" id="el-head"></div>
+      <div class="card tbl" id="el-wrap"></div>
     </section>
 
     <section class="pane" id="p-emails">
@@ -366,7 +375,7 @@ const FORMS = {
 // ───────────────── STATE / UTILS ─────────────────
 let ST = { pdc:{}, bt:{}, pdcAmt:{}, btAmt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
-let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[]};
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
@@ -694,10 +703,47 @@ async function addOpening(flag, key, label, amount, note){
     S[flag] = '1';
   } catch(e){ console.error(flag + ' failed', e); }
 }
+// [sort, unit, tenant match ('' = none), payer name if not a tenant, meter label, type, current, previous, fixed amount]
+const ELEC_SEED_2026_11 = [
+  [1,'102','v52','','','Tenant',7373.5,7373.5,8000],
+  [2,'104 (Store)','coffee story','','Store','Tenant',24059.1,23229.0,''],
+  [3,'104 (Kitchen)','coffee story','','Kitchen','Tenant',4985.1,4786.2,''],
+  [4,'105','toothlu','','','Tenant',7445.5,7209.1,''],
+  [5,'204','seo vas','','','Tenant',11296.8,10251.3,''],
+  [6,'302 & 303','ashcol','','','Tenant',499.2,318.9,''],
+  [7,'3F','','Puremed International Inc.','','Tenant',104.8,61.1,''],
+  [8,'3F','neuera','','','Tenant',289.3,192.4,''],
+  [9,'401','bedoo','','','Tenant',5837.3,5646.2,''],
+  [10,'4F','squeeze','','','Tenant',2056.7,1682.0,7024.02],
+  [11,'4F','andrei','','Drinks','Tenant',1340.8,1085.7,2955.90],
+  [12,'4F','andrei','','Billiards','Tenant',333.4,238.5,''],
+  [13,'4F','andrei','','Press','Tenant',684.1,648.3,''],
+  [20,'3F','','3F Brookland','','Building',94.5,34.5,''],
+  [21,'4F','','KTV','','Building',2122.7,2104.9,''],
+];
+async function seedMeralco(){
+  if (DEMO || S.mig_meralco_2026_11) return;
+  try {
+    if (!DB.Meters.length) {
+      const meters = await saveMany('Meters', ELEC_SEED_2026_11.map(([sort, unit, key, payer, label, type]) => {
+        const t = key ? DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key)) : null;
+        return { sort, unit, label, payer: t ? '' : payer, tenant_id: t ? t.id : '', type, active: 'Yes', notes: key === 'v52' ? 'Fixed ₱8,000 (no usage recorded Nov 2026)' : (key === 'squeeze' || label === 'Drinks') ? 'Nov 2026 amount taken from the Meralco sheet — sheet usage differs from current − previous' : '' };
+      }));
+      await save('ElecPeriods', { id:'2026-11', billing_period:'11 Oct 2026 to 10 Nov 2026', reading_period:'11 Oct 2026 to 14 Nov 2026', billing_date:'2026-11-13', due_date:'2026-11-24', meralco_kwh:4189, rate:16.70, meralco_total:69952.18, common_amount:1645.14 });
+      await saveMany('ElecBills', ELEC_SEED_2026_11.map((r, i) => {
+        const [,, , , , type, curr, prev, fixed] = r, amount = fixed !== '' ? fixed : Math.round((curr - prev) * 16.70 * 100) / 100;
+        return { period:'2026-11', meter_id: meters[i].id, prev, curr, rate:16.70, amount_override: fixed, amount, status: type === 'Building' ? '' : 'Unpaid' };
+      }));
+    }
+    await save('Settings', { id:'mig_meralco_2026_11', value: new Date().toISOString() });
+    S.mig_meralco_2026_11 = '1';
+    toast('Meralco November 2026 added');
+  } catch(e){ console.error('meralco seed failed', e); toast('Meralco setup failed: ' + e.message); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -712,6 +758,7 @@ async function reload(){
     await coffeeStoryArrears();
     await akmasArrears();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
+    await seedMeralco();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
@@ -788,11 +835,14 @@ function computeBill(t, period, inp){
 }
 
 // ───────────────── RENDER ─────────────────
-function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings})[tab](); }
+function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco})[tab](); }
 const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
 const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
 const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent' && !(tn(b.tenant_id) && soaHold(tn(b.tenant_id))));
 function badges(){
+  const lp = (DB.ElecPeriods || []).map(p => p.id).sort().pop();
+  const eu = lp ? DB.ElecBills.filter(b => b.period === lp && b.status === 'Unpaid').length : 0;
+  if ($('b-el')) { $('b-el').hidden = !eu; $('b-el').textContent = eu; }
   const p = pdcsDue().length, b = unsentBills().length;
   $('b-pdc').hidden = !p; $('b-pdc').textContent = p;
   $('b-bill').hidden = !b; $('b-bill').textContent = b;
@@ -1009,6 +1059,126 @@ async function quickSet(id, key, val){
   const t = tn(id); if (!t) return;
   try { await save('Tenants', { ...t, [key]: val }); toast('Saved'); rOverview(); }
   catch(e){ toast('Save failed: ' + e.message); }
+}
+
+// ── Meralco ──────────────────────────────────────────────
+// Meters: one row per submeter (a tenant can have several). ElecBills: one row per meter per month.
+// ElecPeriods: the month's Meralco header (billing period, dates, main-meter kWh, rate, total, common-area share).
+let elGrid = {};   // meter_id → { curr, amount_override }
+const elMonthPrev = m => prevMonth(m);
+const meterName = mt => mt.payer || tName(mt.tenant_id) || mt.label || '—';
+const meterLabel = mt => mt.label && mt.label !== meterName(mt) ? mt.label : '';
+const activeMeters = () => DB.Meters.filter(mt => mt.active !== 'No').sort((a,b) => num(a.sort) - num(b.sort) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+function elBill(mid, per){ return DB.ElecBills.find(b => b.meter_id === mid && b.period === per); }
+function elPrevReading(mid, per){
+  const b = elBill(mid, per); if (b && b.prev !== '') return b.prev;
+  const last = DB.ElecBills.filter(x => x.meter_id === mid && x.period < per).sort((a,b) => b.period.localeCompare(a.period))[0];
+  return last ? last.curr : '';
+}
+function elCalc(mt, per, rate){
+  const b = elBill(mt.id, per), g = elGrid[mt.id] || {};
+  const prev = elPrevReading(mt.id, per), curr = g.curr ?? (b ? b.curr : '');
+  const usage = curr !== '' && prev !== '' ? r2(num(curr) - num(prev)) : null;
+  const ov = g.amount_override ?? (b ? b.amount_override : '');
+  const amount = ov !== '' && ov != null ? num(ov) : usage != null ? r2(usage * num(rate)) : 0;
+  return { b, prev, curr, usage, ov, amount };
+}
+function rMeralco(){
+  const pe = $('f-el-period'); if (!pe.value) pe.value = DB.ElecPeriods.map(p => p.id).sort().pop() || thisMonth();
+  const per = pe.value, P = DB.ElecPeriods.find(p => p.id === per) || {};
+  if (pe.dataset.p !== per) { pe.dataset.p = per; elGrid = {}; }
+  const rate = $('el-rate')?.dataset.p === per ? $('el-rate').value : (P.rate || DB.ElecPeriods.filter(p => p.id < per).sort((a,b)=>b.id.localeCompare(a.id))[0]?.rate || '');
+  const f = (id, label, v, type='text', w='') => `<div class="fld"${w ? ` style="min-width:${w}"` : ''}><label>${label}</label><input id="${id}" data-p="${per}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v ?? '')}"></div>`;
+  $('el-head').innerHTML = f('el-bp','Billing period', P.billing_period, 'text', '210px') + f('el-rp','Tenant meter reading', P.reading_period, 'text', '210px')
+    + f('el-bd','Billing date', P.billing_date, 'date') + f('el-dd','Due date', P.due_date, 'date')
+    + f('el-kwh','Meralco actual kWh', P.meralco_kwh, 'number') + f('el-rate','Rate per kWh', rate, 'number') + f('el-total','Meralco total bill', P.meralco_total, 'number')
+    + f('el-common','201 Brookland Bldg. (common areas)', P.common_amount, 'number', '230px');
+  $('el-rate').addEventListener('input', elUpdateAll);
+  const ms = activeMeters();
+  if (!ms.length) { $('el-wrap').innerHTML = `<div class="empty"><b>No meters yet</b>Meters are added from the November 2026 Meralco sheet on first load.</div>`; $('el-kpis').innerHTML = ''; return; }
+  const tenantM = ms.filter(mt => mt.type !== 'Building'), bldgM = ms.filter(mt => mt.type === 'Building');
+  const row = mt => {
+    const c = elCalc(mt, per, rate), paid = c.b && c.b.status === 'Paid';
+    const st = mt.type === 'Building' ? '<span class="muted">building</span>'
+      : paid ? `<b>Paid ✓</b> <span class="muted">${fmtDate(c.b.paid_date).replace(/, \d{4}$/, '')}</span>${c.b.proof_url ? ` · <a href="${esc(c.b.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">proof ↗</a>` : ''}`
+      : c.b ? `<button class="btn sm" onclick="elPay('${c.b.id}')">Mark paid</button>` : '<span class="muted">save first</span>';
+    return `<tr><td style="white-space:nowrap">${esc(mt.unit)}</td><td><b>${esc(meterName(mt))}</b>${meterLabel(mt) ? ` <span class="muted">${esc(meterLabel(mt))}</span>` : ''}</td>
+      <td class="num"><input class="grid-in" data-m="${mt.id}" data-k="curr" value="${esc(c.curr)}" inputmode="decimal"></td>
+      <td class="num">${c.prev === '' ? '<span class="muted">—</span>' : num(c.prev).toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
+      <td class="num" id="el-u-${mt.id}">${c.usage == null ? '' : c.usage.toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
+      <td class="num"><input class="grid-in" style="width:84px" data-m="${mt.id}" data-k="amount_override" value="${esc(c.ov ?? '')}" placeholder="—" title="Only if the amount is fixed. Leave blank to compute usage × rate."></td>
+      <td class="num"><b id="el-a-${mt.id}">${c.amount ? peso(c.amount).slice(1) : ''}</b></td>
+      <td style="white-space:nowrap">${st}</td></tr>`;
+  };
+  $('el-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Unit</th><th>Tenant</th><th class="num">Current</th><th class="num">Previous</th><th class="num">Usage (kWh)</th><th class="num" title="Only for fixed amounts">Fixed</th><th class="num">Amount due</th><th>Payment</th></tr>
+    ${tenantM.map(row).join('')}
+    <tr style="background:var(--green-l)"><td colspan="6"><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td></tr>
+    ${bldgM.length ? `<tr><td colspan="8" class="muted" style="padding-top:14px"><b>Building (BVI)</b></td></tr>` + bldgM.map(row).join('') : ''}
+    <tr><td></td><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td colspan="4"></td><td class="num" id="el-common-v">—</td><td></td></tr>
+    <tr style="background:#FFF8E1"><td colspan="6"><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td></tr></table>`;
+  $('el-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { (elGrid[e.target.dataset.m] ||= {})[e.target.dataset.k] = e.target.value.trim(); elUpdateAll(); }));
+  $('el-common').addEventListener('input', elUpdateAll);
+  elUpdateAll();
+}
+function elUpdateAll(){
+  const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
+  let tot = 0, paid = 0, bldg = 0, nPaid = 0, nT = 0;
+  ms.forEach(mt => {
+    const c = elCalc(mt, per, rate);
+    const u = $('el-u-' + mt.id), a = $('el-a-' + mt.id);
+    if (u) u.textContent = c.usage == null ? '' : c.usage.toLocaleString('en-PH',{minimumFractionDigits:1});
+    if (a) a.textContent = c.amount ? peso(c.amount).slice(1) : '';
+    if (mt.type === 'Building') bldg += c.amount;
+    else { tot += c.amount; nT++; if (c.b && c.b.status === 'Paid') { paid += num(c.b.paid_amount) || c.amount; nPaid++; } }
+  });
+  const common = num($('el-common').value);
+  $('el-tot').textContent = peso(tot).slice(1);
+  $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
+  $('el-bvi').textContent = peso(bldg + common).slice(1);
+  const unpaid = Math.max(0, tot - paid);
+  $('el-kpis').innerHTML = [['Total collectible', peso(tot), `${nT} meters`, ''], ['Paid', peso(paid), `${nPaid} of ${nT} meters`, paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI share', peso(bldg + common), 'building meters + common', '']]
+    .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
+}
+async function saveElec(){
+  const per = $('f-el-period').value, rate = $('el-rate').value, btn = $('btn-el-save');
+  const head = { ...(DB.ElecPeriods.find(p => p.id === per) || {}), id: per, billing_period: $('el-bp').value.trim(), reading_period: $('el-rp').value.trim(), billing_date: $('el-bd').value, due_date: $('el-dd').value, meralco_kwh: $('el-kwh').value, rate, meralco_total: $('el-total').value, common_amount: $('el-common').value };
+  const rows = activeMeters().map(mt => {
+    const c = elCalc(mt, per, rate);
+    if (c.curr === '' && (c.ov === '' || c.ov == null) && !c.b) return null;
+    return { ...(c.b || {}), period: per, meter_id: mt.id, prev: c.prev, curr: c.curr, rate, amount_override: c.ov ?? '', amount: c.amount, status: c.b?.status || (mt.type === 'Building' ? '' : 'Unpaid') };
+  }).filter(Boolean);
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try { await save('ElecPeriods', head); await saveMany('ElecBills', rows); elGrid = {}; toast(`Saved ${rows.length} meter reading(s) for ${fmtMonth(per)}`); rMeralco(); badges(); }
+  catch(e){ toast('Save failed: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save readings'; }
+}
+function elPay(id){
+  const b = byId('ElecBills', id), mt = byId('Meters', b.meter_id) || {};
+  editing = { elec: id };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Meralco payment · ${meterName(mt)}${meterLabel(mt) ? ' · ' + meterLabel(mt) : ''}`;
+  $('m-body').innerHTML = `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
+    <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
+    <div class="fld"><label>Method</label><select name="method">${opts(['Bank transfer','GCash','Maya','Cash','Check'], b.method || 'Bank transfer')}</select></div>
+    <div class="fld"><label>Reference no.</label><input name="reference" value="${esc(b.reference || '')}"></div>
+    <div class="fld wide"><label>Proof of payment</label><input type="file" id="proof-file" accept="image/*,application/pdf">${b.proof_url ? `<a href="${esc(b.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700;font-size:13px">View current proof ↗</a>` : ''}</div>`;
+  $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="elUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elPaySave('${id}')">Mark paid</button>`;
+  $('ovl').classList.add('on');
+}
+async function elPaySave(id){
+  const b = byId('ElecBills', id), btn = $('m-save');
+  const f = Object.fromEntries([...$('m-body').querySelectorAll('[name]')].map(el => [el.name, el.value.trim()]));
+  const file = $('proof-file')?.files?.[0];
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (file) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(file); }
+    await save('ElecBills', { ...b, ...f, status: 'Paid' });
+    closeForm(); rMeralco(); badges(); toast('Marked paid');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid'; toast('Save failed: ' + e.message); }
+}
+async function elUnpay(id){
+  const b = byId('ElecBills', id);
+  try { await save('ElecBills', { ...b, status: 'Unpaid', paid_date: '', paid_amount: '' }); closeForm(); rMeralco(); badges(); toast('Marked unpaid'); } catch(e){ toast('Save failed: ' + e.message); }
 }
 
 // ── Billing grid ──
@@ -1440,6 +1610,7 @@ function demoData(){
 // ───────────────── BOOT ─────────────────
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 ['f-pay-tenant','f-pay-month','f-pdc-tenant','f-pdc-status','f-tn-status'].forEach(id => $(id).addEventListener('change', render));
+$('f-el-period').addEventListener('change', () => { $('f-el-period').dataset.p = ''; render(); });
 $('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
 ['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
 $('f-tn-q').addEventListener('input', render);
