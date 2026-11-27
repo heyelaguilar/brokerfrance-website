@@ -214,12 +214,13 @@ table.condensed .muted{font-size:11px}
         <div class="bar"><i id="t-bar"></i></div>
         <div class="legend"><span style="--c:var(--green)">Collected</span><span style="--c:#C9D2DB">Remaining</span><span id="t-gap"></span></div>
       </div>
-      <div class="card box" style="margin-bottom:16px"><h3>Rent, CUSA & collection per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
+      <div class="card box" style="margin-bottom:16px"><h3>Tenants <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
       <div class="grid2" style="margin-bottom:16px">
-        <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
-        <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
+        <div class="card box"><h3>PDC / Check <span class="muted" id="pdc-note"></span></h3><div class="tbl"><table id="pdc-sum" class="condensed"></table></div></div>
+        <div class="card box"><h3>Bank transfer — needs SOA <span class="muted" id="bt-note"></span></h3><div class="tbl"><table id="bt-sum" class="condensed"></table></div></div>
       </div>
-      <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
+      <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
+      <div hidden><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
     </section>
 
     <section class="pane" id="p-billing">
@@ -364,7 +365,11 @@ const today = () => new Date(Date.now() + 8*3600e3).toISOString().slice(0,10);
 const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0,10); };
 const thisMonth = () => today().slice(0,7);
 const prevMonth = m => { const [y,mo] = m.split('-').map(Number); return mo === 1 ? `${y-1}-12` : `${y}-${String(mo-1).padStart(2,'0')}`; };
-const dayOf = (m, d) => `${m}-${String(Math.min(28, Math.max(1, num(d) || 1))).padStart(2,'0')}`;
+const lastDay = m => new Date(Date.UTC(+m.slice(0,4), +m.slice(5,7), 0)).getUTCDate();
+const dayOf = (m, d) => `${m}-${String(Math.min(lastDay(m), Math.max(1, num(d) || 1))).padStart(2,'0')}`;
+const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+const dueLabel = t => (t.rent_frequency && t.rent_frequency !== 'Monthly') ? t.rent_frequency.toLowerCase() : !num(t.due_day) ? '' : num(t.due_day) >= 30 ? 'EOM' : ordinal(num(t.due_day));
+const isCheck = mode => mode === 'PDC' || mode === 'Check';
 const daysUntil = d => d ? Math.round((new Date(d) - new Date(today())) / 864e5) : null;
 const fmtDate = d => d ? new Date(d.slice(0,10) + 'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
 const fmtMonth = m => m ? new Date(m + '-01T00:00:00').toLocaleDateString('en-PH',{month:'long',year:'numeric'}) : '—';
@@ -427,11 +432,41 @@ async function migratePaymentSetup(){
     toast(`Payment setup updated for ${rows.length} tenant(s)` + (missing.length ? ` · not found: ${missing.join(', ')}` : ''));
   } catch(e){ console.error('payment setup update failed', e); }
 }
+// [name match, floor, tenant name, rent via, due day, area, monthly rent, CUSA (0 = none), CUSA via, rent frequency, SOA]
+const SUMMARY_2026_11 = [
+  ['beautiful life','Ground Floor','Beautiful Life Ventures Inc.','PDC','27',50,28355.00,4000,'Bank transfer','Monthly','Send'],
+  ['v52','Ground Floor','V52 Cafe','PDC','20',50,30896.25,4000,'Combined with rent','Monthly','Send'],
+  ['coffee story','Ground Floor','Coffee Story Cafe Inc.','Bank transfer','1',45,20300.00,3600,'Bank transfer','Monthly','Send'],
+  ['toothlu','Ground Floor','Toothluscent Dental Corp.','PDC','31',55,32367.50,4400,'Combined with rent','Monthly','Send'],
+  ['enerp','2nd Floor','Enerpo Technical Services Co.','PDC','1',20,13910.00,0,'No CUSA','Monthly','Send'],
+  ['akmas','2nd Floor','AKMAS Modular Kitchen & Cabinet Solutions Modular Cabinet Trading','PDC','31',150,69550.00,7500,'Bank transfer','Monthly','Send'],
+  ['seo vas','2nd Floor','Philippine SEO VAS OPC','Bank transfer','',120,33333.33,9600,'Bank transfer','Bi-annual','Send'],
+  ['storage room','3rd Floor','Relly Fajardo','Bank transfer','',13,5000.00,0,'No CUSA','Monthly','Send'],
+  ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
+  ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4400,'Bank transfer','Monthly','Send'],
+  ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,0,'No CUSA','Annual','Hold'],
+  ["andrei",'4th Floor',"Andrei's Billiards",'Bank transfer','1',50,8000.00,2000,'Bank transfer','Monthly','Send'],
+  ['squeeze','4th Floor','Squeeze Spot','Bank transfer','1',60,20200.00,4800,'Bank transfer','Monthly','Send'],
+];
+async function syncSummary(){
+  if (DEMO || S.mig_summary_2026_11) return;
+  const rows = SUMMARY_2026_11.map(([key, floor, name, rentVia, due, area, rent, cusa, cusaVia, freq, soa]) => {
+    const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key)) || { tenant_name:name, status:'Active', rent_vat:'No' };
+    return { ...t, floor, area_sqm: area, monthly_rent: rent, cusa_mode: cusa ? 'Fixed' : 'None', cusa_value: cusa || '', cusa_payment: cusaVia,
+             rent_payment: rentVia, due_day: due, rent_frequency: freq, soa_status: soa, status: t.status || 'Active' };
+  });
+  try {
+    await saveMany('Tenants', rows);
+    await save('Settings', { id:'mig_summary_2026_11', value: new Date().toISOString() });
+    S.mig_summary_2026_11 = '1';
+    toast(`Tenant list synced to SUMMARY (${rows.length} tenants)`);
+  } catch(e){ console.error('summary sync failed', e); toast('Tenant sync failed: ' + e.message); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
     DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
-    await migratePaymentSetup();
+    await syncSummary();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -599,29 +634,46 @@ function rCollectibles(m){
   // per-tenant monthly rent & CUSA (from tenant setup)
   const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
   const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
-  let tr = 0, tc = 0, tDue = 0, tCol = 0;
-  const rcRows = ts.map(t => {
-    const rent = num(t.monthly_rent), cusa = cusaOf(t);
-    tr += rent; tc += cusa;
-    const dd = num(t.due_day) || num(set('due_day')) || 5, dueDate = dayOf(m, dd);
-    const rp = t.rent_payment || t.payment_mode || '', freq = t.rent_frequency || 'Monthly';
-    // this month's collection: what's due (saved bill, else projected) vs what was received
-    const bill = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
-    const due = bill ? num(bill.total) : computeBill(t, m, { bill_date: dayOf(m, set('bill_day')) }).total;
-    const got = DB.Payments.filter(p => p.tenant_id === t.id && String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0);
-    tDue += due; tCol += got;
-    const st = due <= 0 ? '' : got >= due - 0.005 ? 'Paid' : got ? 'Partial' : !bill ? 'Not billed' : today() > dueDate ? 'Overdue' : 'Pending';
-    const sub = (txt) => txt ? `<div class="muted">${esc(txt)}</div>` : '';
-    return `<tr class="click" onclick="openTenant('${t.id}')">
-      <td><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span>${soaHold(t) ? ' <span class="pill p-amber">SOA on hold</span>' : ''}</td>
-      <td class="num">${rent ? peso(rent) : '—'}${sub([rp, freq !== 'Monthly' ? freq : ''].filter(Boolean).join(' · '))}</td>
-      <td class="num">${noCusa(t) ? '<span class="muted">no CUSA</span>' : (cusa ? peso(cusa) : '—') + sub(t.cusa_payment === 'Combined with rent' ? 'with rent' : t.cusa_payment)}</td>
-      <td>${st ? pill(st) : '<span class="muted">nothing due</span>'} <span style="font-variant-numeric:tabular-nums">${got ? peso(got) + ' of ' : ''}${due > 0 ? peso(due) : ''}</span>${sub(due > 0 ? 'due ' + fmtDate(dueDate).replace(/, \d{4}$/, '') : '')}</td></tr>`;
-  }).join('');
-  $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s) · click a row to edit` : '';
-  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Collection · ${fmtMonth(m)}</th></tr>${rcRows}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td><b>${peso(tCol)} of ${peso(tDue)}</b> <span class="muted">collected</span></td></tr>`
-    : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants with their rent and CUSA in the Tenants tab.</div></td></tr>`;
+  // 1) Summary — same columns as the SUMMARY sheet
+  const all = ts.slice().sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || byUnit(a,b));
+  let ta = 0, tr = 0, tc = 0;
+  const modeOf = t => { const r = t.rent_payment || t.payment_mode || ''; return isCheck(r) ? 'Check' : r; };
+  $('rc-note').textContent = all.length ? `· ${all.length} · click a row to edit` : '';
+  $('rc-tbl').innerHTML = all.length ? `<tr><th>Level</th><th>Business name</th><th>Mode of payment</th><th>Due date</th><th class="num">Area (sqm)</th><th class="num">Monthly rental</th><th class="num">CUSA</th></tr>` + all.map(t => {
+      const area = num(t.area_sqm), rent = num(t.monthly_rent), cusa = cusaOf(t);
+      ta += area; tr += rent; tc += cusa;
+      return `<tr class="click" onclick="openTenant('${t.id}')"><td>${esc(t.floor)}</td><td><b>${esc(t.tenant_name)}</b></td><td>${esc(modeOf(t))}</td><td>${esc(dueLabel(t))}</td><td class="num">${area || ''}</td><td class="num">${rent ? peso(rent).slice(1) : '—'}</td><td class="num">${cusa ? peso(cusa).slice(1) : '-'}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td colspan="4"><b>ACTUAL RENTAL INCOME</b></td><td class="num"><b>${ta.toLocaleString()}</b></td><td class="num"><b>${peso(tr).slice(1)}</b></td><td class="num"><b>${peso(tc).slice(1)}</b></td></tr>`
+    : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
+
+  // 2) PDC / check: amount per check = rent (+ CUSA when combined)
+  const pdcT = all.filter(t => isCheck(t.rent_payment || t.payment_mode));
+  let pTot = 0;
+  $('pdc-note').textContent = pdcT.length ? `· ${pdcT.length} tenant(s)` : '';
+  $('pdc-sum').innerHTML = pdcT.length ? `<tr><th>Tenant</th><th>Due</th><th class="num">Amount</th><th>Checks on hand</th></tr>` + pdcT.map(t => {
+      const amt = num(t.monthly_rent) + (t.cusa_payment === 'Combined with rent' ? cusaOf(t) : 0); pTot += amt;
+      const oh = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').sort((a,b)=>String(a.check_date).localeCompare(b.check_date));
+      return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.trade_name || t.tenant_name)}</b><div class="muted">${t.cusa_payment === 'Combined with rent' ? 'rent + CUSA' : 'rent only'}</div></td><td>${esc(dueLabel(t))}</td><td class="num"><b>${peso(amt)}</b></td><td>${oh.length ? `${oh.length} · next ${fmtDate(oh[0].check_date)}` : '<span class="pill p-red">none on file</span>'}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td colspan="2"><b>Total per month</b></td><td class="num"><b>${peso(pTot)}</b></td><td></td></tr>`
+    : `<tr><td><div class="empty">No PDC tenants.</div></td></tr>`;
+
+  // 3) Bank transfer — anything not covered by a check needs an SOA
+  const btRows = all.map(t => {
+      const rentBT = !isCheck(t.rent_payment || t.payment_mode), cusa = cusaOf(t);
+      const cusaBT = cusa > 0 && t.cusa_payment !== 'Combined with rent' && (rentBT || !isCheck(t.cusa_payment));
+      const parts = [rentBT && num(t.monthly_rent) ? 'Rent' : '', cusaBT ? 'CUSA' : ''].filter(Boolean);
+      if (!parts.length) return null;
+      return { t, parts, amt: (rentBT ? num(t.monthly_rent) : 0) + (cusaBT ? cusa : 0) };
+    }).filter(Boolean);
+  let bTot = 0;
+  $('bt-note').textContent = btRows.length ? `· ${btRows.length} tenant(s)` : '';
+  $('bt-sum').innerHTML = btRows.length ? `<tr><th>Tenant</th><th>For</th><th>Due</th><th class="num">Amount</th><th>${fmtMonth(m).split(' ')[0]} SOA</th></tr>` + btRows.map(({t, parts, amt}) => {
+      bTot += amt;
+      const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
+      const soa = soaHold(t) ? '<span class="pill p-amber">on hold</span>' : b && b.status === 'Sent' ? pill('Sent') : b ? `<button class="btn sm" onclick="event.stopPropagation();sendSOA('${b.id}',this)">✉ Send</button>` : '<span class="pill p-red">not yet</span>';
+      return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.trade_name || t.tenant_name)}</b></td><td style="white-space:nowrap">${parts.join(' + ')}</td><td>${esc(dueLabel(t))}</td><td class="num"><b>${peso(amt)}</b></td><td>${soa}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td colspan="3"><b>Total per month</b></td><td class="num"><b>${peso(bTot)}</b></td><td></td></tr>`
+    : `<tr><td><div class="empty">No bank-transfer tenants.</div></td></tr>`;
 }
 
 async function quickSet(id, key, val){
