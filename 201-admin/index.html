@@ -226,6 +226,7 @@ table.condensed .muted{font-size:11px}
     <button class="nav" data-tab="pdcs"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 14h5M15 10h3"/></svg>PDCs<span class="badge" id="b-pdc" hidden></span></button>
     <button class="nav" data-tab="tenants"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Tenants</button>
     <button class="nav" data-tab="meralco"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Meralco<span class="badge" id="b-el" hidden></span></button>
+    <button class="nav" data-tab="payables"><svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Bills Payable<span class="badge" id="b-pb" hidden></span></button>
     <button class="nav" data-tab="emails"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email Log</button>
     <button class="nav" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     <div class="side-bottom">
@@ -300,6 +301,13 @@ table.condensed .muted{font-size:11px}
       <div class="card el-sum" id="el-sum"></div>
       <div class="card rates" id="el-head" style="display:none"></div>
       <div class="card tbl" id="el-wrap"></div>
+    </section>
+
+    <section class="pane" id="p-payables">
+      <div class="hdr"><div><h1>Bills Payable</h1><p>Brookland's own bills — Meralco, Primewater, waste hauler — and whether they're paid.</p></div>
+        <div class="tools"><input type="month" id="f-pb-month"><select id="f-pb-cat"></select><button class="btn" onclick="openForm('Payables')">+ Add bill</button></div></div>
+      <div class="kpis" id="pb-kpis"></div>
+      <div class="card tbl" id="pb-wrap"></div>
     </section>
 
     <section class="pane" id="p-emails">
@@ -392,6 +400,12 @@ const FORMS = {
     ['applies_to','For','select',PAY_FOR],
     ['bank','Bank','text'],['reference','Reference / check no.','text'],
     ['or_no','Official receipt no.','text'],['proof_url','Proof of payment (screenshot or PDF)','proof',null,1],['notes','Notes','textarea',null,1]]},
+  Payables: { title:'Bill', fields:[
+    ['category','Bill','select',['Meralco','Primewater','Waste hauler','Construction / Renovation','Other']],['payee','Payee / provider','text'],
+    ['billing_period','Billing period','text'],['account_no','Account no.','text'],
+    ['bill_date','Bill date','date'],['due_date','Due date','date'],
+    ['amount','Amount due (₱)','number'],['bill_url','Copy of the bill (optional)','proof',null,1],
+    ['notes','Notes','textarea',null,1]]},
   PDCs: { title:'Check', fields:[
     ['tenant_id','Tenant','ref','Tenants'],['bank','Bank','text'],
     ['check_no','Check no.','text'],['amount','Amount (₱)','number'],
@@ -403,7 +417,7 @@ const FORMS = {
 // ───────────────── STATE / UTILS ─────────────────
 let ST = { pdc:{}, bt:{}, pdcAmt:{}, btAmt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
-let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[]};
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
@@ -831,10 +845,19 @@ async function meralcoPaidTo(){
     S.mig_el_paidto_2026_11 = '1';
   } catch(e){ console.error('meralco paid-to failed', e); }
 }
+async function seedPayables(){
+  if (DEMO || S.mig_payables_2026_11) return;
+  try {
+    if (!DB.Payables.some(b => b.category === 'Meralco' && b.due_date === '2026-11-24'))
+      await save('Payables', { category:'Meralco', payee:'Meralco', billing_period:'11 Oct 2026 to 10 Nov 2026', bill_date:'2026-11-13', due_date:'2026-11-24', amount:69952.18, status:'Unpaid', notes:'4,189 kWh × ₱16.70' });
+    await save('Settings', { id:'mig_payables_2026_11', value: new Date().toISOString() });
+    S.mig_payables_2026_11 = '1';
+  } catch(e){ console.error('payables seed failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -850,6 +873,7 @@ async function reload(){
     await akmasArrears();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
+    await seedPayables();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -928,13 +952,14 @@ function computeBill(t, period, inp){
 }
 
 // ───────────────── RENDER ─────────────────
-function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco})[tab](); }
+function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco,payables:rPayables})[tab](); }
 const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
 const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
 const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent' && !(tn(b.tenant_id) && soaHold(tn(b.tenant_id))));
 function badges(){
   const lp = (DB.ElecPeriods || []).map(p => p.id).sort().pop();
   const eu = lp ? DB.ElecBills.filter(b => b.period === lp && b.status === 'Unpaid').length : 0;
+  const pbn = pbOverdue().length + pbDueSoon().length; if ($('b-pb')) { $('b-pb').hidden = !pbn; $('b-pb').textContent = pbn; }
   if ($('b-el')) { $('b-el').hidden = !eu; $('b-el').textContent = eu; }
   const p = pdcsDue().length, b = unsentBills().length;
   $('b-pdc').hidden = !p; $('b-pdc').textContent = p;
@@ -982,6 +1007,8 @@ function rOverview(){
   if (ts.length && !DB.Bills.some(b => b.period === m)) al.push(['var(--amber)', `${fmtMonth(m)} bills not created yet`, 'billing']);
   else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
   DB.ElecBills.filter(b => b.needs_reading === 'Yes').forEach(b => { const mt = byId('Meters', b.meter_id); if (mt) al.push(['var(--amber)', `<b>${esc(meterName(mt))}</b>: get the actual Meralco reading for ${fmtMonth(b.period)}${num(b.amount_override) ? ` (billed ${peso(b.amount_override)} for now)` : ''}`, 'meralco']); });
+  pbOverdue().forEach(b => al.push(['var(--red)', `Pay <b>${esc(b.category)}</b> bill ${peso(b.amount)} — overdue since ${fmtDate(b.due_date)}`, 'payables']));
+  pbDueSoon().forEach(b => al.push(['var(--amber)', `Pay <b>${esc(b.category)}</b> bill ${peso(b.amount)} — due ${fmtDate(b.due_date)}`, 'payables']));
   // PDC follow-ups: monthly check tenants with nothing on file for next month
   const nextM = (() => { const [y,mo] = thisMonth().split('-').map(Number); return mo === 12 ? `${y+1}-01` : `${y}-${String(mo+1).padStart(2,'0')}`; })();
   ts.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).forEach(t => {
@@ -1327,6 +1354,58 @@ async function elPaySave(id){
 async function elUnpay(id){
   const b = byId('ElecBills', id);
   try { await save('ElecBills', { ...b, status: 'Unpaid', paid_date: '', paid_amount: '' }); closeForm(); rMeralco(); badges(); toast('Marked unpaid'); } catch(e){ toast('Save failed: ' + e.message); }
+}
+
+// ── Bills Payable (Brookland's own bills) ───────────────
+const PB_CATS = ['Meralco','Primewater','Waste hauler','Construction / Renovation','Other'];
+const PAY_FROM = ['Security Bank (BVI)','GCash (MFRG)','Cash','Check'];
+const pbOverdue = () => DB.Payables.filter(b => b.status !== 'Paid' && b.due_date && b.due_date < today());
+const pbDueSoon = () => DB.Payables.filter(b => b.status !== 'Paid' && b.due_date && b.due_date >= today() && b.due_date <= addDays(today(), 5));
+function rPayables(){
+  const mo = $('f-pb-month'); if (!mo.value) mo.value = thisMonth();
+  if (!$('f-pb-cat').options.length) $('f-pb-cat').innerHTML = opts(PB_CATS, null, 'All bills');
+  const m = mo.value, cat = $('f-pb-cat').value;
+  const list = DB.Payables.filter(b => String(b.due_date).slice(0,7) === m && (!cat || b.category === cat)).sort((a,b) => String(a.due_date).localeCompare(b.due_date));
+  const tot = list.reduce((x,b) => x + num(b.amount), 0), paid = list.filter(b => b.status === 'Paid').reduce((x,b) => x + num(b.paid_amount || b.amount), 0);
+  const od = pbOverdue();
+  $('pb-kpis').innerHTML = [['Total bills', peso(tot), `${list.length} bill(s) due in ${fmtMonth(m).split(' ')[0]}`, ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && paid >= tot ? 'good' : ''], ['Unpaid', peso(Math.max(0, tot - paid)), 'still to pay', tot - paid > 0 ? 'bad' : 'good'], ['Overdue', peso(od.reduce((x,b) => x + num(b.amount), 0)), od.length ? `${od.length} bill(s) past due` : 'none', od.length ? 'bad' : 'good']]
+    .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
+  $('pb-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Due date</th><th>Bill</th><th>Billing period</th><th class="num">Amount</th><th>Payment</th><th>Paid date</th><th>Paid from</th><th>Proof</th><th>Bill copy</th></tr>${list.map(b => {
+      const paidB = b.status === 'Paid', late = !paidB && b.due_date < today();
+      return `<tr class="click" onclick="openForm('Payables','${b.id}')"><td style="white-space:nowrap;${late ? 'color:var(--red);font-weight:800' : ''}">${fmtDate(b.due_date)}</td><td><b>${esc(b.category)}</b>${b.payee && b.payee !== b.category ? ` <span class="muted">${esc(b.payee)}</span>` : ''}</td><td class="muted">${esc(b.billing_period)}</td><td class="num"><b>${peso(b.amount).slice(1)}</b></td>
+        <td style="white-space:nowrap">${paidB ? '<span class="paid">Paid ✓</span>' : `<button class="btn sm" onclick="event.stopPropagation();pbPay('${b.id}')">Mark paid</button>`}</td>
+        <td style="white-space:nowrap">${paidB ? fmtDate(b.paid_date) : ''}</td><td style="white-space:nowrap">${esc(b.paid_from || '')}</td><td>${proofThumb(b.proof_url)}</td><td>${proofThumb(b.bill_url)}</td></tr>`;
+    }).join('')}<tr style="background:var(--green-l)"><td colspan="3"><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="5"></td></tr></table>`
+    : `<div class="empty"><b>No bills due in ${fmtMonth(m)}</b>Click “+ Add bill” to add Meralco, Primewater, waste hauler or other bills.</div>`;
+}
+function pbPay(id){
+  const b = byId('Payables', id);
+  editing = { pb: id };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Pay bill · ${b.category}${b.billing_period ? ' · ' + b.billing_period : ''}`;
+  $('m-body').innerHTML = `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
+    <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
+    <div class="fld"><label>Paid from</label><select name="paid_from">${opts(PAY_FROM, b.paid_from || 'Security Bank (BVI)')}</select></div>
+    <div class="fld"><label>Reference no.</label><input name="reference" value="${esc(b.reference || '')}"></div>
+    <div class="fld wide"><label>Proof of payment</label>${proofZone(b.proof_url)}</div>`;
+  wireProofZone();
+  $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="pbUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="pbPaySave('${id}')">Mark paid (with proof)</button>`;
+  $('ovl').classList.add('on');
+}
+async function pbPaySave(id){
+  const b = byId('Payables', id), btn = $('m-save');
+  if (!proofPicked && !b.proof_url) return toast('Attach the proof of payment first');
+  const f = Object.fromEntries([...$('m-body').querySelectorAll('.fld [name]')].map(el => [el.name, el.value.trim()]));
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    if (proofPicked) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(proofPicked); }
+    await save('Payables', { ...b, ...f, status: 'Paid' });
+    closeForm(); render(); toast('Bill marked paid');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
+}
+async function pbUnpay(id){
+  const b = byId('Payables', id);
+  try { await save('Payables', { ...b, status:'Unpaid', paid_date:'', paid_amount:'' }); closeForm(); render(); toast('Marked unpaid'); } catch(e){ toast('Save failed: ' + e.message); }
 }
 
 // ── Billing grid ──
@@ -1677,7 +1756,7 @@ function openForm(t, id, preset){
   $('ovl').classList.add('on');
   wireProofZone();
 }
-function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, PDCs:{status:'On hand'} })[t]; }
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, Payables:{category:'Meralco', status:'Unpaid'}, PDCs:{status:'On hand'} })[t]; }
 // Proof thumbnail (click to enlarge) and lightbox
 const isPdf = u => /\.pdf($|\?)/i.test(u || '');
 function proofThumb(url, attachJs){
@@ -1756,9 +1835,11 @@ async function submitForm(){
   if (t === 'Payments' && (!row.tenant_id || !num(row.amount) || !row.date)) return toast('Tenant, date and amount are required');
   if (t === 'PDCs' && (!row.tenant_id || !num(row.amount) || !row.check_date)) return toast('Tenant, amount and check date are required');
   if (t === 'Payments' && !row.by) row.by = ME;
+  if (t === 'Payables' && (!row.category || !num(row.amount) || !row.due_date)) return toast('Bill, amount and due date are required');
+  if (t === 'Payables' && !row.status) row.status = 'Unpaid';
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    if (proofFile) { btn.textContent = 'Uploading proof…'; row.proof_url = await uploadProof(proofFile); btn.textContent = 'Saving…'; }
+    if (proofFile) { btn.textContent = 'Uploading…'; row[(FORMS[t].fields.find(f => f[2] === 'proof') || [])[0] || 'proof_url'] = await uploadProof(proofFile); btn.textContent = 'Saving…'; }
     if (t === 'PDCs' && row.status === 'Cleared' && !row.payment_id) {
       row.cleared_date ||= today();
       const pay = await save('Payments', { tenant_id:row.tenant_id, date:row.cleared_date, amount:row.amount, method:'PDC', bank:row.bank, reference:row.check_no, pdc_id:row.id||'', notes: row.for_period ? 'For ' + fmtMonth(row.for_period) : '', by:ME });
@@ -1816,6 +1897,7 @@ function demoData(){
 // ───────────────── BOOT ─────────────────
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.dataset.tab));
 ['f-pay-tenant','f-pay-month','f-pdc-tenant','f-pdc-status','f-tn-status'].forEach(id => $(id).addEventListener('change', render));
+['f-pb-month','f-pb-cat'].forEach(id => $(id).addEventListener('change', render));
 $('f-el-period').addEventListener('change', () => { $('f-el-period').dataset.p = ''; render(); });
 $('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
 ['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
