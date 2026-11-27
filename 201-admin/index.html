@@ -184,6 +184,7 @@ a.attach{font-size:12px;font-weight:700;color:var(--amber)}
 .el-sum b{color:var(--ink)}
 .el-view td{padding:6px 12px;vertical-align:middle;font-size:13.5px}
 .el-view img.thumb{width:30px;height:30px}
+#el-hist img.thumb{width:30px;height:30px}
 .el-view .meters{font-size:12px;color:var(--ink4);margin-top:2px}
 .el-view .paid{color:var(--green-d);font-weight:800}
 .el-view .warn{color:var(--amber);font-size:12px;font-weight:700}
@@ -297,7 +298,7 @@ table.condensed .muted{font-size:11px}
 
     <section class="pane" id="p-meralco">
       <div class="hdr"><div><h1 id="el-h1">Meralco</h1></div>
-        <div class="tools"><input type="month" id="f-el-period"><button class="btn ghost" id="btn-el-mode" onclick="elToggle()">Enter readings</button><button class="btn" id="btn-el-save" onclick="saveElec()" style="display:none">Save readings</button></div></div>
+        <div class="tools"><input type="month" id="f-el-period"><button class="btn" id="btn-pw-add" onclick="pwBill()" style="display:none">+ Add bill</button><button class="btn ghost" id="btn-el-mode" onclick="elToggle()">Enter readings</button><button class="btn" id="btn-el-save" onclick="saveElec()" style="display:none">Save readings</button></div></div>
       <div class="kpis" id="el-kpis"></div>
       <div class="card el-sum" id="el-sum"></div>
       <div class="card rates" id="el-head" style="display:none"></div>
@@ -1236,12 +1237,13 @@ function elHistory(){
   if (!ps.length) { $('el-hist').innerHTML = ''; return; }
   const tq = ps.reduce((x,p) => x + num(p.meralco_kwh), 0), tp = ps.reduce((x,p) => x + num(p.meralco_total), 0);
   const q = v => num(v).toLocaleString('en-PH',{minimumFractionDigits:2});
-  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th></tr>
-    ${ps.map(p => `<tr><td>${fmtMonth(p.m)}</td><td class="num">${q(p.meralco_kwh)}</td><td class="num">${peso(num(p.meralco_total)).slice(1)}</td><td class="num">${num(p.meralco_kwh) ? (num(p.meralco_total)/num(p.meralco_kwh)).toFixed(2) : '—'}</td></tr>`).join('')}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${q(tq)}</b></td><td class="num"><b>${peso(tp).slice(1)}</b></td><td class="num"><b>${tq ? (tp/tq).toFixed(2) : ''}</b></td></tr></table></div>`;
+  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th>${UTIL === 'Primewater' ? '<th>Bill</th>' : ''}</tr>
+    ${ps.map(p => `<tr${UTIL === 'Primewater' ? ` style="cursor:pointer" onclick="pwBill('${p.m}')" title="Edit bill"` : ''}><td>${fmtMonth(p.m)}</td><td class="num">${q(p.meralco_kwh)}</td><td class="num">${peso(num(p.meralco_total)).slice(1)}</td><td class="num">${num(p.meralco_kwh) ? (num(p.meralco_total)/num(p.meralco_kwh)).toFixed(2) : '—'}</td>${UTIL === 'Primewater' ? `<td>${proofThumb(p.bill_url, `pwBill('${p.m}')`)}</td>` : ''}</tr>`).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${q(tq)}</b></td><td class="num"><b>${peso(tp).slice(1)}</b></td><td class="num"><b>${tq ? (tp/tq).toFixed(2) : ''}</b></td>${UTIL === 'Primewater' ? '<td></td>' : ''}</tr></table></div>`;
 }
 function rMeralco(){
   $('el-h1').textContent = UTIL;
+  $('btn-pw-add').style.display = UTIL === 'Primewater' ? '' : 'none';
   elHistory();
   const pe = $('f-el-period'); if (!pe.value) pe.value = utilPeriods().map(p => p.m).sort().pop() || thisMonth();
   const per = pe.value, P = DB.ElecPeriods.find(p => p.id === perId(per)) || {};
@@ -1254,8 +1256,10 @@ function rMeralco(){
     + f('el-common','201 Brookland Bldg. (common areas)', P.common_amount, 'number', '230px');
   $('el-rate').addEventListener('input', elUpdateAll);
   const ms = activeMeters();
+  $('el-wrap').style.display = ''; $('el-sum').style.display = '';
+  if (!ms.length && UTIL === 'Primewater' && !elEdit) { ['el-head','el-wrap','el-sum','btn-el-save'].forEach(id => $(id).style.display = 'none'); $('el-kpis').innerHTML = ''; $('btn-el-mode').textContent = 'Enter readings'; return; }
   if (!ms.length) { $('el-head').style.display = 'none'; $('btn-el-save').style.display = 'none'; $('btn-el-mode').textContent = 'Enter readings'; $('el-sum').innerHTML = ''; $('el-kpis').innerHTML = '';
-    $('el-wrap').innerHTML = `<div class="empty"><b>No ${UTIL} meters yet</b>Add each tenant's ${UTIL === 'Primewater' ? 'water' : ''} meter first.<br><br><button class="btn" onclick="openForm('Meters')">+ Add meter</button></div>`; return; }
+    $('el-wrap').innerHTML = `<div class="empty"><b>No ${UTIL} meters yet</b>${UTIL === 'Primewater' ? `Upload the Primewater bill and the amount and consumption fill in automatically.<br><br><button class="btn" onclick="pwBill()">+ Add bill</button> <button class="btn ghost" onclick="openForm('Meters')">+ Add meter</button>` : `Add each tenant's meter first.<br><br><button class="btn" onclick="openForm('Meters')">+ Add meter</button>`}</div>`; return; }
   const tenantM = ms.filter(mt => mt.type !== 'Building'), bldgM = ms.filter(mt => mt.type === 'Building');
   // summary line + view/edit switch
   const kwh = num(P.meralco_kwh), tot = num(P.meralco_total);
@@ -1445,6 +1449,93 @@ async function pbPaySave(id){
 async function pbUnpay(id){
   const b = byId('Payables', id);
   try { await save('Payables', { ...b, status:'Unpaid', paid_date:'', paid_amount:'' }); closeForm(); render(); toast('Marked unpaid'); } catch(e){ toast('Save failed: ' + e.message); }
+}
+
+// ── Primewater bill: upload the bill photo → read it (OCR in the browser) → amount, consumption, ₱/cu.m ──
+function pwBill(m){
+  const last = utilPeriods().map(p => p.m).sort().pop();
+  m = m || (last ? nextMonthOf(last) : thisMonth());
+  const P = DB.ElecPeriods.find(p => p.id === 'PW-' + m) || {};
+  editing = { pw: m };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = P.id ? `Primewater bill · ${fmtMonth(m)}` : 'Add Primewater bill';
+  $('m-body').innerHTML = `<div class="fld wide"><label>Bill photo</label>${proofZone(P.bill_url)}<div id="pw-ocr" class="muted" style="font-size:12px;margin-top:4px">Upload or paste the bill — amount and consumption will fill in automatically.</div></div>
+    <div class="fld"><label>Month</label><input id="pw-m" type="month" value="${esc(m)}"${P.id ? " readonly" : ""}></div>
+    <div class="fld"><label>Due date</label><input id="pw-dd" type="date" value="${esc(P.due_date || '')}"></div>
+    <div class="fld"><label>Consumption (cu.m)</label><input id="pw-q" type="number" step="any" value="${esc(P.meralco_kwh || '')}"></div>
+    <div class="fld"><label>Amount (₱)</label><input id="pw-a" type="number" step="any" value="${esc(P.meralco_total || '')}"></div>
+    <div class="fld"><label>₱ per cu.m</label><input id="pw-r" readonly tabindex="-1" style="background:#F3F5F4"></div>`;
+  wireProofZone();
+  const calc = () => { const q = num($('pw-q').value), a = num($('pw-a').value); $('pw-r').value = q && a ? (a / q).toFixed(2) : ''; };
+  ['pw-q','pw-a'].forEach(id => $(id).addEventListener('input', calc)); calc();
+  window.onProofSet = f => pwReadBill(f, calc);
+  $('m-foot').innerHTML = `<div class="left"></div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="pwBillSave()">Save bill</button>`;
+  $('ovl').classList.add('on');
+}
+function nextMonthOf(m){ const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function loadTesseract(){
+  if (window.Tesseract) return Promise.resolve();
+  return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'; sc.onload = ok; sc.onerror = () => no(new Error('could not load the reader')); document.head.appendChild(sc); });
+}
+async function pwReadBill(file, calc){
+  const st = $('pw-ocr');
+  if (!file.type.startsWith('image/')) { st.textContent = 'PDF attached — type the amount and consumption.'; return; }
+  try {
+    st.textContent = 'Reading the bill…';
+    await loadTesseract();
+    const { data } = await Tesseract.recognize(file, 'eng');
+    if (!$('pw-ocr')) return;
+    const got = parsePwBill(data.text);
+    if (got.q != null) $('pw-q').value = got.q;
+    if (got.a != null) $('pw-a').value = got.a;
+    if (got.dd) $('pw-dd').value = got.dd;
+    calc();
+    const found = [got.q != null && 'consumption', got.a != null && 'amount', got.dd && 'due date'].filter(Boolean);
+    st.innerHTML = found.length ? `<b style="color:var(--green-d)">Filled from the photo: ${found.join(', ')}.</b> Please check against the bill.` : '<b style="color:var(--amber)">Could not read the numbers</b> — type them in.';
+    if (found.length < 2) console.log('Primewater OCR text:', data.text);
+  } catch(e){ if ($('pw-ocr')) st.textContent = 'Could not read the photo (' + e.message + ') — type the numbers in.'; }
+}
+function parsePwBill(text){
+  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
+  const money = l => (l.match(/\d{1,3}(?:,\d{3})*\.\d{2}|\d+\.\d{2}/g) || []).map(x => num(x.replace(/,/g, '')));
+  const nums = l => (l.match(/\d+(?:,\d{3})*(?:\.\d+)?/g) || []).map(x => num(x.replace(/,/g, '')));
+  const near = (re, fn) => { for (let i = 0; i < lines.length; i++) if (re.test(lines[i])) { const v = fn(lines[i].replace(re, ' ')); if (v.length) return v; const w = lines[i+1] ? fn(lines[i+1]) : []; if (w.length) return w; } return []; };
+  const out = {};
+  // amount: "Total Amount Due" first, then "Amount Due", then "Current Charges"/"Total"
+  for (const re of [/total\s*amount\s*due/i, /amount\s*due/i, /total\s*current\s*charges?/i, /current\s*charges?/i, /total/i]) {
+    const v = near(re, money).filter(x => x > 0); if (v.length) { out.a = Math.max(...v); break; }
+  }
+  // consumption: "Consumption" / "cu.m" line, else present − previous reading
+  let q = near(/consumption|cons\.?\s*\(?cu/i, nums).filter(x => x > 0 && x < 100000);
+  if (!q.length) { const m = text.match(/(\d+(?:\.\d+)?)\s*(?:cu\.?\s*m|m3|m³|cubic)/i); if (m) q = [num(m[1])]; }
+  if (q.length) out.q = q[0];
+  else {
+    const pr = near(/present\s*reading|current\s*reading/i, nums), pv = near(/previous\s*reading/i, nums);
+    if (pr.length && pv.length && pr[0] > pv[0]) out.q = r2(pr[0] - pv[0]);
+  }
+  // due date
+  const dl = lines.find(l => /due\s*date/i.test(l));
+  if (dl) { const d = new Date(dl.replace(/.*due\s*date[:\s]*/i, '').replace(/[^\w\s,\/-]/g, ' ').trim()); if (!isNaN(d) && d.getFullYear() > 2000) out.dd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  return out;
+}
+async function pwBillSave(){
+  const btn = $('m-save'), old = editing.pw, m = $('pw-m').value, q = num($('pw-q').value), a = num($('pw-a').value);
+  if (!m) return toast('Pick the month');
+  if (!a) return toast('Enter the amount');
+  const P = DB.ElecPeriods.find(p => p.id === 'PW-' + old) || {};
+  if (m !== old && DB.ElecPeriods.some(p => p.id === 'PW-' + m)) return toast(fmtMonth(m) + ' already has a bill');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    let bill_url = P.bill_url || '';
+    if (proofPicked) { btn.textContent = 'Uploading bill…'; bill_url = await uploadProof(proofPicked); }
+    const row = { ...(m === old ? P : {}), id: 'PW-' + m, meralco_kwh: q || '', meralco_total: a, rate: q ? r2(a / q) : '', due_date: $('pw-dd').value, bill_url, notes: P.notes || 'Primewater main bill' };
+    await save('ElecPeriods', row);
+    // keep Bills Payable in step
+    const pb = DB.Payables.find(x => x.id === 'PB-PW-' + m) || {};
+    await save('Payables', { status: 'Unpaid', ...pb, id: 'PB-PW-' + m, category: 'Primewater', payee: 'Primewater', billing_period: fmtMonth(m), due_date: $('pw-dd').value, amount: a, bill_url, notes: q ? `${q} cu.m × ₱${r2(a / q).toFixed(2)}` : '' });
+    $('f-el-period').value = m;
+    closeForm(); render(); toast('Primewater bill saved');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Save bill'; toast('Save failed: ' + e.message); }
 }
 
 // ── Billing grid ──
@@ -1831,6 +1922,7 @@ function setProof(file){
     ? `<img src="${URL.createObjectURL(file)}" alt=""><span>${esc(file.name || 'pasted image')} · <a href="#" onclick="event.stopPropagation();clearProof();return false">remove</a></span>`
     : `<b>📄 ${esc(file.name)}</b><span><a href="#" onclick="event.stopPropagation();clearProof();return false">remove</a></span>`;
   $('proof-zone').classList.add('has');
+  if (window.onProofSet) window.onProofSet(file);
 }
 function clearProof(){ proofPicked = null; const z = $('proof-zone'); if (z) { z.classList.remove('has'); $('proof-prev').innerHTML = '<b>Drop, paste or click</b><span>Drag a screenshot here, press Ctrl/⌘+V to paste, or click to choose a file</span>'; } }
 function wireProofZone(){
@@ -1863,7 +1955,7 @@ async function uploadProof(file){
   if (!res.ok || !d.secure_url) throw new Error('Proof upload failed' + (d.error ? ': ' + d.error.message : ''));
   return d.secure_url;
 }
-function closeForm(){ $('ovl').classList.remove('on'); editing = null; }
+function closeForm(){ $('ovl').classList.remove('on'); editing = null; window.onProofSet = null; }
 async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
   const row = id ? {...byId(t,id)} : {};
