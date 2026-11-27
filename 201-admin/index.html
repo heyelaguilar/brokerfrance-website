@@ -280,7 +280,10 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','Parking','Other'];
 const TENANT_STATUS = ['Active','Notice to Vacate','Moved Out'];
 const PAY_METHODS = ['Bank transfer','Cash','GCash','Maya','Check','PDC','BIR 2307 (EWT)','Other'];
-const PAY_MODES = ['PDC','Bank transfer','Cash','GCash / Maya','Check on due date'];
+const PAY_MODES = ['PDC','Bank transfer','Check','Cash','GCash / Maya'];
+const CUSA_PAY = ['Combined with rent','Bank transfer','PDC','Check','Cash','GCash / Maya','No CUSA'];
+const RENT_FREQ = ['Monthly','Bi-annual','Annual'];
+const FREQ_MONTHS = {'Monthly':1,'Bi-annual':6,'Annual':12};
 const PDC_STATUS = ['On hand','Deposited','Cleared','Bounced','Replaced','Returned to tenant'];
 
 const SETTINGS_FIELDS = [
@@ -322,7 +325,10 @@ const FORMS = {
     ['email','SOA email (To)','text'],['cc_email','CC emails (comma-separated)','text'],
     ['h','Billing setup'],
     ['monthly_rent','Monthly rent (₱)','number'],['rent_vat','Add VAT on rent? (only if VAT is on in Settings)','select',['No','Yes']],
-    ['payment_mode','Payment mode','select',['',...PAY_MODES]],['due_day','Due day of month (blank = default)','number'],
+    ['h','Payment arrangement'],
+    ['rent_payment','Rent paid via','select',['',...PAY_MODES]],['rent_frequency','Rent paid','select',RENT_FREQ],
+    ['cusa_payment','CUSA paid via','select',['',...CUSA_PAY]],['due_day','Due day of month (blank = default)','number'],
+    ['soa_status','SOA','select',['Send','Hold']],['soa_days_before','Send SOA this many days before due','number'],
     ['ewt_pct','EWT withheld by tenant (%)','number'],
     ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
     ['security_deposit','Security deposit held (₱)','number'],
@@ -390,10 +396,42 @@ function merge(t, rows){ rows.forEach(r => { const i = DB[t].findIndex(x => x.id
 async function save(t, row){ const d = await call({action:'save', tab:t, row}); merge(t, [d.row]); return d.row; }
 async function saveMany(t, rows){ if (!rows.length) return []; const d = await call({action:'saveMany', tab:t, rows}); merge(t, d.rows); return d.rows; }
 async function remove(t, id){ await call({action:'remove', tab:t, id}); DB[t] = DB[t].filter(r => r.id !== id); }
+// One-time update (Nov 2026): payment arrangements per tenant. Matched by name; runs once, flagged in Settings.
+const PAYMENT_SETUP_2026_11 = [
+  ['beautiful life', { rent_payment:'PDC', cusa_payment:'No CUSA', due_day:'27', soa_days_before:'3' }],
+  ['v52',            { rent_payment:'PDC', cusa_payment:'Combined with rent' }],
+  ['coffee story',   { rent_payment:'Bank transfer', cusa_payment:'Bank transfer' }],
+  ['toothlu',        { rent_payment:'PDC', cusa_payment:'Combined with rent' }],
+  ['neuera',         { rent_payment:'PDC', cusa_payment:'Bank transfer' }],
+  ['enerp',          { rent_payment:'PDC', cusa_payment:'No CUSA' }],
+  ['akmas',          { rent_payment:'PDC', cusa_payment:'Bank transfer' }],
+  ['seo vas',        { rent_payment:'Check', rent_frequency:'Bi-annual' }],
+  ['relly',          { rent_payment:'Bank transfer' }],
+  ['ashcol',         { rent_payment:'PDC', cusa_payment:'Combined with rent' }],
+  ['bedoo',          { rent_frequency:'Annual', soa_status:'Hold' }],
+  ['andrei',         { rent_payment:'Bank transfer', cusa_payment:'Bank transfer' }],
+  ['squeeze',        { rent_payment:'Bank transfer', cusa_payment:'Bank transfer' }],
+];
+async function migratePaymentSetup(){
+  if (DEMO || S.mig_payment_setup_2026_11) return;
+  const rows = [], missing = [];
+  PAYMENT_SETUP_2026_11.forEach(([key, f]) => {
+    const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key));
+    if (!t) return missing.push(key);
+    rows.push({ ...t, rent_frequency: t.rent_frequency || 'Monthly', soa_status: t.soa_status || 'Send', ...f });
+  });
+  try {
+    if (rows.length) await saveMany('Tenants', rows);
+    await save('Settings', { id:'mig_payment_setup_2026_11', value: new Date().toISOString() + (missing.length ? ' · not found: ' + missing.join(', ') : '') });
+    S.mig_payment_setup_2026_11 = '1';
+    toast(`Payment setup updated for ${rows.length} tenant(s)` + (missing.length ? ` · not found: ${missing.join(', ')}` : ''));
+  } catch(e){ console.error('payment setup update failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
     DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    await migratePaymentSetup();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -423,11 +461,27 @@ function soaSummary(tid, period, billDate){
   return { last, opening, since, received, unpaid: r2(opening - received) };
 }
 function rateFor(t, key, monthRate){ return num(t[key]) || num(monthRate) || num(set(key)); }
+// Months between lease start and period; rent is billed only on the tenant's rent months
+const monthsBetween = (a, b) => { const [y1,m1] = a.split('-').map(Number), [y2,m2] = b.split('-').map(Number); return (y2 - y1) * 12 + (m2 - m1); };
+function rentMonths(t){ return FREQ_MONTHS[t.rent_frequency] || 1; }
+function rentDueIn(t, period){
+  const n = rentMonths(t); if (n === 1) return true;
+  if (!t.lease_start) return false;                       // need lease start to know the cycle
+  const d = monthsBetween(t.lease_start.slice(0,7), period);
+  return d >= 0 && d % n === 0;
+}
+function nextRentMonth(t, from){
+  const n = rentMonths(t); if (n === 1 || !t.lease_start) return '';
+  let p = from; for (let i = 0; i < 13; i++) { if (rentDueIn(t, p)) return p; const [y,m] = p.split('-').map(Number); p = m === 12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`; }
+  return '';
+}
+const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
+const soaHold = t => t.soa_status === 'Hold';
 function computeBill(t, period, inp){
-  const rent = num(t.monthly_rent);
+  const rent = rentDueIn(t, period) ? r2(num(t.monthly_rent) * rentMonths(t)) : 0;
   const rent_vat = vatOn() && t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
   const mode = t.cusa_mode || 'Per sqm';
-  const cusa = mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
+  const cusa = noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
   const water_rate = rateFor(t, 'water_rate', inp.water_rate_month), elec_rate = rateFor(t, 'elec_rate', inp.elec_rate_month);
   const wUse = Math.max(0, num(inp.water_curr) - num(inp.water_prev)), eUse = Math.max(0, num(inp.elec_curr) - num(inp.elec_prev));
   const water_amt = inp.water_curr !== '' && inp.water_curr != null ? r2(wUse * water_rate) : num(inp.water_amt);
@@ -445,7 +499,7 @@ function computeBill(t, period, inp){
 function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings})[tab](); }
 const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
 const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
-const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent');
+const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent' && !(tn(b.tenant_id) && soaHold(tn(b.tenant_id))));
 function badges(){
   const p = pdcsDue().length, b = unsentBills().length;
   $('b-pdc').hidden = !p; $('b-pdc').textContent = p;
@@ -490,6 +544,15 @@ function rOverview(){
   ts.filter(t => overdueOf(t.id) > 0).forEach(t => al.push(['var(--red)', `<b>${esc(t.tenant_name)}</b> overdue ${peso(overdueOf(t.id))}`, 'tenants']));
   if (ts.length && !DB.Bills.some(b => b.period === m)) al.push(['var(--amber)', `${fmtMonth(m)} bills not created yet`, 'billing']);
   else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
+  ts.filter(t => !soaHold(t) && num(t.soa_days_before)).forEach(t => {
+    const due = dayOf(m, num(t.due_day) || num(set('due_day')) || 5), sendBy = addDays(due, -num(t.soa_days_before));
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
+    if ((!b || b.status !== 'Sent') && today() >= addDays(sendBy, -3) && today() <= due) al.push([today() >= sendBy ? 'var(--red)' : 'var(--amber)', `Send SOA to <b>${esc(t.tenant_name)}</b> by ${fmtDate(sendBy)} (due ${fmtDate(due)})`, 'billing']);
+  });
+  ts.filter(t => rentMonths(t) > 1).forEach(t => {
+    if (!t.lease_start) al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: ${esc(t.rent_frequency)} rent — set lease start so the rent month is known`, 'tenants']);
+    else if (rentDueIn(t, m)) al.push(['var(--blue)', `<b>${esc(t.tenant_name)}</b> ${esc(t.rent_frequency.toLowerCase())} rent due this month — ${peso(num(t.monthly_rent) * rentMonths(t))}`, 'billing']);
+  });
   ts.forEach(t => { const d = daysUntil(t.lease_end); if (d != null && d <= 90) al.push([d < 0 ? 'var(--red)' : 'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'}`, 'tenants']); });
   $('alerts').innerHTML = al.length ? al.slice(0,16).map(([c,h,t])=>`<div class="alert" style="--c:${c};cursor:pointer" onclick="showTab('${t}')"><span class="dot"></span><div>${h}</div></div>`).join('') : `<div class="empty"><b>All clear</b>Nothing due, overdue or bounced.</div>`;
 }
@@ -534,7 +597,7 @@ function rCollectibles(m){
     <tr><td>Collected in ${fmtMonth(m).split(' ')[0]}</td><td class="num" style="color:var(--green-d)"><b>−${peso(collected)}</b></td></tr>
     <tr><td><b>Remaining to collect</b></td><td class="num"><b style="color:${current+prevUnpaid-collected>0?'var(--red)':'var(--green-d)'}">${peso(Math.max(0, current + prevUnpaid - collected))}</b></td></tr>`;
   // per-tenant monthly rent & CUSA (from tenant setup)
-  const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
+  const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
   const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
   let tr = 0, tc = 0;
   const rcRows = ts.map(t => {
@@ -542,14 +605,17 @@ function rCollectibles(m){
     tr += rent; tc += cusa;
     const dd = num(t.due_day) || num(set('due_day')) || 5;
     const pdcN = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').length;
-    return `<tr><td class="click" onclick="openTenant('${t.id}')"><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span></td>
-      <td class="num">${rent ? peso(rent) : '—'}</td><td class="num">${cusa ? peso(cusa) : '—'}</td><td class="num"><b>${peso(rent + cusa)}</b></td>
-      <td><select class="cell-in" onchange="quickSet('${t.id}','payment_mode',this.value)">${opts(PAY_MODES, t.payment_mode || '', '— set —')}</select>${t.payment_mode === 'PDC' ? ` <span class="muted">${pdcN} on hand</span>` : ''}</td>
-      <td style="white-space:nowrap"><input class="cell-in" type="number" min="1" max="31" style="width:56px" value="${esc(t.due_day || '')}" placeholder="${dd}" onchange="quickSet('${t.id}','due_day',this.value)"> <span class="muted">${fmtDate(dayOf(m, dd)).replace(/, \d{4}$/, '')}</span></td></tr>`;
+    const rp = t.rent_payment || t.payment_mode || '', freq = t.rent_frequency || 'Monthly';
+    const nxt = freq !== 'Monthly' ? (t.lease_start ? `next: ${fmtMonth(nextRentMonth(t, m))}` : 'set lease start') : '';
+    return `<tr><td class="click" onclick="openTenant('${t.id}')"><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span>${soaHold(t) ? ' <span class="pill p-amber">SOA on hold</span>' : ''}</td>
+      <td class="num">${rent ? peso(rent) : '—'}${freq !== 'Monthly' ? `<div class="muted">${freq} · ${nxt}</div>` : ''}</td><td class="num">${cusa ? peso(cusa) : (noCusa(t) ? '<span class="muted">no CUSA</span>' : '—')}</td><td class="num"><b>${peso(rent + cusa)}</b></td>
+      <td><select class="cell-in" onchange="quickSet('${t.id}','rent_payment',this.value)">${opts(PAY_MODES, rp, '— set —')}</select>${rp === 'PDC' ? ` <span class="muted">${pdcN} on hand</span>` : ''}</td>
+      <td><select class="cell-in" onchange="quickSet('${t.id}','cusa_payment',this.value)">${opts(CUSA_PAY, t.cusa_payment || '', '— set —')}</select></td>
+      <td style="white-space:nowrap"><input class="cell-in" type="number" min="1" max="31" style="width:56px" value="${esc(t.due_day || '')}" placeholder="${dd}" onchange="quickSet('${t.id}','due_day',this.value)"> <span class="muted">${fmtDate(dayOf(m, dd)).replace(/, \d{4}$/, '')}${num(t.soa_days_before) ? ` · SOA ${t.soa_days_before}d before` : ''}</span></td></tr>`;
   }).join('');
   $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s)` : '';
-  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Monthly rent</th><th class="num">CUSA</th><th class="num">Total</th><th>Payment mode</th><th>Due day</th></tr>${rcRows}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b>${peso(tr + tc)}</b></td><td colspan="2" class="muted">${PAY_MODES.map(mo => { const n = ts.filter(t => t.payment_mode === mo).length; return n ? `${n} ${mo}` : ''; }).filter(Boolean).join(' · ')}</td></tr>`
+  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Monthly rent</th><th class="num">CUSA</th><th class="num">Total</th><th>Rent via</th><th>CUSA via</th><th>Due day</th></tr>${rcRows}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b>${peso(tr + tc)}</b></td><td colspan="3" class="muted">Rent: ${PAY_MODES.map(mo => { const n = ts.filter(t => (t.rent_payment || t.payment_mode) === mo).length; return n ? `${n} ${mo}` : ''; }).filter(Boolean).join(' · ') || '—'}</td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants with their rent and CUSA in the Tenants tab.</div></td></tr>`;
 }
 
@@ -591,14 +657,14 @@ function rBilling(){
     const inp = (k, w) => `<input class="grid-in" data-t="${t.id}" data-k="${k}" value="${esc(g[k] ?? '')}" ${w?`style="width:${w}px"`:''} inputmode="decimal">`;
     return `<tr>
       <td><b>${esc(t.tenant_name)}</b><div class="muted">${esc([t.floor,t.unit].filter(Boolean).join(' · '))}</div></td>
-      <td class="num">${peso(c.rent + c.rent_vat)}${c.rent_vat?`<small>incl. VAT ${peso(c.rent_vat)}</small>`:''}${c.ewt?`<small>EWT −${peso(c.ewt)}</small>`:''}</td>
+      <td class="num">${peso(c.rent + c.rent_vat)}${rentMonths(t) > 1 ? `<small>${c.rent ? esc(t.rent_frequency) + ' rent due' : esc(t.rent_frequency) + ' · not due'}</small>` : ''}${c.rent_vat?`<small>incl. VAT ${peso(c.rent_vat)}</small>`:''}${c.ewt?`<small>EWT −${peso(c.ewt)}</small>`:''}</td>
       <td class="num">${c.cusa?peso(c.cusa):'—'}</td>
       <td><div class="meter">${inp('water_prev')}→${inp('water_curr')}</div><small id="wa-${t.id}">${peso(c.water_amt)}</small></td>
       <td><div class="meter">${inp('elec_prev')}→${inp('elec_curr')}</div><small id="ea-${t.id}">${peso(c.elec_amt)}${c.elec_amt?` @ ${c.elec_rate}`:''}</small></td>
       <td>${inp('waste',80)}</td>
       <td><div class="meter" style="flex-direction:column;align-items:stretch"><input class="grid-in" style="width:96px;text-align:left" placeholder="label" data-t="${t.id}" data-k="other_label" value="${esc(g.other_label||'')}">${inp('other_amt',96)}</div></td>
       <td class="num"><b id="tot-${t.id}">${peso(c.total)}</b>${c.penalty?`<small>penalty ${peso(c.penalty)}</small>`:''}</td>
-      <td>${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at?`<div class="muted">${fmtDate(b.sent_at)}</div>`:'') : '<span class="muted">not saved</span>'}</td>
+      <td>${soaHold(t) ? '<span class="pill p-amber">SOA on hold</span><br>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at?`<div class="muted">${fmtDate(b.sent_at)}</div>`:'') : '<span class="muted">not saved</span>'}</td>
       <td><div class="row-actions">${b?`<button class="btn ghost sm" onclick="openSOA('${b.id}')">SOA</button><button class="btn sm" onclick="sendSOA('${b.id}',this)" ${dirty?'disabled title="Save bills first"':''}>✉ Send</button>`:''}</div></td></tr>`;
   }).join('');
   $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Water (cu.m)</th><th>Meralco (kWh)</th><th>Waste (₱)</th><th>Other</th><th class="num">Current charges</th><th>Status</th><th></th></tr>${rows}
@@ -645,7 +711,8 @@ function soaData(bill){
   const t = tn(bill.tenant_id) || {};
   const s = soaSummary(t.id, bill.period, bill.bill_date);
   const lines = [];
-  lines.push([`Rent — ${fmtMonth(bill.period)}`, bill.rent]);
+  const rm = rentMonths(t);
+  if (num(bill.rent) || rm === 1) lines.push([rm === 1 ? `Rent — ${fmtMonth(bill.period)}` : `Rent — ${t.rent_frequency} (${rm} months from ${fmtMonth(bill.period)})`, bill.rent]);
   if (num(bill.rent_vat)) lines.push([`VAT ${num(set('vat_pct'))}% on rent`, bill.rent_vat]);
   if (num(bill.cusa)) lines.push([`CUSA${t.cusa_mode==='Fixed'?'':` (${num(t.area_sqm)} sqm × ${peso(num(t.cusa_value)||num(set('cusa_rate')))})`}`, bill.cusa]);
   if (num(bill.water_amt) || bill.water_curr !== '') lines.push([`Water${bill.water_curr!==''?` (${bill.water_prev} → ${bill.water_curr} = ${r2(num(bill.water_curr)-num(bill.water_prev))} cu.m × ${peso(bill.water_rate)})`:''}`, bill.water_amt]);
@@ -748,7 +815,8 @@ async function sendSOA(id, btn, quiet){
 async function sendAll(){
   const P = $('f-bill-period').value;
   if (!await saveBills(true)) return;
-  const bills = DB.Bills.filter(b => b.period === P && b.status !== 'Sent' && tn(b.tenant_id) && (tn(b.tenant_id).status||'Active') !== 'Moved Out');
+  const held = DB.Bills.filter(b => b.period === P && b.status !== 'Sent' && tn(b.tenant_id) && soaHold(tn(b.tenant_id)));
+  const bills = DB.Bills.filter(b => b.period === P && b.status !== 'Sent' && tn(b.tenant_id) && !soaHold(tn(b.tenant_id)) && (tn(b.tenant_id).status||'Active') !== 'Moved Out');
   const noMail = bills.filter(b => !tn(b.tenant_id).email);
   const go = bills.filter(b => tn(b.tenant_id).email);
   if (!go.length) return toast(noMail.length ? `${noMail.length} tenant(s) have no email on file` : `All ${fmtMonth(P)} SOAs already sent`);
@@ -903,7 +971,7 @@ function openForm(t, id, preset){
   $('m-foot').innerHTML = `<div class="left">${extra.join('')}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="submitForm()">Save</button>`;
   $('ovl').classList.add('on');
 }
-function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
 function closeForm(){ $('ovl').classList.remove('on'); editing = null; }
 async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
@@ -950,7 +1018,8 @@ function demoData(){
     ['TN2','Sample Bakeshop','','Ground Floor','GF-02',80,60000,'Yes',0,'Per sqm','',1000,'2024-06-01','2027-01-15','maria@example.com'],
     ['TN3','Sample BPO Inc.','','2nd Floor','2F-A',150,65000,'Yes',5,'Per sqm','',1500,'2025-03-01','2028-02-28','pedro@example.com'],
     ['TN4','Sample Review Center','','2nd Floor','2F-B',100,40000,'No',0,'Fixed',3000,800,'2024-01-01','2026-12-31',''],
-  ].map(([id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email]) => ({id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email,contact_person:'Sample Contact',status:'Active',due_day:'',payment_mode:{TN1:'PDC',TN2:'Bank transfer',TN3:'PDC',TN4:''}[id]}));
+  ].map(([id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email]) => ({id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email,contact_person:'Sample Contact',status:'Active',due_day:'',rent_payment:{TN1:'PDC',TN2:'Bank transfer',TN3:'PDC',TN4:'Check'}[id], cusa_payment:{TN1:'Combined with rent',TN2:'Bank transfer',TN3:'No CUSA',TN4:'Bank transfer'}[id], rent_frequency:id==='TN4'?'Bi-annual':'Monthly', soa_status:id==='TN2'?'Hold':'Send', soa_days_before:id==='TN1'?'3':''}));
+  T[3].lease_start = prevMonth(prevMonth(prevMonth(prevMonth(prevMonth(prevMonth(thisMonth())))))) + '-01'; T[0].due_day = '30';
   const Set_ = [['company_name','201 Brookland Building'],['company_address','Sta. Rosa–Tagaytay Road, Sta. Rosa, Laguna'],['cusa_rate','50'],['elec_rate','12.5'],['water_rate','85'],['penalty_pct','2'],['notify_emails','ela@example.com'],['payment_instructions','Make checks payable to SAMPLE PAYEE NAME.\nBank transfer: Sample Bank · Account name: Sample Payee · Account no. 0000-0000-00']].map(([id,value])=>({id,value}));
   S = Object.fromEntries(Set_.map(r => [r.id, r.value]));
   DB = { Tenants:T, Bills:[], Payments:[], PDCs:[], EmailLog:[], Settings:Set_ };
