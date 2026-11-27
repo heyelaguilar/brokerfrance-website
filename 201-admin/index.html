@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>201 Brookland CRM</title>
+<title>201 Brookland — Billing & Collections</title>
 <meta name="robots" content="noindex, nofollow">
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --green:#1C3F2F;--green-d:#2A6044;--green-l:#F0F7F3;--green-m:#D4EAE0;
@@ -143,6 +144,28 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
   .kpis{grid-template-columns:1fr 1fr}
   .kpi .v{font-size:20px}
 }
+
+.grid-in{width:92px;border:1.5px solid var(--border);border-radius:6px;padding:6px 7px;text-align:right;font-variant-numeric:tabular-nums}
+.grid-in:focus{outline:none;border-color:var(--green-d)}
+.rates{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:14px 18px;margin-bottom:14px}
+.rates .fld{min-width:170px}
+.bill-tbl td{vertical-align:middle}
+.bill-tbl .meter{display:flex;gap:4px;align-items:center}
+.bill-tbl .meter .grid-in{width:66px}
+.bill-tbl td,.bill-tbl th{padding:9px 8px}
+.bill-tbl td:first-child{min-width:150px}
+.bill-tbl td,.bill-tbl th{padding:9px 6px}
+.bill-tbl small{display:block;color:var(--ink4);font-size:11px;margin-top:2px;text-align:right}
+.soa-wrap{background:#E9EDF1;padding:18px;border-radius:10px;max-height:62vh;overflow:auto}
+.soa{background:#fff;max-width:680px;margin:0 auto;padding:30px 34px;font-size:13px;color:#111;box-shadow:var(--sh)}
+.modal.wide{max-width:860px}
+.modal .body.one{grid-template-columns:1fr}
+.settings{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:900px}
+.settings h3{grid-column:1/-1;font-size:15px;font-weight:800;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
+.settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
+.hint{font-size:12px;color:var(--ink4)}
+.ledger td{padding:7px 10px;font-size:13px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -150,21 +173,22 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 <div id="login-screen">
   <div class="login-card">
     <div class="mark">201</div>
-    <h1>201 Brookland CRM</h1>
-    <p>Tenants, rent collection, and leasing pipeline for 201 Brookland Building. Sign in with your authorized account.</p>
+    <h1>201 Brookland</h1>
+    <p>Tenant billing, statements of account, payments and PDC tracking. Sign in with your authorized account.</p>
     <button class="btn" style="width:100%;justify-content:center;padding:13px" id="btn-login">Sign in</button>
   </div>
 </div>
 
 <div id="app">
   <nav class="sidebar">
-    <div class="brand"><b>201 Brookland</b><small>Building CRM</small></div>
+    <div class="brand"><b>201 Brookland</b><small>Billing & Collections</small></div>
     <button class="nav active" data-tab="overview"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>Overview</button>
-    <button class="nav" data-tab="spaces"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="1"/><path d="M9 6h1M14 6h1M9 10h1M14 10h1M9 14h1M14 14h1M10 22v-4h4v4"/></svg>Spaces</button>
+    <button class="nav" data-tab="billing"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Billing & SOA<span class="badge" id="b-bill" hidden></span></button>
+    <button class="nav" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
+    <button class="nav" data-tab="pdcs"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 14h5M15 10h3"/></svg>PDCs<span class="badge" id="b-pdc" hidden></span></button>
     <button class="nav" data-tab="tenants"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Tenants</button>
-    <button class="nav" data-tab="payments"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Collections<span class="badge" id="b-pay" hidden></span></button>
-    <button class="nav" data-tab="leads"><svg viewBox="0 0 24 24"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>Leads<span class="badge" id="b-lead" hidden></span></button>
-    <button class="nav" data-tab="activities"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Activity Log</button>
+    <button class="nav" data-tab="emails"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email Log</button>
+    <button class="nav" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
     <div class="side-bottom">
       <div class="who" id="who">—</div>
       <a href="/admin">← Broker France Admin</a>
@@ -174,454 +198,720 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 
   <main class="main">
     <div id="setup-banner"></div>
-    <div id="boot" class="loading">Loading CRM…</div>
+    <div id="boot" class="loading">Loading…</div>
 
-    <!-- OVERVIEW -->
     <section class="pane" id="p-overview">
-      <div class="hdr"><div><h1>Overview</h1><p>Where the building stands against the ₱600K monthly target.</p></div>
+      <div class="hdr"><div><h1>Overview</h1><p id="ov-sub">Receivables, collections and checks at a glance.</p></div>
         <div class="tools"><button class="btn ghost" onclick="reload()">Refresh</button></div></div>
       <div class="card target">
-        <div class="row"><h3>Monthly rent roll vs target</h3><div><b id="t-roll">—</b> <span class="muted">of</span> <b id="t-target">—</b></div></div>
-        <div class="bar"><u id="t-pipe"></u><i id="t-bar"></i></div>
-        <div class="legend"><span style="--c:var(--green)">Contracted rent</span><span style="--c:#9AD3B4">Pipeline offers (Proposal / Negotiation)</span><span id="t-gap"></span></div>
+        <div class="row"><h3 id="t-title">Billed this month vs ₱600K target</h3><div><b id="t-roll">—</b> <span class="muted">of</span> <b id="t-target">—</b></div></div>
+        <div class="bar"><i id="t-bar"></i></div>
+        <div class="legend"><span style="--c:var(--green)">Total current charges billed</span><span id="t-gap"></span></div>
       </div>
       <div class="kpis" id="kpis"></div>
       <div class="grid2">
-        <div class="card box"><h3>By floor</h3><div class="tbl"><table id="floor-tbl"></table></div></div>
+        <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
       </div>
     </section>
 
-    <!-- SPACES -->
-    <section class="pane" id="p-spaces">
-      <div class="hdr"><div><h1>Spaces</h1><p>Every leasable unit, floor, stall, deck and parking slot.</p></div>
-        <div class="tools"><select id="f-sp-floor"></select><select id="f-sp-status"></select><button class="btn" onclick="openForm('Spaces')">+ Add space</button></div></div>
-      <div class="card tbl" id="spaces-wrap"></div>
+    <section class="pane" id="p-billing">
+      <div class="hdr"><div><h1>Billing & SOA</h1><p>Enter meter readings, save the month's bills, then send each tenant their Statement of Account.</p></div>
+        <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Save bills</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
+      <div class="card rates">
+        <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
+        <div class="fld"><label>Due date</label><input type="date" id="r-due-date"></div>
+        <div class="fld"><label>Meralco rate this month (₱/kWh)</label><input type="number" step="any" id="r-elec"></div>
+        <div class="fld"><label>Water rate (₱/cu.m)</label><input type="number" step="any" id="r-water"></div>
+        <div class="hint" style="flex:1;min-width:200px">Previous readings fill in from last month's bill. Totals update as you type. Tenants with their own rate in their profile keep it.</div>
+      </div>
+      <div class="card tbl" id="bill-wrap"></div>
     </section>
 
-    <!-- TENANTS -->
-    <section class="pane" id="p-tenants">
-      <div class="hdr"><div><h1>Tenants & Leases</h1><p>Active and past tenants, rent terms and lease dates.</p></div>
-        <div class="tools"><input id="f-tn-q" placeholder="Search tenant…"><select id="f-tn-status"></select><button class="btn" onclick="openForm('Tenants')">+ Add tenant</button></div></div>
-      <div class="card tbl" id="tenants-wrap"></div>
-    </section>
-
-    <!-- PAYMENTS -->
     <section class="pane" id="p-payments">
-      <div class="hdr"><div><h1>Rent Collection</h1><p>Monthly dues per tenant. Generate the month's dues, then mark payments as they come in.</p></div>
-        <div class="tools"><input type="month" id="f-pay-period"><button class="btn ghost" onclick="generateDues()">Generate dues for month</button><button class="btn" onclick="openForm('Payments')">+ Record payment</button></div></div>
+      <div class="hdr"><div><h1>Payments</h1><p>Every peso received — cash, transfer, cleared PDCs and BIR 2307 credits.</p></div>
+        <div class="tools"><select id="f-pay-tenant"></select><input type="month" id="f-pay-month"><button class="btn" onclick="openForm('Payments')">+ Record payment</button></div></div>
       <div class="kpis" id="pay-kpis"></div>
-      <div class="card tbl" id="payments-wrap"></div>
+      <div class="card tbl" id="pay-wrap"></div>
     </section>
 
-    <!-- LEADS -->
-    <section class="pane" id="p-leads">
-      <div class="hdr"><div><h1>Leads Pipeline</h1><p>Prospective tenants, investors, events, parking and signage deals. Drag cards between stages.</p></div>
-        <div class="tools"><input id="f-ld-q" placeholder="Search lead…"><select id="f-ld-type"></select><button class="btn" onclick="openForm('Leads')">+ Add lead</button></div></div>
-      <div class="board" id="board"></div>
+    <section class="pane" id="p-pdcs">
+      <div class="hdr"><div><h1>Post-Dated Checks</h1><p>Checks on hand, what's due for deposit, and what's cleared or bounced.</p></div>
+        <div class="tools"><select id="f-pdc-tenant"></select><select id="f-pdc-status"></select><button class="btn ghost" onclick="sendPdcReminder()">✉ Email deposit reminder</button><button class="btn ghost" onclick="openSeries()">+ Add check series</button><button class="btn" onclick="openForm('PDCs')">+ Add check</button></div></div>
+      <div class="kpis" id="pdc-kpis"></div>
+      <div class="card tbl" id="pdc-wrap"></div>
     </section>
 
-    <!-- ACTIVITIES -->
-    <section class="pane" id="p-activities">
-      <div class="hdr"><div><h1>Activity Log</h1><p>Calls, Viber messages, site visits, meetings and follow-ups.</p></div>
-        <div class="tools"><select id="f-ac-type"></select><button class="btn" onclick="openForm('Activities')">+ Log activity</button></div></div>
-      <div class="card tbl" id="activities-wrap"></div>
+    <section class="pane" id="p-tenants">
+      <div class="hdr"><div><h1>Tenants</h1><p>Billing setup per tenant: rent, VAT, EWT, CUSA, utilities, waste and email recipients.</p></div>
+        <div class="tools"><input id="f-tn-q" placeholder="Search tenant…"><select id="f-tn-status"></select><button class="btn" onclick="openForm('Tenants')">+ Add tenant</button></div></div>
+      <div class="card tbl" id="tn-wrap"></div>
+    </section>
+
+    <section class="pane" id="p-emails">
+      <div class="hdr"><div><h1>Email Log</h1><p>Every SOA and reminder sent from this dashboard.</p></div></div>
+      <div class="card tbl" id="em-wrap"></div>
+    </section>
+
+    <section class="pane" id="p-settings">
+      <div class="hdr"><div><h1>Settings</h1><p>What appears on the SOA, default rates, and who gets PDC reminders.</p></div>
+        <div class="tools"><button class="btn" id="btn-settings" onclick="saveSettings()">Save settings</button></div></div>
+      <div class="card settings" id="settings-form"></div>
     </section>
   </main>
 </div>
 
-<div class="ovl" id="ovl"><div class="modal"><header><h2 id="m-title"></h2><button onclick="closeForm()">×</button></header><div class="body" id="m-body"></div><footer id="m-foot"></footer></div></div>
+<div class="ovl" id="ovl"><div class="modal" id="modal"><header><h2 id="m-title"></h2><button onclick="closeForm()">×</button></header><div class="body" id="m-body"></div><footer id="m-foot"></footer></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 // ───────────────── CONFIG ─────────────────
-const TARGET = 600000;            // monthly bank obligation
+const TARGET = 600000;
 const API = '/.netlify/functions/brookland-crm';
 const DEMO = new URLSearchParams(location.search).has('demo');
 
-const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','Parking','Signage / Ad Space'];
-const SPACE_TYPES = ['Retail / Commercial','Office','Food Stall','Whole Floor','Event Space','Coworking','Parking Slot','Billboard / Signage','Other'];
-const SPACE_STATUS = ['Vacant','Reserved','Under Negotiation','Occupied','Not Leasable'];
-const TENANT_STATUS = ['Active','Notice to Vacate','Ended'];
-const PAY_STATUS = ['Unpaid','Partial','Paid','Waived'];
-const LEAD_TYPES = ['Tenant','Investor','Event Booking','Parking','Signage / Ads','Coworking'];
-const STAGES = ['New','Contacted','Site Visit','Proposal Sent','Negotiation','Won','Lost'];
-const SOURCES = ['Walk-in','Referral','Facebook','Marketplace','Lamudi / portals','Broker','Signage','Cold call','Other'];
-const ACTS = ['Call','Viber / SMS','Email','Site Visit','Meeting','Follow-up','Note'];
-const TYPE_COLOR = {'Tenant':'#2A6044','Investor':'#7A5AF8','Event Booking':'#DC6803','Parking':'#175CD3','Signage / Ads':'#C11574','Coworking':'#0E9384'};
+const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','Parking','Other'];
+const TENANT_STATUS = ['Active','Notice to Vacate','Moved Out'];
+const PAY_METHODS = ['Bank transfer','Cash','GCash','Maya','Check','PDC','BIR 2307 (EWT)','Other'];
+const PDC_STATUS = ['On hand','Deposited','Cleared','Bounced','Replaced','Returned to tenant'];
 
-// form definitions: [key, label, type, options/extra, wide]
+const SETTINGS_FIELDS = [
+  ['h','Statement of Account header'],
+  ['company_name','Billing entity name','text','201 Brookland Building'],
+  ['company_address','Address','text','Sta. Rosa–Tagaytay Road, Sta. Rosa, Laguna'],
+  ['company_contact','Contact line (phone / email)','text',''],
+  ['company_tin','TIN','text',''],
+  ['h','Payment instructions (printed on every SOA)'],
+  ['payment_instructions','Payment instructions','textarea','Please make checks payable to ____. Bank transfer: Bank ____, Account name ____, Account no. ____. Send proof of payment to this email.'],
+  ['soa_notes','Footer notes','textarea','Please settle on or before the due date to avoid penalties. Kindly disregard if payment has been made.'],
+  ['h','Billing defaults'],
+  ['vat_pct','VAT % on rent','number','12'],
+  ['penalty_pct','Late penalty % per month on unpaid balance (0 = none)','number','0'],
+  ['cusa_rate','Default CUSA rate (₱ per sqm)','number','0'],
+  ['elec_rate','Default Meralco rate (₱/kWh)','number','0'],
+  ['water_rate','Default water rate (₱/cu.m)','number','0'],
+  ['bill_day','Bill date (day of month)','number','1'],
+  ['due_day','Default due date (day of month)','number','5'],
+  ['h','Email'],
+  ['reply_to','Reply-to address (tenants reply here)','text',''],
+  ['soa_cc','Always CC on SOAs (comma-separated)','text',''],
+  ['soa_subject','SOA email subject','text','Statement of Account — {month} — {tenant}'],
+  ['soa_message','SOA email message','textarea','Good day! Please find attached your Statement of Account for {month}. Total amount due is {amount}, payable on or before {due}.\n\nThank you.'],
+  ['h','PDC reminders'],
+  ['notify_emails','PDC reminder recipients (comma-separated)','text',''],
+  ['pdc_remind_days','Remind this many days before check date','number','3'],
+  ['pdc_daily_email','Daily 8 AM reminder email','select','on',['on','off']],
+];
+
 const FORMS = {
-  Spaces: { title:'Space', fields:[
-    ['floor','Floor','select',FLOORS],['unit','Unit / name','text'],
-    ['space_type','Type','select',SPACE_TYPES],['status','Status','select',SPACE_STATUS],
-    ['area_sqm','Area (sqm)','number'],['asking_rent','Asking rent / month (₱)','number'],
-    ['tenant_id','Current tenant','ref','Tenants'],['notes','Notes','textarea',null,1]]},
   Tenants: { title:'Tenant', fields:[
-    ['tenant_name','Tenant / business name','text'],['business','Line of business','text'],
+    ['h','Tenant'],
+    ['tenant_name','Registered / billing name','text'],['trade_name','Trade name','text'],
+    ['floor','Floor','select',FLOORS],['unit','Unit no.','text'],
+    ['area_sqm','Area (sqm)','number'],['tin','Tenant TIN','text'],
     ['contact_person','Contact person','text'],['phone','Phone / Viber','text'],
-    ['email','Email','email'],['space_id','Space','ref','Spaces'],
-    ['monthly_rent','Monthly rent (₱)','number'],['due_day','Due day of month','number'],
-    ['deposit','Security deposit (₱)','number'],['advance','Advance rent (₱)','number'],
+    ['email','SOA email (To)','text'],['cc_email','CC emails (comma-separated)','text'],
+    ['h','Billing setup'],
+    ['monthly_rent','Monthly rent, VAT-exclusive (₱)','number'],['rent_vat','Add VAT on rent?','select',['Yes','No']],
+    ['ewt_pct','EWT withheld by tenant (%)','number'],['due_day','Due day (blank = default)','number'],
+    ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
+    ['waste_fee','Waste hauling per month (₱)','number'],['security_deposit','Security deposit held (₱)','number'],
+    ['elec_rate','Own Meralco rate ₱/kWh (blank = monthly rate)','number'],['water_rate','Own water rate ₱/cu.m (blank = default)','number'],
+    ['h','Lease'],
     ['lease_start','Lease start','date'],['lease_end','Lease end','date'],
-    ['escalation_pct','Yearly escalation (%)','number'],['status','Status','select',TENANT_STATUS],
-    ['notes','Notes','textarea',null,1]]},
+    ['status','Status','select',TENANT_STATUS],['notes','Notes','textarea',null,1]]},
   Payments: { title:'Payment', fields:[
-    ['tenant_id','Tenant','ref','Tenants'],['period','Billing month','month'],
-    ['amount_due','Amount due (₱)','number'],['amount_paid','Amount paid (₱)','number'],
-    ['date_paid','Date paid','date'],['method','Method','select',['','Cash','Bank transfer','GCash','Maya','Check','PDC']],
-    ['reference','OR # / reference','text'],['status','Status','select',PAY_STATUS],
-    ['notes','Notes','textarea',null,1]]},
-  Leads: { title:'Lead', fields:[
-    ['lead_type','Lead type','select',LEAD_TYPES],['stage','Stage','select',STAGES],
-    ['name','Name','text'],['company','Company / brand','text'],
-    ['phone','Phone / Viber','text'],['email','Email','email'],
-    ['interest','Interested in','text'],['space_id','Target space','ref','Spaces'],
-    ['offer','Offer / budget per month (₱)','number'],['source','Source','select',['',...SOURCES]],
-    ['next_followup','Next follow-up','date'],['owner','Handled by','text'],
-    ['notes','Notes','textarea',null,1]]},
-  Activities: { title:'Activity', fields:[
-    ['date','Date','date'],['activity','Type','select',ACTS],
-    ['related_type','Related to','select',['','Leads','Tenants','Spaces']],['related_id','Record','refdyn'],
-    ['notes','What happened','textarea',null,1],
-    ['next_action','Next action','text'],['next_date','Next action date','date']]},
+    ['tenant_id','Tenant','ref','Tenants'],['date','Date received','date'],
+    ['amount','Amount (₱)','number'],['method','Method','select',PAY_METHODS],
+    ['bank','Bank','text'],['reference','Reference / check no.','text'],
+    ['or_no','Official receipt no.','text'],['notes','Notes','textarea',null,1]]},
+  PDCs: { title:'Check', fields:[
+    ['tenant_id','Tenant','ref','Tenants'],['bank','Bank','text'],
+    ['check_no','Check no.','text'],['amount','Amount (₱)','number'],
+    ['check_date','Check date','date'],['for_period','For billing month','month'],
+    ['status','Status','select',PDC_STATUS],['deposited_date','Date deposited','date'],
+    ['cleared_date','Date cleared','date'],['notes','Notes','textarea',null,1]]},
 };
 
 // ───────────────── STATE / UTILS ─────────────────
-let DB = {Spaces:[],Tenants:[],Payments:[],Leads:[],Activities:[]};
-let tab = 'overview', idn, editing = null;
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[]};
+let S = {};      // settings key → value
+let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num = v => { const n = parseFloat(String(v ?? '').replace(/[₱,\s]/g,'')); return isNaN(n) ? 0 : n; };
-const peso = v => '₱' + Math.round(num(v)).toLocaleString('en-PH');
-const pesoK = v => { const n = num(v); return n >= 1e6 ? '₱' + (n/1e6).toFixed(2).replace(/\.?0+$/,'') + 'M' : n >= 1000 ? '₱' + (n/1000).toFixed(n>=1e5?0:1).replace(/\.0$/,'') + 'K' : peso(n); };
-const today = () => new Date(Date.now() + 8*3600e3).toISOString().slice(0,10); // Manila date
+const r2 = n => Math.round(n * 100) / 100;
+const peso = v => '₱' + num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const peso0 = v => '₱' + Math.round(num(v)).toLocaleString('en-PH');
+const php = v => 'PHP ' + num(v).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const today = () => new Date(Date.now() + 8*3600e3).toISOString().slice(0,10);
+const addDays = (d, n) => { const x = new Date(d + 'T00:00:00Z'); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0,10); };
 const thisMonth = () => today().slice(0,7);
+const prevMonth = m => { const [y,mo] = m.split('-').map(Number); return mo === 1 ? `${y-1}-12` : `${y}-${String(mo-1).padStart(2,'0')}`; };
+const dayOf = (m, d) => `${m}-${String(Math.min(28, Math.max(1, num(d) || 1))).padStart(2,'0')}`;
 const daysUntil = d => d ? Math.round((new Date(d) - new Date(today())) / 864e5) : null;
-const fmtDate = d => d ? new Date(d + (d.length===10?'T00:00:00':'')).toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
+const fmtDate = d => d ? new Date(d.slice(0,10) + 'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
 const fmtMonth = m => m ? new Date(m + '-01T00:00:00').toLocaleDateString('en-PH',{month:'long',year:'numeric'}) : '—';
 const byId = (t, id) => DB[t].find(r => r.id === id);
-const tenantName = id => byId('Tenants', id)?.tenant_name || '—';
-const spaceName = id => { const s = byId('Spaces', id); return s ? `${s.floor} · ${s.unit || s.space_type}` : '—'; };
-const refLabel = (t, id) => t==='Tenants' ? tenantName(id) : t==='Spaces' ? spaceName(id) : t==='Leads' ? (byId('Leads',id)?.name || '—') : '—';
-function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),2600); }
+const tn = id => byId('Tenants', id);
+const tName = id => tn(id)?.tenant_name || '—';
+const tLabel = t => `${t.tenant_name}${t.unit ? ' · ' + t.unit : ''}`;
+const activeTenants = () => DB.Tenants.filter(t => (t.status || 'Active') !== 'Moved Out').sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),3000); }
 function opts(list, sel, blank){ return (blank!=null?`<option value="">${esc(blank)}</option>`:'') + list.map(o=>`<option ${o===sel?'selected':''}>${esc(o)}</option>`).join(''); }
-const pillCls = s => ({'Occupied':'p-green','Active':'p-green','Paid':'p-green','Won':'p-green','Vacant':'p-red','Unpaid':'p-red','Overdue':'p-red','Lost':'p-red','Ended':'','Partial':'p-amber','Reserved':'p-amber','Under Negotiation':'p-blue','Notice to Vacate':'p-amber','Negotiation':'p-blue','Proposal Sent':'p-blue'}[s] || '');
-const pill = s => s ? `<span class="pill ${pillCls(s)}">${esc(s)}</span>` : '';
+const PILL = {'Active':'p-green','Paid':'p-green','Cleared':'p-green','Sent':'p-green','On hand':'p-blue','Deposited':'p-amber','Draft':'p-amber','Unsent':'p-amber','Notice to Vacate':'p-amber','Partial':'p-amber','Bounced':'p-red','Overdue':'p-red','Unpaid':'p-red','Failed':'p-red'};
+const pill = s => s ? `<span class="pill ${PILL[String(s).split(':')[0]] || ''}">${esc(s)}</span>` : '';
+const set = k => S[k] ?? (SETTINGS_FIELDS.find(f => f[0] === k) || [])[3] ?? '';
 
 // ───────────────── API ─────────────────
 async function call(payload){
   if (DEMO) return demoCall(payload);
   const user = idn.currentUser();
   if (!user) throw new Error('Signed out — please sign in again');
-  const token = await user.jwt();
-  const res = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify(payload) });
-  const data = await res.json().catch(()=>({error:'HTTP '+res.status}));
+  const res = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer ' + await user.jwt()}, body: JSON.stringify(payload) });
+  const data = await res.json().catch(()=>({error:'HTTP ' + res.status}));
   if (!res.ok || data.error) { const e = new Error(data.error || 'Request failed'); e.setup = data.setup; throw e; }
   return data;
 }
+function merge(t, rows){ rows.forEach(r => { const i = DB[t].findIndex(x => x.id === r.id); if (i >= 0) DB[t][i] = r; else DB[t].push(r); }); }
+async function save(t, row){ const d = await call({action:'save', tab:t, row}); merge(t, [d.row]); return d.row; }
+async function saveMany(t, rows){ if (!rows.length) return []; const d = await call({action:'saveMany', tab:t, rows}); merge(t, d.rows); return d.rows; }
+async function remove(t, id){ await call({action:'remove', tab:t, id}); DB[t] = DB[t].filter(r => r.id !== id); }
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only, nothing is saved. Remove <code>?demo</code> from the URL to use the live CRM.</div>` : '';
+    DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
+      : (!DB.Settings.length ? `<div class="banner"><b>First time here?</b> Fill in <a href="#" onclick="showTab('settings');return false"><b>Settings</b></a> (payment instructions, default rates, reminder emails), then add your tenants.</div>` : '');
     $('boot').style.display='none'; render();
   } catch(e) {
     $('boot').style.display='none';
-    $('setup-banner').innerHTML = `<div class="banner"><b>Can't load the CRM:</b> ${esc(e.message)}<br>${e.setup ? 'Setup: create a Google Sheet named <b>201 Brookland CRM</b>, share it (Editor) with the site\'s Google service account, then add its ID as <code>BROOKLAND_SHEET_ID</code> in Netlify → Environment variables and redeploy. Tabs are created automatically.' : 'If this is the first run, make sure the sheet is shared with the service account as Editor.'}</div>`;
-    showTab(tab);
+    $('setup-banner').innerHTML = `<div class="banner"><b>Can't load:</b> ${esc(e.message)}<br>${e.setup ? 'Setup: create a Google Sheet named <b>201 Brookland CRM</b>, share it as Editor with the site\'s Google service account, add its ID as <code>BROOKLAND_SHEET_ID</code> in Netlify → Environment variables, then redeploy. Tabs are created automatically.' : 'Check that the sheet is shared with the service account as Editor.'}</div>`;
   }
 }
-async function save(t, row){
-  const d = await call({action:'save', tab:t, row});
-  const i = DB[t].findIndex(r => r.id === d.row.id);
-  if (i >= 0) DB[t][i] = d.row; else DB[t].push(d.row);
-  return d.row;
-}
-async function remove(t, id){ await call({action:'remove', tab:t, id}); DB[t] = DB[t].filter(r => r.id !== id); }
 
-// ───────────────── DERIVED ─────────────────
-const activeTenants = () => DB.Tenants.filter(t => (t.status||'Active') !== 'Ended');
-function payStatus(p){
-  if (p.status === 'Waived') return 'Waived';
-  const due = num(p.amount_due), paid = num(p.amount_paid);
-  if (due > 0 && paid >= due) return 'Paid';
-  const t = byId('Tenants', p.tenant_id);
-  const dueDate = p.period ? `${p.period}-${String(Math.min(28, num(t?.due_day) || 5)).padStart(2,'0')}` : null;
-  if (dueDate && today() > dueDate) return paid > 0 ? 'Partial · Overdue' : 'Overdue';
-  return paid > 0 ? 'Partial' : 'Unpaid';
+// ───────────────── LEDGER MATH ─────────────────
+const billsOf = id => DB.Bills.filter(b => b.tenant_id === id).sort((a,b) => a.period.localeCompare(b.period));
+const paysOf = id => DB.Payments.filter(p => p.tenant_id === id).sort((a,b) => String(a.date).localeCompare(b.date));
+const balanceOf = id => r2(billsOf(id).reduce((s,b)=>s+num(b.total),0) - paysOf(id).reduce((s,p)=>s+num(p.amount),0));
+function overdueOf(id){
+  const dueBills = billsOf(id).filter(b => b.due_date && b.due_date < today()).reduce((s,b)=>s+num(b.total),0);
+  return Math.max(0, r2(dueBills - paysOf(id).reduce((s,p)=>s+num(p.amount),0)));
 }
-const overduePays = () => DB.Payments.filter(p => payStatus(p).includes('Overdue'));
-const openLeads = () => DB.Leads.filter(l => !['Won','Lost'].includes(l.stage));
-const dueFollowups = () => openLeads().filter(l => l.next_followup && l.next_followup <= today());
+// SOA summary for a tenant's bill of `period`
+function soaSummary(tid, period, billDate){
+  const prior = billsOf(tid).filter(b => b.period < period);
+  const last = prior[prior.length - 1];
+  const pays = paysOf(tid);
+  const opening = last ? r2(prior.reduce((s,b)=>s+num(b.total),0) - pays.filter(p => p.date < last.bill_date).reduce((s,p)=>s+num(p.amount),0)) : 0;
+  const since = pays.filter(p => (!last || p.date >= last.bill_date) && p.date <= billDate);
+  const received = r2(since.reduce((s,p)=>s+num(p.amount),0));
+  // payments made before the first bill are credits too
+  return { last, opening, since, received, unpaid: r2(opening - received) };
+}
+function rateFor(t, key, monthRate){ return num(t[key]) || num(monthRate) || num(set(key)); }
+function computeBill(t, period, inp){
+  const rent = num(t.monthly_rent);
+  const rent_vat = t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
+  const mode = t.cusa_mode || 'Per sqm';
+  const cusa = mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
+  const water_rate = rateFor(t, 'water_rate', inp.water_rate_month), elec_rate = rateFor(t, 'elec_rate', inp.elec_rate_month);
+  const wUse = Math.max(0, num(inp.water_curr) - num(inp.water_prev)), eUse = Math.max(0, num(inp.elec_curr) - num(inp.elec_prev));
+  const water_amt = inp.water_curr !== '' && inp.water_curr != null ? r2(wUse * water_rate) : num(inp.water_amt);
+  const elec_amt = inp.elec_curr !== '' && inp.elec_curr != null ? r2(eUse * elec_rate) : num(inp.elec_amt);
+  const waste = num(t.waste_fee);
+  const other_amt = num(inp.other_amt);
+  const ewt = r2(rent * num(t.ewt_pct) / 100);
+  const summ = soaSummary(t.id, period, inp.bill_date);
+  const penalty = num(set('penalty_pct')) > 0 && summ.unpaid > 0 ? r2(summ.unpaid * num(set('penalty_pct')) / 100) : 0;
+  const total = r2(rent + rent_vat + cusa + water_amt + elec_amt + waste + other_amt + penalty - ewt);
+  return { rent, rent_vat, cusa, water_rate, water_amt, elec_rate, elec_amt, waste, other_amt, penalty, ewt, total };
+}
 
 // ───────────────── RENDER ─────────────────
-function render(){ badges(); ({overview:rOverview,spaces:rSpaces,tenants:rTenants,payments:rPayments,leads:rLeads,activities:rActivities})[tab](); }
+function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings})[tab](); }
+const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
+const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
+const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent');
 function badges(){
-  const o = overduePays().length, f = dueFollowups().length;
-  $('b-pay').hidden = !o; $('b-pay').textContent = o;
-  $('b-lead').hidden = !f; $('b-lead').textContent = f;
+  const p = pdcsDue().length, b = unsentBills().length;
+  $('b-pdc').hidden = !p; $('b-pdc').textContent = p;
+  $('b-bill').hidden = !b; $('b-bill').textContent = b;
 }
 function showTab(t){
   tab = t;
   document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-'+t));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
   if ($('boot').style.display === 'none') render();
 }
 
 function rOverview(){
-  const roll = activeTenants().reduce((s,t)=>s+num(t.monthly_rent),0);
-  const pipe = DB.Leads.filter(l=>['Proposal Sent','Negotiation'].includes(l.stage) && ['Tenant','Coworking','Parking','Signage / Ads'].includes(l.lead_type)).reduce((s,l)=>s+num(l.offer),0);
-  const gap = Math.max(0, TARGET - roll);
-  $('t-roll').textContent = peso(roll); $('t-target').textContent = peso(TARGET);
-  $('t-bar').style.width = Math.min(100, roll/TARGET*100) + '%';
-  $('t-pipe').style.left = Math.min(100, roll/TARGET*100) + '%';
-  $('t-pipe').style.width = Math.max(0, Math.min(100 - roll/TARGET*100, pipe/TARGET*100)) + '%';
-  $('t-gap').innerHTML = gap ? `<b style="color:var(--red)">Gap: ${peso(gap)}/month</b>` : `<b style="color:var(--green-d)">Target covered ✓</b>`;
-
-  const m = thisMonth(), mp = DB.Payments.filter(p=>p.period===m);
-  const billed = mp.reduce((s,p)=>s+num(p.amount_due),0), coll = mp.reduce((s,p)=>s+num(p.amount_paid),0);
-  const leasable = DB.Spaces.filter(s=>s.status!=='Not Leasable' && num(s.area_sqm));
-  const totSqm = leasable.reduce((s,x)=>s+num(x.area_sqm),0), occSqm = leasable.filter(s=>s.status==='Occupied').reduce((s,x)=>s+num(x.area_sqm),0);
-  const vacant = DB.Spaces.filter(s=>s.status==='Vacant');
-  const vacantAsk = vacant.reduce((s,x)=>s+num(x.asking_rent),0);
-  const overdueAmt = overduePays().reduce((s,p)=>s+Math.max(0,num(p.amount_due)-num(p.amount_paid)),0);
+  const m = thisMonth();
+  const billed = DB.Bills.filter(b => b.period === m).reduce((s,b)=>s+num(b.total),0);
+  const coll = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
+  const recv = activeTenants().concat(DB.Tenants.filter(t=>t.status==='Moved Out')).reduce((s,t)=>s+Math.max(0,balanceOf(t.id)),0);
+  const overdue = DB.Tenants.reduce((s,t)=>s+overdueOf(t.id),0);
+  const onHand = DB.PDCs.filter(p => (p.status||'On hand') === 'On hand');
+  const due = pdcsDue();
+  $('t-title').textContent = `Billed for ${fmtMonth(m)} vs ₱600K target`;
+  $('t-roll').textContent = peso0(billed); $('t-target').textContent = peso0(TARGET);
+  $('t-bar').style.width = Math.min(100, billed / TARGET * 100) + '%';
+  $('t-gap').innerHTML = billed >= TARGET ? `<b style="color:var(--green-d)">Target covered ✓</b>` : `<b style="color:var(--red)">Gap: ${peso0(TARGET - billed)}</b>`;
   const k = [
-    ['Collected this month', peso(coll), billed ? `of ${peso(billed)} billed (${Math.round(coll/billed*100)}%)` : 'no dues generated yet', coll>=billed&&billed?'good':''],
-    ['Overdue balance', peso(overdueAmt), `${overduePays().length} unpaid bill(s)`, overdueAmt?'bad':'good'],
-    ['Occupancy', totSqm ? Math.round(occSqm/totSqm*100)+'%' : '—', totSqm ? `${occSqm.toLocaleString()} of ${totSqm.toLocaleString()} sqm` : 'add areas to spaces', ''],
-    ['Vacant spaces', vacant.length, vacantAsk ? `${peso(vacantAsk)}/mo asking` : 'set asking rents', vacant.length?'bad':''],
-    ['Active tenants', activeTenants().length, `${DB.Tenants.filter(t=>t.status==='Notice to Vacate').length} on notice`, ''],
-    ['Open leads', openLeads().length, pipe ? `${pesoK(pipe)}/mo in proposals` : `${dueFollowups().length} follow-ups due`, ''],
+    ['Total receivables', peso0(recv), `${DB.Tenants.filter(t=>balanceOf(t.id)>0).length} tenant(s) with balance`, ''],
+    ['Overdue', peso0(overdue), `${DB.Tenants.filter(t=>overdueOf(t.id)>0).length} tenant(s) past due`, overdue ? 'bad' : 'good'],
+    [`Collected · ${fmtMonth(m).split(' ')[0]}`, peso0(coll), billed ? `${Math.round(coll/billed*100)}% of ${peso0(billed)} billed` : 'no bills yet this month', ''],
+    ['PDCs on hand', peso0(onHand.reduce((s,p)=>s+num(p.amount),0)), `${onHand.length} check(s)`, ''],
+    ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : 'good'],
   ];
   $('kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
-
-  const rows = FLOORS.map(f => {
-    const sp = DB.Spaces.filter(s=>s.floor===f); if (!sp.length) return '';
-    const occ = sp.filter(s=>s.status==='Occupied').length;
-    const rent = activeTenants().filter(t=>byId('Spaces',t.space_id)?.floor===f).reduce((s,t)=>s+num(t.monthly_rent),0);
-    const vac = sp.filter(s=>s.status==='Vacant').reduce((s,x)=>s+num(x.area_sqm),0);
-    return `<tr><td><b>${esc(f)}</b></td><td class="num">${occ}/${sp.length}</td><td class="num">${vac?vac.toLocaleString()+' sqm':'—'}</td><td class="num"><b>${rent?peso(rent):'—'}</b></td></tr>`;
-  }).join('');
-  $('floor-tbl').innerHTML = rows ? `<tr><th>Floor</th><th class="num">Occupied</th><th class="num">Vacant area</th><th class="num">Rent / mo</th></tr>${rows}` : `<tr><td><div class="empty"><b>No spaces yet</b>Add your units in Spaces, or <a href="#" onclick="seedSpaces();return false" style="color:var(--green-d);font-weight:700">load the starter list</a>.</div></td></tr>`;
-
+  const ts = activeTenants();
+  $('bal-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Balance</th><th class="num">Overdue</th><th>${fmtMonth(m).split(' ')[0]} SOA</th></tr>` + ts.map(t => {
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m), bal = balanceOf(t.id), od = overdueOf(t.id);
+    return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc([t.floor,t.unit].filter(Boolean).join(' · '))}</div></td><td class="num">${bal>0?'<b>'+peso(bal)+'</b>':bal<0?'<span class="muted">'+peso(-bal)+' credit</span>':'—'}</td><td class="num">${od?`<b style="color:var(--red)">${peso(od)}</b>`:'—'}</td><td>${b?pill(b.status==='Sent'?'Sent':'Unsent'):'<span class="muted">not billed</span>'}</td></tr>`;
+  }).join('') : `<tr><td><div class="empty"><b>No tenants yet</b><a href="#" onclick="openForm('Tenants');return false" style="color:var(--green-d);font-weight:700">Add your first tenant</a></div></td></tr>`;
   const al = [];
-  overduePays().forEach(p => al.push(['var(--red)', `<b>${esc(tenantName(p.tenant_id))}</b> — ${peso(num(p.amount_due)-num(p.amount_paid))} overdue for ${fmtMonth(p.period)}`, 'payments']));
-  activeTenants().forEach(t => { const d = daysUntil(t.lease_end); if (d!=null && d<=90) al.push([d<0?'var(--red)':'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'} — renew or re-market`, 'tenants']); });
-  dueFollowups().forEach(l => al.push(['var(--blue)', `Follow up <b>${esc(l.name)}</b> (${esc(l.lead_type)}) — ${l.next_followup<today()?'overdue since '+fmtDate(l.next_followup):'today'}`, 'leads']));
-  if (!DB.Payments.some(p=>p.period===m) && activeTenants().length) al.push(['var(--amber)', `Dues for ${fmtMonth(m)} not generated yet`, 'payments']);
-  $('alerts').innerHTML = al.length ? al.slice(0,14).map(([c,h,t])=>`<div class="alert" style="--c:${c};cursor:pointer" onclick="showTab('${t}')"><span class="dot"></span><div>${h}</div></div>`).join('') : `<div class="empty"><b>All clear</b>Nothing overdue or expiring.</div>`;
+  due.forEach(p => al.push([p.check_date < today() ? 'var(--red)' : 'var(--amber)', `Deposit <b>${esc(tName(p.tenant_id))}</b> PDC ${esc(p.bank)} #${esc(p.check_no)} — ${peso(p.amount)}, dated ${fmtDate(p.check_date)}`, 'pdcs']));
+  DB.PDCs.filter(p => p.status === 'Bounced').forEach(p => al.push(['var(--red)', `<b>Bounced:</b> ${esc(tName(p.tenant_id))} ${esc(p.bank)} #${esc(p.check_no)} — ${peso(p.amount)}. Ask for replacement.`, 'pdcs']));
+  DB.PDCs.filter(p => p.status === 'Deposited' && p.deposited_date && daysUntil(p.deposited_date) <= -3).forEach(p => al.push(['var(--amber)', `Confirm clearing: ${esc(tName(p.tenant_id))} #${esc(p.check_no)} deposited ${fmtDate(p.deposited_date)}`, 'pdcs']));
+  ts.filter(t => overdueOf(t.id) > 0).forEach(t => al.push(['var(--red)', `<b>${esc(t.tenant_name)}</b> overdue ${peso(overdueOf(t.id))}`, 'tenants']));
+  if (ts.length && !DB.Bills.some(b => b.period === m)) al.push(['var(--amber)', `${fmtMonth(m)} bills not created yet`, 'billing']);
+  else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
+  ts.forEach(t => { const d = daysUntil(t.lease_end); if (d != null && d <= 90) al.push([d < 0 ? 'var(--red)' : 'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'}`, 'tenants']); });
+  $('alerts').innerHTML = al.length ? al.slice(0,16).map(([c,h,t])=>`<div class="alert" style="--c:${c};cursor:pointer" onclick="showTab('${t}')"><span class="dot"></span><div>${h}</div></div>`).join('') : `<div class="empty"><b>All clear</b>Nothing due, overdue or bounced.</div>`;
 }
 
-function rSpaces(){
-  if (!$('f-sp-floor').options.length){ $('f-sp-floor').innerHTML = opts(FLOORS,null,'All floors'); $('f-sp-status').innerHTML = opts(SPACE_STATUS,null,'All statuses'); }
-  const ff = $('f-sp-floor').value, fs = $('f-sp-status').value;
-  const list = DB.Spaces.filter(s=>(!ff||s.floor===ff)&&(!fs||s.status===fs)).sort((a,b)=>FLOORS.indexOf(a.floor)-FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit),undefined,{numeric:true}));
-  if (!DB.Spaces.length) { $('spaces-wrap').innerHTML = `<div class="empty"><b>No spaces yet</b>Add units one by one, or start with the known spaces (3rd floor 400 sqm, 4th floor food hub, roof deck, parking).<br><br><button class="btn" onclick="seedSpaces()">Load starter spaces</button></div>`; return; }
-  $('spaces-wrap').innerHTML = `<table><tr><th>Floor</th><th>Unit</th><th>Type</th><th class="num">Area</th><th class="num">Asking / mo</th><th>Status</th><th>Tenant</th><th class="num">Actual rent</th></tr>${list.map(s=>{
-    const t = DB.Tenants.find(t=>t.space_id===s.id && t.status!=='Ended') || byId('Tenants', s.tenant_id);
-    return `<tr class="click" onclick="openForm('Spaces','${s.id}')"><td>${esc(s.floor)}</td><td><b>${esc(s.unit)}</b></td><td>${esc(s.space_type)}</td><td class="num">${s.area_sqm?num(s.area_sqm).toLocaleString()+' sqm':'—'}</td><td class="num">${s.asking_rent?peso(s.asking_rent):'—'}</td><td>${pill(s.status)}</td><td>${t?esc(t.tenant_name):'<span class="muted">—</span>'}</td><td class="num">${t&&t.monthly_rent?peso(t.monthly_rent):'—'}</td></tr>`;}).join('')}</table>`;
+// ── Billing grid ──
+let grid = {};  // tenant_id → inputs
+function rBilling(){
+  const per = $('f-bill-period'); if (!per.value) per.value = thisMonth();
+  const P = per.value, ts = activeTenants();
+  const existing = DB.Bills.filter(b => b.period === P);
+  if ($('r-bill-date').dataset.p !== P) {
+    $('r-bill-date').dataset.p = P;
+    const any = existing[0];
+    $('r-bill-date').value = any?.bill_date || dayOf(P, set('bill_day'));
+    $('r-due-date').value = any?.due_date || dayOf(P, set('due_day'));
+    const lastE = DB.Bills.filter(b => b.period <= P && num(b.elec_rate)).sort((a,b)=>b.period.localeCompare(a.period))[0];
+    $('r-elec').value = existing.find(b=>num(b.elec_rate))?.elec_rate || lastE?.elec_rate || set('elec_rate') || '';
+    $('r-water').value = existing.find(b=>num(b.water_rate))?.water_rate || set('water_rate') || '';
+    grid = {};
+    ts.forEach(t => {
+      const b = existing.find(x => x.tenant_id === t.id);
+      const prev = billsOf(t.id).filter(x => x.period < P).pop();
+      grid[t.id] = b ? { water_prev:b.water_prev, water_curr:b.water_curr, elec_prev:b.elec_prev, elec_curr:b.elec_curr, other_label:b.other_label, other_amt:b.other_amt, water_amt:b.water_amt, elec_amt:b.elec_amt }
+                     : { water_prev: prev?.water_curr ?? '', water_curr:'', elec_prev: prev?.elec_curr ?? '', elec_curr:'', other_label:'', other_amt:'' };
+    });
+  }
+  if (!ts.length) { $('bill-wrap').innerHTML = `<div class="empty"><b>No tenants yet</b>Add tenants and their billing setup first.<br><br><button class="btn" onclick="showTab('tenants')">Go to Tenants</button></div>`; return; }
+  let sum = 0;
+  const rows = ts.map(t => {
+    const g = grid[t.id] || (grid[t.id] = {});
+    const c = computeBill(t, P, inputsFor(t.id)); sum += c.total;
+    const b = existing.find(x => x.tenant_id === t.id);
+    const dirty = b && Math.abs(num(b.total) - c.total) > 0.004;
+    const inp = (k, w) => `<input class="grid-in" data-t="${t.id}" data-k="${k}" value="${esc(g[k] ?? '')}" ${w?`style="width:${w}px"`:''} inputmode="decimal">`;
+    return `<tr>
+      <td><b>${esc(t.tenant_name)}</b><div class="muted">${esc([t.floor,t.unit].filter(Boolean).join(' · '))}</div></td>
+      <td class="num">${peso(c.rent + c.rent_vat)}${c.rent_vat?`<small>incl. VAT ${peso(c.rent_vat)}</small>`:''}${c.ewt?`<small>EWT −${peso(c.ewt)}</small>`:''}</td>
+      <td class="num">${c.cusa?peso(c.cusa):'—'}</td>
+      <td><div class="meter">${inp('water_prev')}→${inp('water_curr')}</div><small id="wa-${t.id}">${peso(c.water_amt)}</small></td>
+      <td><div class="meter">${inp('elec_prev')}→${inp('elec_curr')}</div><small id="ea-${t.id}">${peso(c.elec_amt)}${c.elec_amt?` @ ${c.elec_rate}`:''}</small></td>
+      <td class="num">${c.waste?peso(c.waste):'—'}</td>
+      <td><div class="meter" style="flex-direction:column;align-items:stretch"><input class="grid-in" style="width:96px;text-align:left" placeholder="label" data-t="${t.id}" data-k="other_label" value="${esc(g.other_label||'')}">${inp('other_amt',96)}</div></td>
+      <td class="num"><b id="tot-${t.id}">${peso(c.total)}</b>${c.penalty?`<small>penalty ${peso(c.penalty)}</small>`:''}</td>
+      <td>${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at?`<div class="muted">${fmtDate(b.sent_at)}</div>`:'') : '<span class="muted">not saved</span>'}</td>
+      <td><div class="row-actions">${b?`<button class="btn ghost sm" onclick="openSOA('${b.id}')">SOA</button><button class="btn sm" onclick="sendSOA('${b.id}',this)" ${dirty?'disabled title="Save bills first"':''}>✉ Send</button>`:''}</div></td></tr>`;
+  }).join('');
+  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Water (cu.m)</th><th>Meralco (kWh)</th><th class="num">Waste</th><th>Other</th><th class="num">Current charges</th><th>Status</th><th></th></tr>${rows}
+    <tr><td colspan="7" style="text-align:right;font-weight:800">Total current charges · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(sum)}</b></td><td colspan="2"></td></tr></table>`;
+  $('bill-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { grid[e.target.dataset.t][e.target.dataset.k] = e.target.value.trim(); updateBillRow(e.target.dataset.t); }));
+}
+function updateBillRow(tid){
+  const P = $('f-bill-period').value, c = computeBill(tn(tid), P, inputsFor(tid));
+  $('wa-' + tid).textContent = peso(c.water_amt);
+  $('ea-' + tid).textContent = peso(c.elec_amt) + (c.elec_amt ? ' @ ' + c.elec_rate : '');
+  $('tot-' + tid).textContent = peso(c.total);
+  $('bill-sum').textContent = peso(activeTenants().reduce((s,t) => s + computeBill(t, P, inputsFor(t.id)).total, 0));
+  const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P);
+  const row = $('tot-' + tid).closest('tr');
+  if (b && Math.abs(num(b.total) - c.total) > 0.004) { row.cells[8].innerHTML = pill('Unsaved changes'); row.querySelector('.row-actions .btn:not(.ghost)')?.setAttribute('disabled', ''); }
+}
+function inputsFor(tid){
+  const g = grid[tid] || {};
+  return { ...g, bill_date: $('r-bill-date').value, elec_rate_month: $('r-elec').value, water_rate_month: $('r-water').value };
+}
+async function saveBills(silent){
+  const P = $('f-bill-period').value, bd = $('r-bill-date').value, dd = $('r-due-date').value;
+  if (!bd || !dd) return toast('Set the bill date and due date');
+  const rows = activeTenants().map(t => {
+    const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
+    const tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
+    const row = { ...(b||{}), tenant_id:t.id, period:P, bill_date:bd, due_date:tDue,
+      rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
+      water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
+      elec_prev:g.elec_prev??'', elec_curr:g.elec_curr??'', elec_rate:c.elec_rate, elec_amt:c.elec_amt,
+      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total,
+      status: b && b.status === 'Sent' && Math.abs(num(b.total) - c.total) < 0.005 ? 'Sent' : 'Draft' };
+    return row;
+  });
+  const btn = $('btn-save-bills'); btn.disabled = true; btn.textContent = 'Saving…';
+  try { await saveMany('Bills', rows); if (!silent) toast(`${rows.length} bill(s) saved for ${fmtMonth(P)}`); rBilling(); badges(); return true; }
+  catch(e){ toast('Save failed: ' + e.message); return false; }
+  finally { btn.disabled = false; btn.textContent = 'Save bills'; }
 }
 
-function rTenants(){
-  if (!$('f-tn-status').options.length) $('f-tn-status').innerHTML = opts(TENANT_STATUS,null,'All statuses');
-  const q = $('f-tn-q').value.toLowerCase(), fs = $('f-tn-status').value;
-  const list = DB.Tenants.filter(t=>(!fs||t.status===fs)&&(!q||[t.tenant_name,t.business,t.contact_person,t.phone].join(' ').toLowerCase().includes(q))).sort((a,b)=>String(a.tenant_name).localeCompare(b.tenant_name));
-  if (!list.length) { $('tenants-wrap').innerHTML = `<div class="empty"><b>${DB.Tenants.length?'No match':'No tenants yet'}</b>${DB.Tenants.length?'':'Add your ground and 2nd floor tenants to start tracking rent.'}</div>`; return; }
-  $('tenants-wrap').innerHTML = `<table><tr><th>Tenant</th><th>Space</th><th>Contact</th><th class="num">Rent / mo</th><th class="num">Due</th><th>Lease end</th><th>Balance</th><th>Status</th></tr>${list.map(t=>{
-    const d = daysUntil(t.lease_end), bal = DB.Payments.filter(p=>p.tenant_id===t.id && !['Paid','Waived'].includes(payStatus(p))).reduce((s,p)=>s+Math.max(0,num(p.amount_due)-num(p.amount_paid)),0);
-    return `<tr class="click" onclick="openForm('Tenants','${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.business)}</div></td><td>${esc(spaceName(t.space_id))}</td><td>${esc(t.contact_person)}<div class="muted">${esc(t.phone)}</div></td><td class="num"><b>${t.monthly_rent?peso(t.monthly_rent):'—'}</b></td><td class="num">${t.due_day?'every '+esc(t.due_day)+'th':'—'}</td><td>${fmtDate(t.lease_end)}${d!=null&&d<=90&&t.status!=='Ended'?`<div>${pill(d<0?'Expired':d+' days left').replace('pill ','pill p-amber ')}</div>`:''}</td><td class="num">${bal?`<b style="color:var(--red)">${peso(bal)}</b>`:'<span class="muted">—</span>'}</td><td>${pill(t.status||'Active')}</td></tr>`;}).join('')}</table>`;
+// ── SOA ──
+function soaData(bill){
+  const t = tn(bill.tenant_id) || {};
+  const s = soaSummary(t.id, bill.period, bill.bill_date);
+  const lines = [];
+  lines.push([`Rent — ${fmtMonth(bill.period)}`, bill.rent]);
+  if (num(bill.rent_vat)) lines.push([`VAT ${num(set('vat_pct'))}% on rent`, bill.rent_vat]);
+  if (num(bill.cusa)) lines.push([`CUSA${t.cusa_mode==='Fixed'?'':` (${num(t.area_sqm)} sqm × ${peso(num(t.cusa_value)||num(set('cusa_rate')))})`}`, bill.cusa]);
+  if (num(bill.water_amt) || bill.water_curr !== '') lines.push([`Water${bill.water_curr!==''?` (${bill.water_prev} → ${bill.water_curr} = ${r2(num(bill.water_curr)-num(bill.water_prev))} cu.m × ${peso(bill.water_rate)})`:''}`, bill.water_amt]);
+  if (num(bill.elec_amt) || bill.elec_curr !== '') lines.push([`Electricity / Meralco${bill.elec_curr!==''?` (${bill.elec_prev} → ${bill.elec_curr} = ${r2(num(bill.elec_curr)-num(bill.elec_prev))} kWh × ${peso(bill.elec_rate)})`:''}`, bill.elec_amt]);
+  if (num(bill.waste)) lines.push(['Waste hauling', bill.waste]);
+  if (num(bill.other_amt)) lines.push([bill.other_label || 'Other charges', bill.other_amt]);
+  if (num(bill.penalty)) lines.push([`Penalty ${num(set('penalty_pct'))}% on unpaid balance`, bill.penalty]);
+  if (num(bill.ewt)) lines.push([`Less: ${num(t.ewt_pct)}% EWT on rent (submit BIR Form 2307)`, -num(bill.ewt)]);
+  const amountDue = r2(s.unpaid + num(bill.total));
+  const pdcs = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').sort((a,b)=>a.check_date.localeCompare(b.check_date)).slice(0,6);
+  const soaNo = `SOA-${bill.period.replace('-','')}-${(t.unit||t.tenant_name||'').replace(/[^\w]/g,'').slice(0,8).toUpperCase()}`;
+  return { t, s, lines, amountDue, pdcs, soaNo };
+}
+function soaHTML(bill){
+  const { t, s, lines, amountDue, pdcs, soaNo } = soaData(bill);
+  const td = 'padding:7px 8px;border-bottom:1px solid #eee', tdr = td + ';text-align:right;white-space:nowrap';
+  return `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;font-size:13px;line-height:1.45">
+  <table style="width:100%;border-collapse:collapse"><tr><td style="vertical-align:top"><div style="font-size:18px;font-weight:800;color:#1C3F2F">${esc(set('company_name'))}</div><div style="color:#444">${esc(set('company_address'))}</div>${set('company_contact')?`<div style="color:#444">${esc(set('company_contact'))}</div>`:''}${set('company_tin')?`<div style="color:#444">TIN ${esc(set('company_tin'))}</div>`:''}</td>
+  <td style="vertical-align:top;text-align:right"><div style="font-size:16px;font-weight:800;letter-spacing:.04em">STATEMENT OF ACCOUNT</div><div>${soaNo}</div><div>Bill date: <b>${fmtDate(bill.bill_date)}</b></div><div>Due date: <b>${fmtDate(bill.due_date)}</b></div></td></tr></table>
+  <div style="margin:16px 0;padding:12px 14px;background:#F4F6F8;border-radius:6px"><div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Bill to</div><b style="font-size:14px">${esc(t.tenant_name)}</b>${t.trade_name?` (${esc(t.trade_name)})`:''}<div>${esc([t.floor,t.unit?'Unit '+t.unit:''].filter(Boolean).join(' · '))}${t.contact_person?' · Attn: '+esc(t.contact_person):''}</div>${t.tin?`<div>TIN ${esc(t.tin)}</div>`:''}</div>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
+    <tr><td style="${td}">Previous amount due</td><td style="${tdr}">${peso(s.opening)}</td></tr>
+    <tr><td style="${td}">Less: payments received${s.since.length?' ('+s.since.map(p=>`${fmtDate(p.date)}${p.reference?' #'+esc(p.reference):''}`).join(', ')+')':''}</td><td style="${tdr}">${s.received?'−'+peso(s.received):peso(0)}</td></tr>
+    <tr><td style="${td};font-weight:700">${s.unpaid<0?'Advance / credit':'Unpaid previous balance'}</td><td style="${tdr};font-weight:700">${peso(s.unpaid)}</td></tr>
+  </table>
+  <div style="font-weight:800;margin:6px 0">Current charges — ${fmtMonth(bill.period)}</div>
+  <table style="width:100%;border-collapse:collapse">${lines.map(([l,v])=>`<tr><td style="${td}">${esc(l)}</td><td style="${tdr}">${num(v)<0?'−'+peso(-num(v)):peso(v)}</td></tr>`).join('')}
+    <tr><td style="${td};font-weight:700">Total current charges</td><td style="${tdr};font-weight:700">${peso(bill.total)}</td></tr></table>
+  <table style="width:100%;border-collapse:collapse;margin-top:14px"><tr><td style="padding:12px 14px;background:#1C3F2F;color:#fff;font-size:15px;font-weight:800">TOTAL AMOUNT DUE on or before ${fmtDate(bill.due_date)}</td><td style="padding:12px 14px;background:#1C3F2F;color:#fff;font-size:17px;font-weight:800;text-align:right;white-space:nowrap">${peso(amountDue)}</td></tr></table>
+  ${pdcs.length?`<div style="margin-top:14px"><div style="font-weight:700;margin-bottom:4px">Post-dated checks on file</div>${pdcs.map(p=>`<div>${fmtDate(p.check_date)} · ${esc(p.bank)} #${esc(p.check_no)} · ${peso(p.amount)}</div>`).join('')}</div>`:''}
+  ${set('payment_instructions')?`<div style="margin-top:16px;padding:12px 14px;border:1px solid #D4EAE0;background:#F0F7F3;border-radius:6px;white-space:pre-line"><b>Payment instructions</b>\n${esc(set('payment_instructions'))}</div>`:''}
+  ${set('soa_notes')?`<div style="margin-top:12px;color:#444;font-size:12px;white-space:pre-line">${esc(set('soa_notes'))}</div>`:''}
+  </div>`;
+}
+function openSOA(billId){
+  const b = byId('Bills', billId), t = tn(b.tenant_id);
+  editing = null;
+  $('modal').classList.add('wide');
+  $('m-title').textContent = `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
+  $('m-body').className = 'body one';
+  $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
+  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ Download PDF</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
+  $('ovl').classList.add('on');
+}
+function printSOA(id){
+  const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
+  w.document.write(`<html><head><title>SOA</title><style>@page{size:A4;margin:16mm}body{margin:0}</style></head><body>${soaHTML(byId('Bills',id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
+}
+let jsPDFp;
+function loadJsPDF(){
+  return jsPDFp ||= new Promise((res, rej) => { const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload = () => res(window.jspdf.jsPDF); s.onerror = () => { jsPDFp = null; rej(new Error('PDF library failed to load')); }; document.head.appendChild(s); });
+}
+async function soaPDF(bill){
+  const jsPDF = await loadJsPDF();
+  const { t, s, lines, amountDue, pdcs, soaNo } = soaData(bill);
+  const doc = new jsPDF({ unit:'mm', format:'a4', compress:true });
+  const L = 18, R = 192, W = R - L; let y = 20;
+  const txt = (str, x, yy, o={}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize(o.s || 10); doc.setTextColor(...(o.c || [17,17,17])); doc.text(String(str), x, yy, o.r ? {align:'right'} : undefined); };
+  const wrap = (str, x, yy, w, o={}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize(o.s || 10); doc.setTextColor(...(o.c || [17,17,17])); const ls = doc.splitTextToSize(String(str), w); doc.text(ls, x, yy); return ls.length * (o.s || 10) * 0.42; };
+  const money = v => num(v) < 0 ? '-' + php(-num(v)) : php(v);
+  txt(set('company_name'), L, y, {b:1, s:15, c:[28,63,47]}); txt('STATEMENT OF ACCOUNT', R, y, {b:1, s:13, r:1});
+  y += 6; txt(set('company_address').replace(/[–—]/g, '-'), L, y, {s:9, c:[68,68,68]}); txt(soaNo, R, y, {s:9, r:1});
+  y += 4.5; if (set('company_contact')) txt(set('company_contact'), L, y, {s:9, c:[68,68,68]}); txt('Bill date: ' + fmtDate(bill.bill_date), R, y, {s:9, r:1});
+  y += 4.5; if (set('company_tin')) txt('TIN ' + set('company_tin'), L, y, {s:9, c:[68,68,68]}); txt('Due date: ' + fmtDate(bill.due_date), R, y, {s:9, r:1, b:1});
+  y += 8; doc.setFillColor(244,246,248); doc.rect(L, y-5, W, 20, 'F');
+  txt('BILL TO', L+4, y, {s:8, b:1, c:[85,85,85]}); y += 5;
+  txt(t.tenant_name + (t.trade_name ? ` (${t.trade_name})` : ''), L+4, y, {b:1, s:11}); y += 5;
+  txt([t.floor, t.unit ? 'Unit ' + t.unit : '', t.contact_person ? 'Attn: ' + t.contact_person : '', t.tin ? 'TIN ' + t.tin : ''].filter(Boolean).join('  ·  '), L+4, y, {s:9}); y += 12;
+  const row = (label, val, o={}) => { const h = wrap(label, L, y, W - 50, o); txt(val, R, y, {...o, r:1}); y += Math.max(5.5, h + 1.5); doc.setDrawColor(232,232,232); doc.line(L, y-3.5, R, y-3.5); };
+  row('Previous amount due', money(s.opening));
+  row('Less: payments received' + (s.since.length ? ' (' + s.since.map(p => fmtDate(p.date) + (p.reference ? ' #' + p.reference : '')).join(', ') + ')' : ''), s.received ? '-' + php(s.received) : php(0));
+  row(s.unpaid < 0 ? 'Advance / credit' : 'Unpaid previous balance', money(s.unpaid), {b:1});
+  y += 4; txt('Current charges — ' + fmtMonth(bill.period), L, y, {b:1, s:11}); y += 6;
+  lines.forEach(([l, v]) => row(l.replace(/₱/g, 'PHP ').replace(/→/g, 'to').replace(/−/g, '-'), money(v)));
+  row('Total current charges', php(bill.total), {b:1});
+  y += 3; doc.setFillColor(28,63,47); doc.rect(L, y-6, W, 12, 'F');
+  txt('TOTAL AMOUNT DUE on or before ' + fmtDate(bill.due_date), L+4, y+1.5, {b:1, s:11, c:[255,255,255]}); txt(php(amountDue), R-4, y+1.5, {b:1, s:13, c:[255,255,255], r:1}); y += 14;
+  if (pdcs.length) { txt('Post-dated checks on file', L, y, {b:1}); y += 5; pdcs.forEach(p => { txt(`${fmtDate(p.check_date)}  ·  ${p.bank} #${p.check_no}  ·  ${php(p.amount)}`, L, y, {s:9}); y += 4.5; }); y += 3; }
+  if (set('payment_instructions')) { txt('Payment instructions', L, y, {b:1}); y += 5; y += wrap(set('payment_instructions'), L, y, W, {s:9}) + 3; }
+  if (set('soa_notes')) wrap(set('soa_notes'), L, y, W, {s:8.5, c:[68,68,68]});
+  return { doc, filename: `${soaNo}.pdf`, amountDue };
+}
+async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(byId('Bills', id)); doc.save(filename); } catch(e){ toast(e.message); } }
+const fill = (tpl, b, amt) => String(tpl).replace(/\{month\}/g, fmtMonth(b.period)).replace(/\{tenant\}/g, tName(b.tenant_id)).replace(/\{amount\}/g, peso(amt)).replace(/\{due\}/g, fmtDate(b.due_date));
+async function sendSOA(id, btn, quiet){
+  const b = byId('Bills', id), t = tn(b.tenant_id);
+  if (!t?.email) { toast(`${t?.tenant_name || 'Tenant'} has no email on file`); return false; }
+  if (!quiet && !confirm(`Email the ${fmtMonth(b.period)} SOA to ${t.tenant_name} (${t.email})?`)) return false;
+  const label = btn?.textContent; if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const { doc, filename, amountDue } = await soaPDF(b);
+    const msg = esc(fill(set('soa_message'), b, amountDue)).replace(/\n/g, '<br>');
+    const html = `<div style="max-width:680px;margin:0 auto"><p style="font-family:Arial,sans-serif;font-size:14px;color:#111">${msg}</p><div style="border:1px solid #e5e5e5;padding:24px;border-radius:8px">${soaHTML(b)}</div></div>`;
+    const r = await call({ action:'sendSOA', tenant_id:t.id, bill_id:b.id, period:b.period, subject: fill(set('soa_subject'), b, amountDue), html, filename, pdf_base64: doc.output('datauristring').split(',')[1] });
+    merge('EmailLog', [r.log]); b.status = 'Sent'; b.sent_at = r.log.date;
+    if (!quiet) { toast(`SOA sent to ${t.email}`); if ($('ovl').classList.contains('on')) closeForm(); render(); }
+    return true;
+  } catch(e){ toast('Send failed: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = label; } return false; }
+}
+async function sendAll(){
+  const P = $('f-bill-period').value;
+  if (!await saveBills(true)) return;
+  const bills = DB.Bills.filter(b => b.period === P && b.status !== 'Sent' && tn(b.tenant_id) && (tn(b.tenant_id).status||'Active') !== 'Moved Out');
+  const noMail = bills.filter(b => !tn(b.tenant_id).email);
+  const go = bills.filter(b => tn(b.tenant_id).email);
+  if (!go.length) return toast(noMail.length ? `${noMail.length} tenant(s) have no email on file` : `All ${fmtMonth(P)} SOAs already sent`);
+  if (!confirm(`Email ${go.length} SOA(s) for ${fmtMonth(P)}?\n\n${go.map(b => `• ${tName(b.tenant_id)} — ${tn(b.tenant_id).email}`).join('\n')}${noMail.length ? `\n\nSkipped (no email): ${noMail.map(b=>tName(b.tenant_id)).join(', ')}` : ''}`)) return;
+  const btn = $('btn-send-all'); btn.disabled = true; let ok = 0;
+  for (const [i, b] of go.entries()) { btn.textContent = `Sending ${i+1}/${go.length}…`; if (await sendSOA(b.id, null, true)) ok++; }
+  btn.disabled = false; btn.textContent = '✉ Send all SOAs';
+  toast(`${ok} of ${go.length} SOA(s) sent`); render();
 }
 
+// ── Payments ──
 function rPayments(){
-  const per = $('f-pay-period'); if (!per.value) per.value = thisMonth();
-  const list = DB.Payments.filter(p=>p.period===per.value).sort((a,b)=>tenantName(a.tenant_id).localeCompare(tenantName(b.tenant_id)));
-  const billed = list.reduce((s,p)=>s+num(p.amount_due),0), coll = list.reduce((s,p)=>s+num(p.amount_paid),0);
-  $('pay-kpis').innerHTML = [['Billed', peso(billed), fmtMonth(per.value)],['Collected', peso(coll), billed?Math.round(coll/billed*100)+'% collection rate':'—'],['Outstanding', peso(Math.max(0,billed-coll)), `${list.filter(p=>!['Paid','Waived'].includes(payStatus(p))).length} tenant(s)`],['All-time overdue', peso(overduePays().reduce((s,p)=>s+Math.max(0,num(p.amount_due)-num(p.amount_paid)),0)), `${overduePays().length} bill(s)`]]
-    .map(([l,v,s],i)=>`<div class="card kpi ${i===2&&billed-coll>0?'bad':''}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
-  if (!list.length) { $('payments-wrap').innerHTML = `<div class="empty"><b>No dues for ${fmtMonth(per.value)}</b>Click “Generate dues for month” to create one bill per active tenant based on their monthly rent.</div>`; return; }
-  $('payments-wrap').innerHTML = `<table><tr><th>Tenant</th><th class="num">Due</th><th class="num">Paid</th><th class="num">Balance</th><th>Date paid</th><th>Method / Ref</th><th>Status</th><th></th></tr>${list.map(p=>{
-    const st = payStatus(p), bal = Math.max(0,num(p.amount_due)-num(p.amount_paid));
-    return `<tr class="click" onclick="openForm('Payments','${p.id}')"><td><b>${esc(tenantName(p.tenant_id))}</b></td><td class="num">${peso(p.amount_due)}</td><td class="num">${p.amount_paid?peso(p.amount_paid):'—'}</td><td class="num">${bal&&st!=='Waived'?`<b style="color:var(--red)">${peso(bal)}</b>`:'—'}</td><td>${fmtDate(p.date_paid)}</td><td>${esc(p.method)}<div class="muted">${esc(p.reference)}</div></td><td>${pill(st.includes('Overdue')?'Overdue':st)}${st==='Partial · Overdue'?' '+pill('Partial'):''}</td><td>${st!=='Paid'&&st!=='Waived'?`<button class="btn sm" onclick="event.stopPropagation();markPaid('${p.id}',this)">Mark paid</button>`:''}</td></tr>`;}).join('')}</table>`;
+  if (!$('f-pay-tenant').options.length) { $('f-pay-tenant').innerHTML = tenantOpts('', 'All tenants'); $('f-pay-month').value = thisMonth(); }
+  const ft = $('f-pay-tenant').value, fm = $('f-pay-month').value;
+  const list = DB.Payments.filter(p => (!ft || p.tenant_id === ft) && (!fm || String(p.date).startsWith(fm))).sort((a,b) => String(b.date).localeCompare(a.date));
+  const total = list.reduce((s,p)=>s+num(p.amount),0);
+  const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
+  $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b></td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+    : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
+}
+function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
+
+// ── PDCs ──
+function rPdcs(){
+  if (!$('f-pdc-status').options.length) { $('f-pdc-status').innerHTML = opts(PDC_STATUS, 'On hand', 'All statuses'); $('f-pdc-tenant').innerHTML = tenantOpts('', 'All tenants'); }
+  const fs = $('f-pdc-status').value, ft = $('f-pdc-tenant').value, win = pdcWindow();
+  const list = DB.PDCs.filter(p => (!fs || (p.status||'On hand') === fs) && (!ft || p.tenant_id === ft)).sort((a,b)=>String(a.check_date).localeCompare(b.check_date));
+  const oh = DB.PDCs.filter(p => (p.status||'On hand') === 'On hand'), wk = oh.filter(p => p.check_date <= addDays(today(), 7));
+  const k = [['On hand', peso0(oh.reduce((s,p)=>s+num(p.amount),0)), `${oh.length} check(s)`, ''],['Due for deposit', pdcsDue().length, `dated by ${fmtDate(win)}`, pdcsDue().length?'bad':'good'],['Next 7 days', peso0(wk.reduce((s,p)=>s+num(p.amount),0)), `${wk.length} check(s)`, ''],['Deposited, not cleared', DB.PDCs.filter(p=>p.status==='Deposited').length, 'awaiting clearing', ''],['Bounced', DB.PDCs.filter(p=>p.status==='Bounced').length, 'need replacement', DB.PDCs.some(p=>p.status==='Bounced')?'bad':'']];
+  $('pdc-kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
+  $('pdc-wrap').innerHTML = list.length ? `<table><tr><th>Check date</th><th>Tenant</th><th>Bank · Check no.</th><th class="num">Amount</th><th>For</th><th>Status</th><th></th></tr>${list.map(p => {
+    const st = p.status || 'On hand', d = daysUntil(p.check_date), due = st === 'On hand' && p.check_date <= win;
+    return `<tr class="click" onclick="openForm('PDCs','${p.id}')"><td style="white-space:nowrap;${due?'color:var(--red);font-weight:800':''}">${fmtDate(p.check_date)}${st==='On hand'&&d!=null?`<div class="muted" style="${due?'color:var(--red)':''}">${d<0?Math.abs(d)+' days past':d===0?'today':'in '+d+' days'}</div>`:''}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td>${esc(p.bank)} · #${esc(p.check_no)}</td><td class="num"><b>${peso(p.amount)}</b></td><td>${p.for_period?fmtMonth(p.for_period):'—'}</td><td>${pill(st)}${p.deposited_date&&st!=='On hand'?`<div class="muted">dep. ${fmtDate(p.deposited_date)}</div>`:''}</td>
+      <td><div class="row-actions" onclick="event.stopPropagation()">${st==='On hand'?`<button class="btn sm" onclick="pdcAction('${p.id}','Deposited',this)">Deposited</button>`:''}${st==='Deposited'?`<button class="btn sm" onclick="pdcAction('${p.id}','Cleared',this)">Cleared</button><button class="btn danger sm" onclick="pdcAction('${p.id}','Bounced',this)">Bounced</button>`:''}</div></td></tr>`;}).join('')}</table>`
+    : `<div class="empty"><b>No checks${fs?' marked '+fs:''}</b>Add each tenant's PDCs — use “Add check series” for a year's worth of monthly checks.</div>`;
+}
+async function pdcAction(id, status, btn){
+  const p = byId('PDCs', id);
+  if (status === 'Bounced' && !confirm(`Mark ${tName(p.tenant_id)} check #${p.check_no} as BOUNCED?`)) return;
+  btn.disabled = true;
+  try {
+    const row = { ...p, status };
+    if (status === 'Deposited') row.deposited_date = today();
+    if (status === 'Cleared') {
+      row.cleared_date = today();
+      if (!p.payment_id) { const pay = await save('Payments', { tenant_id:p.tenant_id, date:row.cleared_date, amount:p.amount, method:'PDC', bank:p.bank, reference:p.check_no, pdc_id:p.id, notes: p.for_period ? 'For ' + fmtMonth(p.for_period) : '', by:ME }); row.payment_id = pay.id; }
+    }
+    await save('PDCs', row);
+    toast(status === 'Cleared' ? `Cleared — ${peso(p.amount)} posted to payments` : `Marked ${status}`); render();
+  } catch(e){ btn.disabled = false; toast('Save failed: ' + e.message); }
+}
+function openSeries(){
+  editing = { series:true };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = 'Add check series';
+  $('m-body').innerHTML = `<div class="fld wide"><label>Tenant</label><select name="tenant_id">${tenantOpts('', '—')}</select></div>
+    <div class="fld"><label>Bank</label><input name="bank"></div><div class="fld"><label>First check no.</label><input name="check_no" inputmode="numeric"></div>
+    <div class="fld"><label>Amount per check (₱)</label><input name="amount" type="number" step="any"></div><div class="fld"><label>Number of checks</label><input name="count" type="number" value="12"></div>
+    <div class="fld"><label>First check date</label><input name="check_date" type="date"></div><div class="fld"><label>First billing month covered</label><input name="for_period" type="month"></div>
+    <div class="hint wide" style="grid-column:1/-1">Creates monthly checks with consecutive check numbers and dates one month apart.</div>`;
+  $('m-foot').innerHTML = `<button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="saveSeries()">Add checks</button>`;
+  $('ovl').classList.add('on');
+}
+async function saveSeries(){
+  const f = Object.fromEntries([...$('m-body').querySelectorAll('[name]')].map(el => [el.name, el.value.trim()]));
+  const n = Math.min(60, num(f.count));
+  if (!f.tenant_id || !f.check_date || !num(f.amount) || !n) return toast('Fill in tenant, amount, count and first check date');
+  const m = f.check_no.match(/^(.*?)(\d+)$/), w = m ? m[2].length : 0;
+  const rows = Array.from({length:n}, (_, i) => {
+    const d = new Date(f.check_date + 'T00:00:00Z'), day = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + i);
+    const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate(); d.setUTCDate(Math.min(day, last));
+    let per = ''; if (f.for_period) { const p = new Date(f.for_period + '-01T00:00:00Z'); p.setUTCMonth(p.getUTCMonth() + i); per = p.toISOString().slice(0,7); }
+    return { tenant_id:f.tenant_id, bank:f.bank, check_no: m ? m[1] + String(num(m[2]) + i).padStart(w, '0') : f.check_no, amount:f.amount, check_date:d.toISOString().slice(0,10), for_period:per, status:'On hand' };
+  });
+  const btn = $('m-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try { await saveMany('PDCs', rows); closeForm(); render(); toast(`${n} checks added`); } catch(e){ btn.disabled = false; btn.textContent = 'Add checks'; toast('Save failed: ' + e.message); }
+}
+async function sendPdcReminder(){
+  if (!pdcsDue().length) return toast('No PDCs due for deposit right now');
+  const to = set('notify_emails') || ME;
+  if (!confirm(`Email the PDC deposit reminder (${pdcsDue().length} check(s)) to ${to}?`)) return;
+  try { const r = await call({action:'sendPdcReminder'}); if (r.log) merge('EmailLog', [r.log]); toast(r.skipped ? r.message : 'Reminder sent to ' + to); }
+  catch(e){ toast('Send failed: ' + e.message); }
 }
 
-let dragId = null;
-function rLeads(){
-  if (!$('f-ld-type').options.length) $('f-ld-type').innerHTML = opts(LEAD_TYPES,null,'All types');
-  const q = $('f-ld-q').value.toLowerCase(), ft = $('f-ld-type').value;
-  const list = DB.Leads.filter(l=>(!ft||l.lead_type===ft)&&(!q||[l.name,l.company,l.interest,l.phone].join(' ').toLowerCase().includes(q)));
-  $('board').innerHTML = STAGES.map(st => {
-    const items = list.filter(l=>(l.stage||'New')===st).sort((a,b)=>(a.next_followup||'9').localeCompare(b.next_followup||'9'));
-    const sum = items.reduce((s,l)=>s+num(l.offer),0);
-    return `<div class="col" data-stage="${st}" ondragover="event.preventDefault();this.classList.add('drop')" ondragleave="this.classList.remove('drop')" ondrop="dropLead(event,'${st}')"><h4><span>${st} · ${items.length}</span><span>${sum?pesoK(sum):''}</span></h4>${items.map(l=>{
-      const due = l.next_followup && l.next_followup <= today() && !['Won','Lost'].includes(st);
-      return `<div class="lead" draggable="true" ondragstart="dragId='${l.id}'" onclick="openForm('Leads','${l.id}')" style="--c:${TYPE_COLOR[l.lead_type]||'#999'}"><b>${esc(l.name||'(no name)')}</b><div class="m">${esc(l.company)}${l.company&&l.interest?' · ':''}${esc(l.interest)}</div><div class="f"><span class="pill">${esc(l.lead_type)}</span>${l.offer?`<b style="font-size:12px">${pesoK(l.offer)}</b>`:''}</div>${l.next_followup&&!['Won','Lost'].includes(st)?`<div class="m" style="${due?'color:var(--red);font-weight:700':''}">↻ ${fmtDate(l.next_followup)}</div>`:''}</div>`;}).join('')}</div>`;
+// ── Tenants ──
+function rTenants(){
+  if (!$('f-tn-status').options.length) $('f-tn-status').innerHTML = opts(TENANT_STATUS, null, 'All statuses');
+  const q = $('f-tn-q').value.toLowerCase(), fs = $('f-tn-status').value;
+  const list = DB.Tenants.filter(t => (!fs || (t.status||'Active') === fs) && (!q || [t.tenant_name,t.trade_name,t.unit,t.contact_person,t.email].join(' ').toLowerCase().includes(q)))
+    .sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+  $('tn-wrap').innerHTML = list.length ? `<table><tr><th>Tenant</th><th>Unit</th><th class="num">Rent</th><th>Charges</th><th>SOA email</th><th>Lease end</th><th class="num">Balance</th><th>Status</th></tr>${list.map(t => {
+    const bal = balanceOf(t.id), d = daysUntil(t.lease_end);
+    const ch = [t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco', num(t.waste_fee)?'Waste':''].filter(Boolean).join(' · ');
+    return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.trade_name)}</div></td><td>${esc(t.floor)}<div class="muted">${esc(t.unit)}${t.area_sqm?' · '+t.area_sqm+' sqm':''}</div></td><td class="num">${t.monthly_rent?peso(t.monthly_rent):'—'}</td><td class="muted">${ch}</td><td>${t.email?esc(t.email):'<span class="pill p-red">missing</span>'}</td><td>${fmtDate(t.lease_end)}${d!=null&&d<=90&&t.status!=='Moved Out'?`<div class="muted" style="color:var(--amber)">${d<0?'expired':d+' days left'}</div>`:''}</td><td class="num">${bal>0?`<b ${overdueOf(t.id)?'style="color:var(--red)"':''}>${peso(bal)}</b>`:bal<0?`<span class="muted">${peso(-bal)} credit</span>`:'—'}</td><td>${pill(t.status||'Active')}</td></tr>`;}).join('')}</table>`
+    : `<div class="empty"><b>${DB.Tenants.length?'No match':'No tenants yet'}</b>${DB.Tenants.length?'':'Add each tenant with their rent, CUSA, utilities and SOA email.'}</div>`;
+}
+function openTenant(id){
+  openForm('Tenants', id);
+  const t = tn(id); let run = 0;
+  const ev = [...billsOf(id).map(b => ({d:b.bill_date||b.period+'-01', l:`SOA ${fmtMonth(b.period)}`, chg:num(b.total), id:b.id})), ...paysOf(id).map(p => ({d:p.date, l:`Payment · ${p.method}${p.reference?' #'+p.reference:''}`, pay:num(p.amount)}))].sort((a,b)=>String(a.d).localeCompare(b.d));
+  const rows = ev.map(e => { run = r2(run + (e.chg||0) - (e.pay||0)); return `<tr><td>${fmtDate(e.d)}</td><td>${e.id?`<a href="#" style="color:var(--green-d);font-weight:700" onclick="openSOA('${e.id}');return false">${esc(e.l)}</a>`:esc(e.l)}</td><td class="num">${e.chg?peso(e.chg):''}</td><td class="num">${e.pay?peso(e.pay):''}</td><td class="num"><b>${peso(run)}</b></td></tr>`; }).slice(-24).join('');
+  const pd = DB.PDCs.filter(p => p.tenant_id === id).sort((a,b)=>String(a.check_date).localeCompare(b.check_date));
+  $('m-body').insertAdjacentHTML('beforeend', `<div class="sub"><h4>Ledger</h4>${rows?`<table class="ledger"><tr><th>Date</th><th>Item</th><th class="num">Charges</th><th class="num">Payments</th><th class="num">Balance</th></tr>${rows}</table>`:'<div class="muted">No bills or payments yet.</div>'}</div>`
+    + (pd.length ? `<div class="sub"><h4>Post-dated checks</h4><table class="ledger">${pd.map(p=>`<tr><td>${fmtDate(p.check_date)}</td><td>${esc(p.bank)} #${esc(p.check_no)}</td><td class="num">${peso(p.amount)}</td><td>${pill(p.status||'On hand')}</td></tr>`).join('')}</table></div>` : ''));
+}
+
+function rEmails(){
+  const list = DB.EmailLog.slice().sort((a,b)=>String(b.date).localeCompare(a.date));
+  $('em-wrap').innerHTML = list.length ? `<table><tr><th>Sent</th><th>Type</th><th>Tenant</th><th>To</th><th>Subject</th><th>Status</th><th>By</th></tr>${list.map(e=>`<tr><td style="white-space:nowrap">${fmtDate(e.date)}<div class="muted">${e.date?new Date(e.date).toLocaleTimeString('en-PH',{hour:'numeric',minute:'2-digit'}):''}</div></td><td>${esc(e.type)}</td><td>${e.tenant_id?esc(tName(e.tenant_id)):'—'}</td><td>${esc(e.to)}${e.cc?`<div class="muted">cc ${esc(e.cc)}</div>`:''}</td><td>${esc(e.subject)}</td><td>${pill(String(e.status).startsWith('Sent')?'Sent':'Failed')}${String(e.status).startsWith('Failed')?`<div class="muted">${esc(e.status)}</div>`:''}</td><td class="muted">${esc(e.by)}</td></tr>`).join('')}</table>`
+    : `<div class="empty"><b>No emails sent yet</b>SOAs and PDC reminders show up here.</div>`;
+}
+
+function rSettings(){
+  $('settings-form').innerHTML = SETTINGS_FIELDS.map(([k,l,type,def,o]) => {
+    if (k === 'h') return `<h3>${esc(l)}</h3>`;
+    const v = S[k] ?? def ?? '';
+    const wide = type === 'textarea' || ['company_name','company_address','payment_instructions','soa_subject','soa_message','notify_emails','soa_cc'].includes(k);
+    const input = type === 'textarea' ? `<textarea name="${k}" rows="4">${esc(v)}</textarea>` : type === 'select' ? `<select name="${k}">${opts(o, v)}</select>` : `<input name="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v)}">`;
+    return `<div class="fld ${wide?'wide':''}"><label>${esc(l)}</label>${input}${k==='soa_message'||k==='soa_subject'?'<span class="hint">Placeholders: {tenant} {month} {amount} {due}</span>':''}</div>`;
   }).join('');
 }
-async function dropLead(e, st){
-  e.currentTarget.classList.remove('drop');
-  const l = byId('Leads', dragId); dragId = null;
-  if (!l || l.stage === st) return;
-  const prev = l.stage; l.stage = st; rLeads();
-  try { await save('Leads', {...l, stage:st}); await save('Activities', {date:today(), activity:'Note', related_type:'Leads', related_id:l.id, notes:`Stage: ${prev||'New'} → ${st}`, by:me()}); toast(`${l.name} → ${st}`); badges();
-    if (st==='Won' && l.lead_type!=='Investor' && confirm(`Create a tenant record for ${l.name}?`)) convertLead(l.id);
-  } catch(err){ l.stage = prev; rLeads(); toast('Save failed: '+err.message); }
-}
-
-function rActivities(){
-  if (!$('f-ac-type').options.length) $('f-ac-type').innerHTML = opts(ACTS,null,'All types');
-  const ft = $('f-ac-type').value;
-  const list = DB.Activities.filter(a=>!ft||a.activity===ft).sort((a,b)=>(b.date+b.updated).localeCompare(a.date+a.updated));
-  if (!list.length) { $('activities-wrap').innerHTML = `<div class="empty"><b>No activity yet</b>Log calls, site visits and follow-ups here or from any lead/tenant.</div>`; return; }
-  $('activities-wrap').innerHTML = `<table><tr><th>Date</th><th>Type</th><th>Related to</th><th>Notes</th><th>Next action</th><th>By</th></tr>${list.map(a=>`<tr class="click" onclick="openForm('Activities','${a.id}')"><td style="white-space:nowrap">${fmtDate(a.date)}</td><td>${pill(a.activity)}</td><td>${a.related_type?esc(refLabel(a.related_type,a.related_id)):'—'}<div class="muted">${esc(a.related_type)}</div></td><td style="max-width:420px">${esc(a.notes)}</td><td>${esc(a.next_action)}${a.next_date?`<div class="muted">${fmtDate(a.next_date)}</div>`:''}</td><td class="muted">${esc(a.by)}</td></tr>`).join('')}</table>`;
+async function saveSettings(){
+  const rows = [...$('settings-form').querySelectorAll('[name]')].map(el => ({ id: el.name, value: el.value.trim() })).filter(r => (S[r.id] ?? '') !== r.value || !DB.Settings.some(x => x.id === r.id));
+  if (!rows.length) return toast('No changes');
+  const btn = $('btn-settings'); btn.disabled = true; btn.textContent = 'Saving…';
+  try { await saveMany('Settings', rows); rows.forEach(r => S[r.id] = r.value); $('setup-banner').innerHTML = DEMO ? $('setup-banner').innerHTML : ''; toast('Settings saved'); }
+  catch(e){ toast('Save failed: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Save settings'; }
 }
 
 // ───────────────── FORMS ─────────────────
-function refOptions(t, sel){
-  const list = t==='Tenants' ? DB.Tenants.map(r=>[r.id, r.tenant_name + (r.status==='Ended'?' (ended)':'')]) : t==='Spaces' ? DB.Spaces.map(r=>[r.id, `${r.floor} · ${r.unit||r.space_type}`]) : t==='Leads' ? DB.Leads.map(r=>[r.id, `${r.name} (${r.lead_type})`]) : [];
-  return `<option value="">—</option>` + list.map(([id,l])=>`<option value="${esc(id)}" ${id===sel?'selected':''}>${esc(l)}</option>`).join('');
-}
 function openForm(t, id, preset){
   const r = id ? {...byId(t,id)} : {...defaults(t), ...(preset||{})};
   editing = {t, id};
+  $('modal').classList.toggle('wide', t === 'Tenants'); $('m-body').className = 'body';
   $('m-title').textContent = (id ? 'Edit ' : 'New ') + FORMS[t].title.toLowerCase();
   $('m-body').innerHTML = FORMS[t].fields.map(([k,l,type,o,wide]) => {
+    if (k === 'h') return `<div class="sub" style="padding-top:6px;border-top:${l==='Tenant'?'none':'1px solid var(--border)'}"><h4 style="margin:0">${esc(l)}</h4></div>`;
     const v = r[k] ?? '';
     let input;
-    if (type==='select') input = `<select name="${k}">${opts(o, v)}</select>`;
-    else if (type==='ref') input = `<select name="${k}">${refOptions(o, v)}</select>`;
-    else if (type==='refdyn') input = `<select name="${k}">${refOptions(r.related_type, v)}</select>`;
-    else if (type==='textarea') input = `<textarea name="${k}">${esc(v)}</textarea>`;
-    else input = `<input name="${k}" type="${type==='number'?'number':type}" ${type==='number'?'step="any"':''} value="${esc(v)}">`;
+    if (type === 'select') input = `<select name="${k}">${opts(o, v)}</select>`;
+    else if (type === 'ref') input = `<select name="${k}">${tenantOpts(v, '—')}</select>`;
+    else if (type === 'textarea') input = `<textarea name="${k}">${esc(v)}</textarea>`;
+    else input = `<input name="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v)}">`;
     return `<div class="fld ${wide?'wide':''}"><label>${l}</label>${input}</div>`;
-  }).join('') + (id ? related(t, id) : '');
-  if (t==='Activities') $('m-body').querySelector('[name=related_type]').onchange = e => { $('m-body').querySelector('[name=related_id]').innerHTML = refOptions(e.target.value); };
-  if (t==='Payments') { const ts = $('m-body').querySelector('[name=tenant_id]'); ts.onchange = () => { const tn = byId('Tenants', ts.value); const d = $('m-body').querySelector('[name=amount_due]'); if (tn && !d.value) d.value = num(tn.monthly_rent) || ''; }; }
+  }).join('');
   const extra = [];
   if (id) extra.push(`<button class="btn danger" onclick="delRecord()">Delete</button>`);
-  if (id && (t==='Leads'||t==='Tenants')) extra.push(`<button class="btn ghost" onclick="openForm('Activities',null,{related_type:'${t}',related_id:'${id}'})">+ Log activity</button>`);
-  if (id && t==='Leads' && r.lead_type!=='Investor') extra.push(`<button class="btn ghost" onclick="convertLead('${id}')">Convert to tenant</button>`);
+  if (id && t === 'Tenants') extra.push(`<button class="btn ghost" onclick="openForm('Payments',null,{tenant_id:'${id}'})">+ Payment</button><button class="btn ghost" onclick="openForm('PDCs',null,{tenant_id:'${id}'})">+ PDC</button>`);
   $('m-foot').innerHTML = `<div class="left">${extra.join('')}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="submitForm()">Save</button>`;
   $('ovl').classList.add('on');
-  setTimeout(()=>$('m-body').querySelector('input,select')?.focus(), 50);
 }
-function defaults(t){
-  return ({Spaces:{status:'Vacant'}, Tenants:{status:'Active',due_day:5}, Payments:{period:$('f-pay-period').value||thisMonth(),status:'Unpaid'}, Leads:{stage:'New',lead_type:'Tenant',owner:me()}, Activities:{date:today(),activity:'Call'}})[t];
-}
-function related(t, id){
-  const acts = DB.Activities.filter(a=>a.related_type===t && a.related_id===id).sort((a,b)=>b.date.localeCompare(a.date));
-  let html = '';
-  if (t==='Tenants') {
-    const pays = DB.Payments.filter(p=>p.tenant_id===id).sort((a,b)=>b.period.localeCompare(a.period)).slice(0,12);
-    if (pays.length) html += `<div class="sub"><h4>Payment history</h4><table>${pays.map(p=>`<tr><td>${fmtMonth(p.period)}</td><td class="num">${peso(p.amount_due)}</td><td class="num">${p.amount_paid?peso(p.amount_paid):'—'}</td><td>${pill(payStatus(p).includes('Overdue')?'Overdue':payStatus(p))}</td></tr>`).join('')}</table></div>`;
-  }
-  if (acts.length) html += `<div class="sub"><h4>Activity</h4>${acts.map(a=>`<div class="alert" style="--c:var(--green-d)"><span class="dot"></span><div><b>${fmtDate(a.date)} · ${esc(a.activity)}</b><div>${esc(a.notes)}</div>${a.next_action?`<div class="muted">Next: ${esc(a.next_action)} ${a.next_date?'('+fmtDate(a.next_date)+')':''}</div>`:''}</div></div>`).join('')}</div>`;
-  return html;
-}
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'Yes', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
 function closeForm(){ $('ovl').classList.remove('on'); editing = null; }
-const me = () => DEMO ? 'demo' : (idn?.currentUser()?.email || '');
 async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
   const row = id ? {...byId(t,id)} : {};
-  $('m-body').querySelectorAll('[name]').forEach(el => row[el.name] = el.value.trim());
-  if (t==='Spaces' && !row.unit && !row.floor) return toast('Add a floor and unit name');
-  if (t==='Tenants' && !row.tenant_name) return toast('Tenant name is required');
-  if (t==='Leads' && !row.name) return toast('Lead name is required');
-  if (t==='Payments' && (!row.tenant_id || !row.period)) return toast('Pick a tenant and billing month');
-  if (t==='Payments') { const s = payStatus(row); row.status = row.status==='Waived' ? 'Waived' : s.startsWith('Paid') ? 'Paid' : s.startsWith('Partial') ? 'Partial' : 'Unpaid'; }
-  if (t==='Activities' && !row.by) row.by = me();
+  $('m-body').querySelectorAll('.fld [name]').forEach(el => row[el.name] = el.value.trim());
+  if (t === 'Tenants' && !row.tenant_name) return toast('Tenant name is required');
+  if (t === 'Payments' && (!row.tenant_id || !num(row.amount) || !row.date)) return toast('Tenant, date and amount are required');
+  if (t === 'PDCs' && (!row.tenant_id || !num(row.amount) || !row.check_date)) return toast('Tenant, amount and check date are required');
+  if (t === 'Payments' && !row.by) row.by = ME;
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    const saved = await save(t, row);
-    await syncLinks(t, saved);
-    closeForm(); render(); toast('Saved');
+    if (t === 'PDCs' && row.status === 'Cleared' && !row.payment_id) {
+      row.cleared_date ||= today();
+      const pay = await save('Payments', { tenant_id:row.tenant_id, date:row.cleared_date, amount:row.amount, method:'PDC', bank:row.bank, reference:row.check_no, pdc_id:row.id||'', notes: row.for_period ? 'For ' + fmtMonth(row.for_period) : '', by:ME });
+      row.payment_id = pay.id;
+    }
+    await save(t, row);
+    closeForm(); $('f-pay-tenant').innerHTML = ''; $('f-pdc-tenant').innerHTML = ''; $('f-pdc-status').innerHTML = ''; $('r-bill-date').dataset.p = '';
+    render(); toast('Saved');
   } catch(e){ btn.disabled = false; btn.textContent = 'Save'; toast('Save failed: ' + e.message); }
-}
-// keep space status in step with tenant assignment
-async function syncLinks(t, r){
-  if (t !== 'Tenants' || !r.space_id) return;
-  const s = byId('Spaces', r.space_id); if (!s) return;
-  const want = r.status==='Ended' ? {status:'Vacant', tenant_id:''} : {status:'Occupied', tenant_id:r.id};
-  if (s.status !== want.status || s.tenant_id !== want.tenant_id) await save('Spaces', {...s, ...want});
 }
 async function delRecord(){
   const {t, id} = editing;
-  if (!confirm(`Delete this ${FORMS[t].title.toLowerCase()}? This removes the row from the Google Sheet and can't be undone.`)) return;
-  try { await remove(t, id); closeForm(); render(); toast('Deleted'); } catch(e){ toast('Delete failed: ' + e.message); }
+  if (!confirm(`Delete this ${FORMS[t].title.toLowerCase()}? It is removed from the Google Sheet and can't be undone.`)) return;
+  try { await remove(t, id); closeForm(); $('r-bill-date').dataset.p = ''; render(); toast('Deleted'); } catch(e){ toast('Delete failed: ' + e.message); }
 }
 
-// ───────────────── ACTIONS ─────────────────
-async function generateDues(){
-  const per = $('f-pay-period').value || thisMonth();
-  const todo = activeTenants().filter(t => num(t.monthly_rent) && !DB.Payments.some(p=>p.tenant_id===t.id && p.period===per));
-  if (!todo.length) return toast(activeTenants().length ? `Dues for ${fmtMonth(per)} already generated` : 'Add active tenants with a monthly rent first');
-  if (!confirm(`Create ${todo.length} bill(s) for ${fmtMonth(per)} totaling ${peso(todo.reduce((s,t)=>s+num(t.monthly_rent),0))}?`)) return;
-  toast('Generating…');
-  try { for (const t of todo) await save('Payments', {tenant_id:t.id, period:per, amount_due:t.monthly_rent, amount_paid:'', status:'Unpaid'}); render(); toast(`${todo.length} bill(s) created`); }
-  catch(e){ render(); toast('Stopped: ' + e.message); }
-}
-async function markPaid(id, btn){
-  const p = byId('Payments', id); btn.disabled = true; btn.textContent = '…';
-  try { await save('Payments', {...p, amount_paid:p.amount_due, date_paid:p.date_paid||today(), status:'Paid'}); render(); toast(`${tenantName(p.tenant_id)} marked paid`); }
-  catch(e){ btn.disabled=false; btn.textContent='Mark paid'; toast('Save failed: ' + e.message); }
-}
-function convertLead(id){
-  const l = byId('Leads', id); closeForm();
-  openForm('Tenants', null, {tenant_name:l.company||l.name, contact_person:l.name, phone:l.phone, email:l.email, space_id:l.space_id, monthly_rent:l.offer, notes:`From lead (${l.lead_type}). ${l.notes||''}`.trim()});
-}
-async function seedSpaces(){
-  if (!confirm('Add the starter spaces? (3rd floor 400 sqm, 4th floor food hub, roof deck, parking). You can edit them after.')) return;
-  const seed = [
-    {floor:'3rd Floor', unit:'3F Whole Floor', space_type:'Whole Floor', area_sqm:400, status:'Vacant', notes:'Bare shell. Can be leased whole or subdivided.'},
-    {floor:'4th Floor', unit:'Food Hub', space_type:'Food Stall', status:'Vacant', notes:'Partial food hub — split into stalls as needed.'},
-    {floor:'Roof Deck', unit:'Roof Deck', space_type:'Event Space', status:'Vacant', notes:'Idle — events, bar concept, or lease.'},
-    {floor:'Parking', unit:'Parking Lot', space_type:'Parking Slot', status:'Vacant', notes:'Wide lot, underutilized — monthly / pay parking.'},
-    {floor:'Signage / Ad Space', unit:'Façade Billboard', space_type:'Billboard / Signage', status:'Vacant', notes:'Sta. Rosa–Tagaytay Road frontage.'},
-  ];
-  toast('Adding…');
-  try { for (const s of seed) await save('Spaces', s); render(); toast('Starter spaces added'); } catch(e){ render(); toast('Stopped: '+e.message); }
-}
-
-// ───────────────── DEMO DATA ─────────────────
+// ───────────────── DEMO ─────────────────
 function demoCall(p){
-  if (p.action==='load') return Promise.resolve({data: DB.Spaces.length ? DB : demoData()});
-  if (p.action==='save') { const row = {...p.row, updated:new Date().toISOString()}; if (!row.id) row.id = p.tab.slice(0,2).toUpperCase()+'-'+Math.random().toString(36).slice(2,8); return Promise.resolve({row}); }
-  return Promise.resolve({ok:true});
+  if (p.action === 'load') return Promise.resolve({ data: DB.Tenants.length ? DB : demoData() });
+  const stamp = r => ({ ...r, id: r.id || (p.tab||'EM').slice(0,2).toUpperCase() + '-' + Math.random().toString(36).slice(2,8), updated: new Date().toISOString() });
+  if (p.action === 'save') return Promise.resolve({ row: stamp(p.row) });
+  if (p.action === 'saveMany') return Promise.resolve({ rows: p.rows.map(stamp) });
+  if (p.action === 'sendSOA' || p.action === 'sendPdcReminder') {
+    const t = tn(p.tenant_id);
+    return new Promise(res => setTimeout(() => res({ ok:true, log: stamp.call(null, { id:'', date:new Date().toISOString(), tenant_id:p.tenant_id||'', type:p.action==='sendSOA'?'SOA '+p.period:'PDC reminder', to:t?.email||set('notify_emails'), subject:p.subject||'PDC deposit reminder', status:'Sent (demo — not delivered)', by:'demo' }) }), 300));
+  }
+  return Promise.resolve({ ok:true });
 }
 function demoData(){
-  const m = thisMonth(), pm = (()=>{ const d=new Date(m+'-01'); d.setMonth(d.getMonth()-1); return d.toISOString().slice(0,7); })();
-  const S = [['SP1','Ground Floor','GF-01','Retail / Commercial',120,90000,'Occupied','TN1'],['SP2','Ground Floor','GF-02','Retail / Commercial',80,60000,'Occupied','TN2'],['SP3','Ground Floor','GF-03','Retail / Commercial',60,45000,'Vacant',''],['SP4','2nd Floor','2F-A','Office',150,70000,'Occupied','TN3'],['SP5','2nd Floor','2F-B','Office',100,45000,'Occupied','TN4'],['SP6','3rd Floor','3F Whole Floor','Whole Floor',400,180000,'Under Negotiation',''],['SP7','4th Floor','Stall 1','Food Stall',20,15000,'Vacant',''],['SP8','4th Floor','Stall 2','Food Stall',20,15000,'Vacant',''],['SP9','Roof Deck','Roof Deck','Event Space',300,60000,'Vacant',''],['SP10','Parking','Parking Lot','Parking Slot',0,30000,'Vacant','']]
-    .map(([id,floor,unit,space_type,area_sqm,asking_rent,status,tenant_id])=>({id,floor,unit,space_type,area_sqm,asking_rent,status,tenant_id}));
-  const T = [['TN1','Sample Pharmacy','Pharmacy','Juan Dela Cruz','0917 000 0001','SP1',95000,5,'2025-01-01','2027-12-31'],['TN2','Sample Bakeshop','Bakery','Maria Santos','0917 000 0002','SP2',60000,10,'2024-06-01','2027-01-15'],['TN3','Sample BPO Satellite','Office','Pedro Reyes','0917 000 0003','SP4',65000,5,'2025-03-01','2028-02-28'],['TN4','Sample Review Center','Education','Ana Cruz','0917 000 0004','SP5',40000,15,'2024-01-01','2026-12-31']]
-    .map(([id,tenant_name,business,contact_person,phone,space_id,monthly_rent,due_day,lease_start,lease_end])=>({id,tenant_name,business,contact_person,phone,space_id,monthly_rent,due_day,lease_start,lease_end,status:'Active',escalation_pct:5}));
-  const P = [...T.map((t,i)=>({id:'PA'+i,tenant_id:t.id,period:pm,amount_due:t.monthly_rent,amount_paid:i===3?20000:t.monthly_rent,date_paid:pm+'-0'+(i+3),method:'Bank transfer',status:i===3?'Partial':'Paid'})),
-    ...T.map((t,i)=>({id:'PB'+i,tenant_id:t.id,period:m,amount_due:t.monthly_rent,amount_paid:i<2?t.monthly_rent:'',date_paid:i<2?m+'-04':'',method:i<2?'GCash':'',status:i<2?'Paid':'Unpaid'}))];
-  const f = n => { const d=new Date(today()); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
-  const L = [['LD1','Tenant','Sample Gym Owner','Sample Fitness Co.','3F whole floor','SP6',170000,'Negotiation','Facebook',f(0)],['LD2','Coworking','Sample Cowork Operator','Sample Hub','3F revenue share','SP6',120000,'Proposal Sent','Referral',f(2)],['LD3','Investor','Sample Investor','Sample Holdings','₱10M renovation','', '', 'Site Visit','Broker',f(-1)],['LD4','Event Booking','Sample Events','Sample Weddings','Roof deck — Dec events','SP9',25000,'Contacted','Facebook',f(3)],['LD5','Tenant','Sample Milk Tea','','4F food stall','SP7',15000,'New','Walk-in',f(1)],['LD6','Parking','Sample Transport Coop','','Monthly parking 10 slots','SP10',20000,'Proposal Sent','Cold call',f(5)],['LD7','Signage / Ads','Sample Ad Agency','','Façade billboard','',35000,'Lost','Marketplace','']]
-    .map(([id,lead_type,name,company,interest,space_id,offer,stage,source,next_followup])=>({id,lead_type,name,company,interest,space_id,offer,stage,source,next_followup,created:f(-10)}));
-  const A = [{id:'AC1',date:f(-2),activity:'Site Visit',related_type:'Leads',related_id:'LD1',notes:'Walked 3F. Wants 5-yr lease, asking 3 months rent-free for fit-out.',next_action:'Send counter-proposal',next_date:f(0),by:'demo'},{id:'AC2',date:f(-1),activity:'Viber / SMS',related_type:'Tenants',related_id:'TN4',notes:'Reminded about balance for last month.',next_action:'Collect balance',next_date:f(2),by:'demo'}];
-  return {Spaces:S,Tenants:T,Payments:P,Leads:L,Activities:A};
+  const m = thisMonth(), pm = prevMonth(m);
+  const T = [
+    ['TN1','Sample Pharmacy Corp.','Sample Drugstore','Ground Floor','GF-01',120,95000,'Yes',5,'Per sqm','',1500,'2025-01-01','2027-12-31','juan@example.com'],
+    ['TN2','Sample Bakeshop','','Ground Floor','GF-02',80,60000,'Yes',0,'Per sqm','',1000,'2024-06-01','2027-01-15','maria@example.com'],
+    ['TN3','Sample BPO Inc.','','2nd Floor','2F-A',150,65000,'Yes',5,'Per sqm','',1500,'2025-03-01','2028-02-28','pedro@example.com'],
+    ['TN4','Sample Review Center','','2nd Floor','2F-B',100,40000,'No',0,'Fixed',3000,800,'2024-01-01','2026-12-31',''],
+  ].map(([id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email]) => ({id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email,contact_person:'Sample Contact',status:'Active',due_day:''}));
+  const Set_ = [['company_name','201 Brookland Building'],['company_address','Sta. Rosa–Tagaytay Road, Sta. Rosa, Laguna'],['cusa_rate','50'],['elec_rate','12.5'],['water_rate','85'],['penalty_pct','2'],['notify_emails','ela@example.com'],['payment_instructions','Make checks payable to SAMPLE PAYEE NAME.\nBank transfer: Sample Bank · Account name: Sample Payee · Account no. 0000-0000-00']].map(([id,value])=>({id,value}));
+  S = Object.fromEntries(Set_.map(r => [r.id, r.value]));
+  DB = { Tenants:T, Bills:[], Payments:[], PDCs:[], EmailLog:[], Settings:Set_ };
+  const meters = { TN1:[1200,1450,5200,6900], TN2:[800,950,3100,4200], TN3:[400,470,9000,11800], TN4:[300,360,2000,2600] };
+  T.forEach(t => {
+    const [wp,wc,ep,ec] = meters[t.id];
+    const c = computeBill(t, pm, { water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, bill_date:pm+'-01', elec_rate_month:12.1, water_rate_month:85 });
+    DB.Bills.push({ id:'BL-'+t.id, tenant_id:t.id, period:pm, bill_date:pm+'-01', due_date:pm+'-05', ...c, water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, status:'Sent', sent_at:pm+'-01' });
+  });
+  DB.Payments = [['PA1','TN1',pm+'-04','Bank transfer'],['PA2','TN2',pm+'-05','GCash'],['PA3','TN3',pm+'-10','PDC']].map(([id,tenant_id,date,method]) => ({ id, tenant_id, date, amount: DB.Bills.find(b=>b.tenant_id===tenant_id).total, method, reference: method==='PDC'?'0001234':'TRX-'+id }));
+  DB.Payments.push({ id:'PA4', tenant_id:'TN4', date:pm+'-08', amount:30000, method:'Cash', reference:'', or_no:'0451' });
+  const add = n => addDays(today(), n);
+  DB.PDCs = [['PD1','TN3','BDO','0001235',add(-1)],['PD2','TN3','BDO','0001236',add(30)],['PD3','TN1','BPI','5550101',add(2)],['PD4','TN1','BPI','5550102',add(32)]].map(([id,tenant_id,bank,check_no,check_date]) => ({ id, tenant_id, bank, check_no, check_date, amount: 98000, status:'On hand', for_period: check_date.slice(0,7) }));
+  DB.PDCs.push({ id:'PD5', tenant_id:'TN2', bank:'Metrobank', check_no:'778812', check_date:add(-6), amount:68000, status:'Deposited', deposited_date:add(-5) });
+  return DB;
 }
 
 // ───────────────── BOOT ─────────────────
 document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.dataset.tab));
-['f-sp-floor','f-sp-status','f-tn-status','f-ld-type','f-ac-type','f-pay-period'].forEach(id => $(id).addEventListener('change', render));
-['f-tn-q','f-ld-q'].forEach(id => $(id).addEventListener('input', render));
+['f-pay-tenant','f-pay-month','f-pdc-tenant','f-pdc-status','f-tn-status'].forEach(id => $(id).addEventListener('change', render));
+$('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
+['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
+$('f-tn-q').addEventListener('input', render);
 $('ovl').addEventListener('click', e => { if (e.target.id === 'ovl') closeForm(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeForm(); });
 function logout(){ if (DEMO) return location.href = '/201-admin'; idn.logout(); }
-function enter(user){ $('login-screen').style.display='none'; $('app').style.display='block'; $('who').textContent = DEMO ? 'Demo mode' : (user.email || '—'); showTab('overview'); reload(); }
-
+function enter(user){ ME = DEMO ? 'demo' : (user.email || ''); $('login-screen').style.display='none'; $('app').style.display='block'; $('who').textContent = DEMO ? 'Demo mode' : (ME || '—'); showTab('overview'); reload(); }
 window.addEventListener('load', () => {
   if (DEMO) return enter({});
   idn = window.netlifyIdentity;
-  if (!idn) { $('login-screen').style.display='flex'; return; }
+  if (!idn) { $('login-screen').style.display = 'flex'; return; }
   idn.init({ locale:'en' });
   const u = idn.currentUser();
-  if (u) enter(u); else $('login-screen').style.display='flex';
+  if (u) enter(u); else $('login-screen').style.display = 'flex';
   idn.on('login', u => { idn.close(); enter(u); });
-  idn.on('logout', () => { $('app').style.display='none'; $('login-screen').style.display='flex'; });
+  idn.on('logout', () => { $('app').style.display = 'none'; $('login-screen').style.display = 'flex'; });
   $('btn-login').onclick = () => idn.open('login');
 });
+
 </script>
 </body>
 </html>

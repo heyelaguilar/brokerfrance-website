@@ -1,0 +1,3 @@
+# Daily PDC deposit reminder for the 201 Brookland dashboard — 00:00 UTC = 8:00 AM Manila
+[functions."brookland-pdc-reminder"]
+  schedule = "0 0 * * *"
