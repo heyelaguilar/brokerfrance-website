@@ -213,6 +213,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
         <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
         <div class="card box"><h3>Tenants <span class="muted" id="tn-count"></span></h3><div class="tbl"><table id="tn-sum"></table></div></div>
       </div>
+      <div class="card box" style="margin-bottom:16px"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl"></table></div></div>
       <div class="grid2">
         <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
@@ -523,6 +524,21 @@ function rCollectibles(m){
     <tr style="background:var(--green-l)"><td><b>Total collectibles</b></td><td class="num"><b style="font-size:16px">${peso(current + prevUnpaid)}</b></td></tr>
     <tr><td>Collected in ${fmtMonth(m).split(' ')[0]}</td><td class="num" style="color:var(--green-d)"><b>−${peso(collected)}</b></td></tr>
     <tr><td><b>Remaining to collect</b></td><td class="num"><b style="color:${current+prevUnpaid-collected>0?'var(--red)':'var(--green-d)'}">${peso(Math.max(0, current + prevUnpaid - collected))}</b></td></tr>`;
+  // per-tenant monthly rent & CUSA (from tenant setup)
+  const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
+  const vatOf = t => t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
+  let tr = 0, tv = 0, tc = 0, ta = 0;
+  const rcRows = ts.map(t => {
+    const rent = num(t.monthly_rent), vat = vatOf(t), cusa = cusaOf(t), area = num(t.area_sqm);
+    tr += rent; tv += vat; tc += cusa; ta += area;
+    const cusaBasis = (t.cusa_mode || 'Per sqm') === 'Per sqm' && cusa ? `${area} sqm × ${peso(num(t.cusa_value) || num(set('cusa_rate')))}` : (t.cusa_mode === 'Fixed' ? 'fixed' : '');
+    return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc([t.floor, t.unit].filter(Boolean).join(' · '))}</div></td><td class="num">${area ? area.toLocaleString() + ' sqm' : '—'}</td><td class="num">${rent ? peso(rent) : '—'}${area && rent ? `<div class="muted">${peso(rent / area)}/sqm</div>` : ''}</td><td class="num">${vat ? peso(vat) : '<span class="muted">—</span>'}</td><td class="num">${cusa ? peso(cusa) : '—'}${cusaBasis ? `<div class="muted">${cusaBasis}</div>` : ''}</td><td class="num"><b>${peso(rent + vat + cusa)}</b></td><td class="muted">${t.lease_end ? 'until ' + fmtDate(t.lease_end) : ''}</td></tr>`;
+  }).join('');
+  $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s)` : '';
+  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Area</th><th class="num">Monthly rent</th><th class="num">VAT</th><th class="num">CUSA</th><th class="num">Rent + VAT + CUSA</th><th>Lease</th></tr>${rcRows}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${ta.toLocaleString()} sqm</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tv)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b style="font-size:15px">${peso(tr + tv + tc)}</b></td><td></td></tr>`
+    : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants with their rent, area and CUSA in the Tenants tab.</div></td></tr>`;
+
   // tenant summary
   const all = DB.Tenants, by = s => all.filter(t => (t.status||'Active') === s).length;
   $('tn-count').textContent = `· ${ts.length} occupying`;
