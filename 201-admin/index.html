@@ -816,13 +816,13 @@ function rOverview(){
   const due = pdcsDue();
   const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
   const mon = fmtMonth(m).split(' ')[0];
-  const toColl = SUM.tp + SUM.tb, unpaid = Math.max(0, toColl - Math.min(coll, toColl));
+  const toColl = SUM.tp + SUM.tb, unpaid = ST.btAmt['Unpaid'] || 0;   // PDCs on hand aren't unpaid — the checks are already with us
   const pdTenants = activeTenants().filter(t => pastDueBefore(t.id, m) > 0), pastDue = pdTenants.reduce((x,t) => x + pastDueBefore(t.id, m), 0);
   const k = [
     ['Monthly income', peso(SUM.tr + SUM.tc), 'Rent + CUSA', ''],
     ['Actual collection', peso(toColl), `Due this ${mon}`, ''],
     ['Collected', peso(coll), toColl ? `${Math.round(coll / toColl * 100)}% collected` : '', coll && coll >= toColl ? 'good' : ''],
-    ['Unpaid', peso(unpaid), 'Still to collect', unpaid ? 'bad' : 'good'],
+    ['Unpaid', peso(unpaid), 'Bank transfer not yet paid', unpaid ? 'bad' : 'good'],
     ['Past due', peso(pastDue), pastDue ? `${pdTenants.length} tenants` : 'None', pastDue ? 'bad' : 'good'],
   ];
   $('kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
