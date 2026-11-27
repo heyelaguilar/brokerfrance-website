@@ -226,6 +226,7 @@ table.condensed .muted{font-size:11px}
     <button class="nav" data-tab="pdcs"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 14h5M15 10h3"/></svg>PDCs<span class="badge" id="b-pdc" hidden></span></button>
     <button class="nav" data-tab="tenants"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Tenants</button>
     <button class="nav" data-tab="meralco"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Meralco<span class="badge" id="b-el" hidden></span></button>
+    <button class="nav" data-tab="primewater"><svg viewBox="0 0 24 24"><path d="M12 2.7S5 10 5 14.5a7 7 0 0014 0C19 10 12 2.7 12 2.7z"/></svg>Primewater<span class="badge" id="b-pw" hidden></span></button>
     <button class="nav" data-tab="payables"><svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Bills Payable<span class="badge" id="b-pb" hidden></span></button>
     <button class="nav" data-tab="emails"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email Log</button>
     <button class="nav" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
@@ -295,7 +296,7 @@ table.condensed .muted{font-size:11px}
     </section>
 
     <section class="pane" id="p-meralco">
-      <div class="hdr"><div><h1>Meralco</h1><p>Who owes what for electricity this month, and who has paid.</p></div>
+      <div class="hdr"><div><h1 id="el-h1">Meralco</h1></div>
         <div class="tools"><input type="month" id="f-el-period"><button class="btn ghost" id="btn-el-mode" onclick="elToggle()">Enter readings</button><button class="btn" id="btn-el-save" onclick="saveElec()" style="display:none">Save readings</button></div></div>
       <div class="kpis" id="el-kpis"></div>
       <div class="card el-sum" id="el-sum"></div>
@@ -400,6 +401,11 @@ const FORMS = {
     ['applies_to','For','select',PAY_FOR],
     ['bank','Bank','text'],['reference','Reference / check no.','text'],
     ['or_no','Official receipt no.','text'],['proof_url','Proof of payment (screenshot or PDF)','proof',null,1],['notes','Notes','textarea',null,1]]},
+  Meters: { title:'Meter', fields:[
+    ['tenant_id','Tenant','ref','Tenants'],['payer','…or name (if not a tenant, e.g. KTV)','text'],
+    ['unit','Unit','text'],['label','Meter name (e.g. Store, Kitchen)','text'],
+    ['type','Billed to','select',['Tenant','Building']],['sort','Order in list','number'],
+    ['active','Active','select',['Yes','No']],['notes','Notes','textarea',null,1]]},
   Payables: { title:'Bill', fields:[
     ['category','Bill','select',['Meralco','Primewater','Waste hauler','Construction / Renovation','Other']],['payee','Payee / provider','text'],
     ['billing_period','Billing period','text'],['account_no','Account no.','text'],
@@ -952,13 +958,14 @@ function computeBill(t, period, inp){
 }
 
 // ───────────────── RENDER ─────────────────
-function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco,payables:rPayables})[tab](); }
+function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco,primewater:rMeralco,payables:rPayables})[tab](); }
 const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
 const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
 const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent' && !(tn(b.tenant_id) && soaHold(tn(b.tenant_id))));
 function badges(){
-  const lp = (DB.ElecPeriods || []).map(p => p.id).sort().pop();
-  const eu = lp ? DB.ElecBills.filter(b => b.period === lp && b.status === 'Unpaid').length : 0;
+  const unpaidFor = u => { const ids = new Set(DB.Meters.filter(m => utilOf(m) === u && m.type !== 'Building').map(m => m.id)); const lp = DB.ElecBills.filter(b => ids.has(b.meter_id)).map(b => b.period).sort().pop(); return lp ? DB.ElecBills.filter(b => ids.has(b.meter_id) && b.period === lp && b.status === 'Unpaid').length : 0; };
+  const eu = unpaidFor('Meralco'), pw = unpaidFor('Primewater');
+  if ($('b-pw')) { $('b-pw').hidden = !pw; $('b-pw').textContent = pw; }
   const pbn = pbOverdue().length + pbDueSoon().length; if ($('b-pb')) { $('b-pb').hidden = !pbn; $('b-pb').textContent = pbn; }
   if ($('b-el')) { $('b-el').hidden = !eu; $('b-el').textContent = eu; }
   const p = pdcsDue().length, b = unsentBills().length;
@@ -967,8 +974,10 @@ function badges(){
 }
 function showTab(t){
   tab = t;
+  if (t === 'meralco' || t === 'primewater') { const u = t === 'primewater' ? 'Primewater' : 'Meralco'; if (UTIL !== u) { UTIL = u; elEdit = false; elGrid = {}; $('f-el-period').value = ''; $('f-el-period').dataset.p = ''; } }
   document.querySelectorAll('.nav').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + t));
+  const pane = t === 'primewater' ? 'meralco' : t;
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'p-' + pane));
   if ($('boot').style.display === 'none') render();
 }
 
@@ -1189,7 +1198,12 @@ let elGrid = {};   // meter_id → { curr, amount_override }
 const elMonthPrev = m => prevMonth(m);
 const meterName = mt => mt.payer || tName(mt.tenant_id) || mt.label || '—';
 const meterLabel = mt => mt.label && mt.label !== meterName(mt) ? mt.label : '';
-const activeMeters = () => DB.Meters.filter(mt => mt.active !== 'No').sort((a,b) => num(a.sort) - num(b.sort) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+let UTIL = 'Meralco';
+const UNIT = () => UTIL === 'Meralco' ? 'kWh' : 'cu.m';
+const utilOf = mt => mt.utility || 'Meralco';
+const perId = per => UTIL === 'Meralco' ? per : 'PW-' + per;
+const utilPeriods = () => DB.ElecPeriods.filter(p => UTIL === 'Meralco' ? !/^PW-/.test(p.id) : /^PW-/.test(p.id)).map(p => ({ ...p, m: p.id.replace(/^PW-/, '') }));
+const activeMeters = () => DB.Meters.filter(mt => mt.active !== 'No' && utilOf(mt) === UTIL).sort((a,b) => num(a.sort) - num(b.sort) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
 function elBill(mid, per){ return DB.ElecBills.find(b => b.meter_id === mid && b.period === per); }
 function elPrevReading(mid, per){
   const b = elBill(mid, per); if (b && b.prev !== '') return b.prev;
@@ -1198,29 +1212,31 @@ function elPrevReading(mid, per){
 }
 function elCalc(mt, per, rate){
   const b = elBill(mt.id, per), g = elGrid[mt.id] || {};
-  const prev = elPrevReading(mt.id, per), curr = g.curr ?? (b ? b.curr : '');
+  const prev = g.prev ?? elPrevReading(mt.id, per), curr = g.curr ?? (b ? b.curr : '');
   const usage = curr !== '' && prev !== '' ? r2(num(curr) - num(prev)) : null;
   const ov = g.amount_override ?? (b ? b.amount_override : '');
   const amount = ov !== '' && ov != null ? num(ov) : usage != null ? r2(usage * num(rate)) : 0;
   return { b, prev, curr, usage, ov, amount };
 }
 function rMeralco(){
-  const pe = $('f-el-period'); if (!pe.value) pe.value = DB.ElecPeriods.map(p => p.id).sort().pop() || thisMonth();
-  const per = pe.value, P = DB.ElecPeriods.find(p => p.id === per) || {};
+  $('el-h1').textContent = UTIL;
+  const pe = $('f-el-period'); if (!pe.value) pe.value = utilPeriods().map(p => p.m).sort().pop() || thisMonth();
+  const per = pe.value, P = DB.ElecPeriods.find(p => p.id === perId(per)) || {};
   if (pe.dataset.p !== per) { pe.dataset.p = per; elGrid = {}; }
-  const rate = $('el-rate')?.dataset.p === per ? $('el-rate').value : (P.rate || DB.ElecPeriods.filter(p => p.id < per).sort((a,b)=>b.id.localeCompare(a.id))[0]?.rate || '');
+  const rate = $('el-rate')?.dataset.p === per ? $('el-rate').value : (P.rate || utilPeriods().filter(p => p.m < per).sort((a,b)=>b.m.localeCompare(a.m))[0]?.rate || '');
   const f = (id, label, v, type='text', w='') => `<div class="fld"${w ? ` style="min-width:${w}"` : ''}><label>${label}</label><input id="${id}" data-p="${per}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v ?? '')}"></div>`;
   $('el-head').innerHTML = f('el-bp','Billing period', P.billing_period, 'text', '210px') + f('el-rp','Tenant meter reading', P.reading_period, 'text', '210px')
     + f('el-bd','Billing date', P.billing_date, 'date') + f('el-dd','Due date', P.due_date, 'date')
-    + f('el-kwh','Meralco actual kWh', P.meralco_kwh, 'number') + f('el-rate','Rate per kWh', rate, 'number') + f('el-total','Meralco total bill', P.meralco_total, 'number')
+    + f('el-kwh',`${UTIL} actual ${UNIT()}`, P.meralco_kwh, 'number') + f('el-rate',`Rate per ${UNIT()}`, rate, 'number') + f('el-total',`${UTIL} total bill`, P.meralco_total, 'number')
     + f('el-common','201 Brookland Bldg. (common areas)', P.common_amount, 'number', '230px');
   $('el-rate').addEventListener('input', elUpdateAll);
   const ms = activeMeters();
-  if (!ms.length) { $('el-wrap').innerHTML = `<div class="empty"><b>No meters yet</b>Meters are added from the November 2026 Meralco sheet on first load.</div>`; $('el-kpis').innerHTML = ''; return; }
+  if (!ms.length) { $('el-head').style.display = 'none'; $('btn-el-save').style.display = 'none'; $('btn-el-mode').textContent = 'Enter readings'; $('el-sum').innerHTML = ''; $('el-kpis').innerHTML = '';
+    $('el-wrap').innerHTML = `<div class="empty"><b>No ${UTIL} meters yet</b>Add each tenant's ${UTIL === 'Primewater' ? 'water' : ''} meter first.<br><br><button class="btn" onclick="openForm('Meters')">+ Add meter</button></div>`; return; }
   const tenantM = ms.filter(mt => mt.type !== 'Building'), bldgM = ms.filter(mt => mt.type === 'Building');
   // summary line + view/edit switch
   const kwh = num(P.meralco_kwh), tot = num(P.meralco_total);
-  $('el-sum').innerHTML = `<span>Billing period <b>${esc(P.billing_period || '—')}</b></span><span>Billed <b>${P.billing_date ? fmtDate(P.billing_date) : '—'}</b></span><span>Due <b>${P.due_date ? fmtDate(P.due_date) : '—'}</b></span><span>Rate <b>${rate ? '₱' + num(rate).toFixed(2) + '/kWh' : '—'}</b></span><span>Meralco bill <b>${tot ? peso(tot) : '—'}</b>${kwh ? ` (${kwh.toLocaleString()} kWh)` : ''}</span>`;
+  $('el-sum').innerHTML = `<span>Billing period <b>${esc(P.billing_period || '—')}</b></span><span>Billed <b>${P.billing_date ? fmtDate(P.billing_date) : '—'}</b></span><span>Due <b>${P.due_date ? fmtDate(P.due_date) : '—'}</b></span><span>Rate <b>${rate ? '₱' + num(rate).toFixed(2) + '/' + UNIT() : '—'}</b></span><span>${UTIL} bill <b>${tot ? peso(tot) : '—'}</b>${kwh ? ` (${kwh.toLocaleString()} ${UNIT()})` : ''}</span>`;
   $('el-head').style.display = elEdit ? '' : 'none'; $('btn-el-save').style.display = elEdit ? '' : 'none'; $('btn-el-mode').textContent = elEdit ? 'Done' : 'Enter readings';
   if (!elEdit) { elView(per, rate, tenantM, bldgM); elUpdateAll(); return; }
   const row = mt => {
@@ -1228,20 +1244,20 @@ function rMeralco(){
     const st = mt.type === 'Building' ? '<span class="muted">building</span>'
       : paid ? `<b>Paid ✓</b> <span class="muted">${fmtDate(c.b.paid_date).replace(/, \d{4}$/, '')}</span>${c.b.proof_url ? ` · <a href="${esc(c.b.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">proof ↗</a>` : ''}`
       : c.b ? `<button class="btn sm" onclick="elPay('${c.b.id}')">Mark paid</button>` : '<span class="muted">save first</span>';
-    return `<tr><td style="white-space:nowrap">${esc(mt.unit)}</td><td><b>${esc(meterName(mt))}</b>${meterLabel(mt) ? ` <span class="muted">${esc(meterLabel(mt))}</span>` : ''}${c.b && c.b.needs_reading === 'Yes' ? '<div style="color:var(--amber);font-size:12px;font-weight:700">⚠ Needs actual reading</div>' : ''}</td>
+    return `<tr><td style="white-space:nowrap">${esc(mt.unit)}</td><td><a href="#" style="color:var(--ink);text-decoration:none" onclick="openForm('Meters','${mt.id}');return false"><b>${esc(meterName(mt))}</b></a>${meterLabel(mt) ? ` <span class="muted">${esc(meterLabel(mt))}</span>` : ''}${c.b && c.b.needs_reading === 'Yes' ? '<div style="color:var(--amber);font-size:12px;font-weight:700">⚠ Needs actual reading</div>' : ''}</td>
       <td class="num"><input class="grid-in" data-m="${mt.id}" data-k="curr" value="${esc(c.curr)}" inputmode="decimal"></td>
-      <td class="num">${c.prev === '' ? '<span class="muted">—</span>' : num(c.prev).toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
+      <td class="num"><input class="grid-in" data-m="${mt.id}" data-k="prev" value="${esc(c.prev)}" inputmode="decimal" title="Filled from last month — change only if needed"></td>
       <td class="num" id="el-u-${mt.id}">${c.usage == null ? '' : c.usage.toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
       <td class="num"><input class="grid-in" style="width:84px" data-m="${mt.id}" data-k="amount_override" value="${esc(c.ov ?? '')}" placeholder="—" title="Only if the amount is fixed. Leave blank to compute usage × rate."></td>
       <td class="num"><b id="el-a-${mt.id}">${c.amount ? peso(c.amount).slice(1) : ''}</b></td>
       <td style="white-space:nowrap">${st}</td></tr>`;
   };
-  $('el-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Unit</th><th>Tenant</th><th class="num">Current</th><th class="num">Previous</th><th class="num">Usage (kWh)</th><th class="num" title="Only for fixed amounts">Fixed</th><th class="num">Amount due</th><th>Payment</th></tr>
+  $('el-wrap').innerHTML = `<div style="padding:10px 12px"><button class="btn ghost sm" onclick="openForm('Meters')">+ Add meter</button> <span class="muted">click a tenant name to edit or remove a meter</span></div><table class="bill-tbl"><tr><th>Unit</th><th>Tenant</th><th class="num">Current</th><th class="num">Previous</th><th class="num">Usage (${UNIT()})</th><th class="num" title="Only for fixed amounts">Fixed</th><th class="num">Amount due</th><th>Payment</th></tr>
     ${tenantM.map(row).join('')}
     <tr style="background:var(--green-l)"><td colspan="6"><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td></tr>
     ${bldgM.length ? `<tr><td colspan="8" class="muted" style="padding-top:14px"><b>Building (BVI)</b></td></tr>` + bldgM.map(row).join('') : ''}
     <tr><td></td><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td colspan="4"></td><td class="num" id="el-common-v">—</td><td></td></tr>
-    <tr style="background:#FFF8E1"><td colspan="6"><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td></tr></table>`;
+    <tr style="background:#FFF8E1"><td colspan="6"><b>BVI ${UTIL} total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td></tr></table>`;
   $('el-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { (elGrid[e.target.dataset.m] ||= {})[e.target.dataset.k] = e.target.value.trim(); elUpdateAll(); }));
   $('el-common').addEventListener('input', elUpdateAll);
   elUpdateAll();
@@ -1252,7 +1268,7 @@ function elView(per, rate, tenantM, bldgM){
   // one row per tenant (their meters combined)
   const groups = [];
   tenantM.forEach(mt => { const k = mt.tenant_id || mt.payer || mt.id; let g = groups.find(x => x.k === k); if (!g) groups.push(g = { k, ms: [] }); g.ms.push(mt); });
-  const kwh = v => v == null ? '' : v.toLocaleString('en-PH', { minimumFractionDigits: 1 }) + ' kWh';
+  const kwh = v => v == null ? '' : v.toLocaleString('en-PH', { minimumFractionDigits: 1 }) + ' ' + UNIT();
   const rows = groups.map(g => {
     const cs = g.ms.map(mt => ({ mt, c: elCalc(mt, per, rate) }));
     const amount = cs.reduce((x, y) => x + y.c.amount, 0), bills = cs.map(y => y.c.b).filter(Boolean);
@@ -1274,7 +1290,7 @@ function elView(per, rate, tenantM, bldgM){
     <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td colspan="4"></td></tr>
     <tr><td colspan="6" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
     <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td colspan="4"></td></tr>
-    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td colspan="4"></td></tr></table>`;
+    <tr style="background:#FFF8E1"><td><b>BVI ${UTIL} total due</b></td><td class="num"><b id="el-bvi">—</b></td><td colspan="4"></td></tr></table>`;
 }
 function elUpdateAll(){
   const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
@@ -1292,12 +1308,12 @@ function elUpdateAll(){
   $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
   $('el-bvi').textContent = peso(bldg + common).slice(1);
   const unpaid = Math.max(0, tot - paid);
-  $('el-kpis').innerHTML = [['Total amount due', peso(num($('el-total').value)), 'Meralco bill', ''], ['Collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI', peso(bldg + common), 'building share', '']]
+  $('el-kpis').innerHTML = [['Total amount due', peso(num($('el-total').value)), `${UTIL} bill`, ''], ['Collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI', peso(bldg + common), 'building share', '']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
 async function saveElec(){
   const per = $('f-el-period').value, rate = $('el-rate').value, btn = $('btn-el-save');
-  const head = { ...(DB.ElecPeriods.find(p => p.id === per) || {}), id: per, billing_period: $('el-bp').value.trim(), reading_period: $('el-rp').value.trim(), billing_date: $('el-bd').value, due_date: $('el-dd').value, meralco_kwh: $('el-kwh').value, rate, meralco_total: $('el-total').value, common_amount: $('el-common').value };
+  const head = { ...(DB.ElecPeriods.find(p => p.id === perId(per)) || {}), id: perId(per), billing_period: $('el-bp').value.trim(), reading_period: $('el-rp').value.trim(), billing_date: $('el-bd').value, due_date: $('el-dd').value, meralco_kwh: $('el-kwh').value, rate, meralco_total: $('el-total').value, common_amount: $('el-common').value };
   const rows = activeMeters().map(mt => {
     const c = elCalc(mt, per, rate);
     if (c.curr === '' && (c.ov === '' || c.ov == null) && !c.b) return null;
@@ -1321,7 +1337,7 @@ function elPay(id){
   const b = byId('ElecBills', id), mt = byId('Meters', b.meter_id) || {}, sib = b.status === 'Paid' ? [] : elSiblings(b);
   editing = { elec: id };
   $('modal').classList.remove('wide'); $('m-body').className = 'body';
-  $('m-title').textContent = `Meralco payment · ${meterName(mt)}`;
+  $('m-title').textContent = `${UTIL} payment · ${meterName(mt)}`;
   const line = (x, on, lock) => { const m = byId('Meters', x.meter_id) || {}; return `<div class="cov-row"><input type="checkbox" class="el-cov" value="${x.id}" ${on ? 'checked' : ''} ${lock ? 'disabled' : ''}><span>${esc(meterLabel(m) || m.unit)}</span><b>${peso(x.amount)}</b></div>`; };
   $('m-body').innerHTML = (sib.length ? `<div class="fld wide"><label>Meters covered by this payment</label>${line(b, true, true)}${sib.map(x => line(x, true, false)).join('')}</div>` : '')
     + `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
@@ -1756,7 +1772,7 @@ function openForm(t, id, preset){
   $('ovl').classList.add('on');
   wireProofZone();
 }
-function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, Payables:{category:'Meralco', status:'Unpaid'}, PDCs:{status:'On hand'} })[t]; }
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, Payables:{category:'Meralco', status:'Unpaid'}, Meters:{type:'Tenant', active:'Yes'}, PDCs:{status:'On hand'} })[t]; }
 // Proof thumbnail (click to enlarge) and lightbox
 const isPdf = u => /\.pdf($|\?)/i.test(u || '');
 function proofThumb(url, attachJs){
@@ -1837,6 +1853,7 @@ async function submitForm(){
   if (t === 'Payments' && !row.by) row.by = ME;
   if (t === 'Payables' && (!row.category || !num(row.amount) || !row.due_date)) return toast('Bill, amount and due date are required');
   if (t === 'Payables' && !row.status) row.status = 'Unpaid';
+  if (t === 'Meters') { if (!row.utility) row.utility = UTIL; if (!row.tenant_id && !row.payer) return toast('Pick a tenant or type a name'); if (!row.sort) row.sort = activeMeters().length + 1; }
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     if (proofFile) { btn.textContent = 'Uploading…'; row[(FORMS[t].fields.find(f => f[2] === 'proof') || [])[0] || 'proof_url'] = await uploadProof(proofFile); btn.textContent = 'Saving…'; }
