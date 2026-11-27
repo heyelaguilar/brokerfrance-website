@@ -816,13 +816,15 @@ function rOverview(){
   const due = pdcsDue();
   const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
   const mon = fmtMonth(m).split(' ')[0];
+  const toColl = SUM.tp + SUM.tb, unpaid = Math.max(0, toColl - Math.min(coll, toColl));
+  const pdTenants = activeTenants().filter(t => pastDueBefore(t.id, m) > 0), pastDue = pdTenants.reduce((x,t) => x + pastDueBefore(t.id, m), 0);
+  const pdcLeft = Math.max(0, SUM.tp - ST.pdcPaid), btLeft = Math.max(0, SUM.tb - ST.btPaid);
   const k = [
     ['Monthly income', peso(SUM.tr + SUM.tc), `Rent ${peso(SUM.tr)} · CUSA ${peso(SUM.tc)}`, ''],
-    [`To collect · ${mon}`, peso(SUM.tp + SUM.tb), `${SUM.n} tenants`, ''],
-    ['PDC', peso(SUM.tp), ['Paid','Deposited','To deposit','On hand','No check','Bounced'].filter(k => ST.pdc[k]).map(k => `${ST.pdc[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nP} tenant(s)`, ''],
-    ['Bank transfer · SOA', peso(SUM.tb), (() => { const pd = activeTenants().reduce((x,t) => x + pastDueBefore(t.id, m), 0); return pd ? `+ ${peso(pd)} past due · ` : ''; })() + ['Paid','Partial','Unpaid','On hold'].filter(k => ST.bt[k]).map(k => `${ST.bt[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nB} tenant(s) need SOA`, ''],
-    [`Collected · ${mon}`, peso(coll), SUM.tp + SUM.tb ? `${Math.round(coll / (SUM.tp + SUM.tb) * 100)}% of ${peso0(SUM.tp + SUM.tb)}` : '', coll && coll >= SUM.tp + SUM.tb ? 'good' : ''],
-    ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : ''],
+    [`Monthly actual collection · ${mon}`, peso(toColl), `PDC ${peso(SUM.tp)} · Bank transfer ${peso(SUM.tb)}`, ''],
+    [`Collection · ${mon}`, peso(coll), toColl ? `${(coll / toColl * 100).toFixed(2)}% of actual collection` : '', coll && coll >= toColl ? 'good' : ''],
+    [`Unpaid · ${mon}`, peso(unpaid), `PDC ${peso(pdcLeft)} · Bank transfer ${peso(btLeft)}`, unpaid ? 'bad' : 'good'],
+    ['Past due', peso(pastDue), pastDue ? `${pdTenants.length} tenant(s) · before ${fmtMonth(m)}` : 'none', pastDue ? 'bad' : 'good'],
   ];
   $('kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
   const ts = activeTenants();
