@@ -640,6 +640,30 @@ async function squeezeSpotNov(){
     S.mig_squeeze_nov_2026_11 = '1';
   } catch(e){ console.error('squeeze payment failed', e); }
 }
+async function beautifulLifeArrears(){
+  if (DEMO || S.mig_bl_arrears_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('beautiful life'));
+  try {
+    if (t && !DB.Bills.some(b => b.tenant_id === t.id && /opening balance/i.test(b.notes || '')))
+      await save('Bills', { tenant_id:t.id, period:'2026-10', bill_date:'2026-10-31', due_date:'2026-10-31', rent:0, rent_vat:0, cusa:0,
+        other_label:'CUSA 50 sqm × ₱80 (Oct 2025 – Oct 2026)', other_amt:52000, penalty:0, ewt:0, total:52000, status:'Sent', notes:'Opening balance — CUSA arrears, 13 months' });
+    await save('Settings', { id:'mig_bl_arrears_2026_11', value: new Date().toISOString() });
+    S.mig_bl_arrears_2026_11 = '1';
+  } catch(e){ console.error('BL arrears failed', e); }
+}
+async function coffeeStoryArrears(){
+  if (DEMO || S.mig_cs_arrears_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('coffee story'));
+  try {
+    if (t && !DB.Bills.some(b => b.tenant_id === t.id && /opening balance/i.test(b.notes || '')))
+      await save('Bills', { tenant_id:t.id, period:'2026-10', bill_date:'2026-10-31', due_date:'2026-10-31', rent:0, rent_vat:0, cusa:0,
+        other_label:'CUSA 45 sqm (Jul – Oct 2026), ₱3,600 × 4', other_amt:14400, penalty:0, ewt:0, total:14400, status:'Sent', notes:'Opening balance — CUSA arrears, 4 months' });
+    // they pay the full ₱20,300 rent (no 5% withheld), so no EWT deduction on their SOA
+    if (t && num(t.ewt_pct)) await save('Tenants', { ...t, ewt_pct:'' });
+    await save('Settings', { id:'mig_cs_arrears_2026_11', value: new Date().toISOString() });
+    S.mig_cs_arrears_2026_11 = '1';
+  } catch(e){ console.error('CS arrears failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -654,6 +678,8 @@ async function reload(){
     await bedooNoCusa();
     await coffeeStoryNovRent();
     await squeezeSpotNov();
+    await beautifulLifeArrears();
+    await coffeeStoryArrears();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -667,6 +693,11 @@ async function reload(){
 const billsOf = id => DB.Bills.filter(b => b.tenant_id === id).sort((a,b) => a.period.localeCompare(b.period));
 // Only rent & CUSA payments count toward monthly collections (utilities / other charges are tracked but excluded)
 const forRent = p => !p.applies_to || p.applies_to === 'Rent & CUSA';
+// unpaid SOA balance from bills before month m (non-PDC payments up to now applied oldest first)
+function pastDueBefore(id, m){
+  const before = billsOf(id).filter(b => b.period < m).reduce((x,b) => x + num(b.total), 0);
+  return Math.max(0, r2(before - paysOf(id).filter(p => String(p.date).slice(0,7) < m).reduce((x,p) => x + num(p.amount), 0)));   // this month's payments count toward this month
+}
 const paysOf = id => DB.Payments.filter(p => p.tenant_id === id && p.method !== 'PDC').sort(   // SOA ledger: PDCs are tracked separately
   (a,b) => String(a.date).localeCompare(b.date));
 const balanceOf = id => r2(billsOf(id).reduce((s,b)=>s+num(b.total),0) - paysOf(id).reduce((s,p)=>s+num(p.amount),0));
@@ -756,7 +787,7 @@ function rOverview(){
     ['Monthly income', peso(SUM.tr + SUM.tc), `Rent ${peso(SUM.tr)} · CUSA ${peso(SUM.tc)}`, ''],
     [`To collect · ${mon}`, peso(SUM.tp + SUM.tb), `${SUM.n} tenants`, ''],
     ['PDC', peso(SUM.tp), ['Paid','Deposited','To deposit','On hand','No check','Bounced'].filter(k => ST.pdc[k]).map(k => `${ST.pdc[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nP} tenant(s)`, ''],
-    ['Bank transfer · SOA', peso(SUM.tb), ['Paid','Partial','Unpaid','On hold'].filter(k => ST.bt[k]).map(k => `${ST.bt[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nB} tenant(s) need SOA`, ''],
+    ['Bank transfer · SOA', peso(SUM.tb), (() => { const pd = activeTenants().reduce((x,t) => x + pastDueBefore(t.id, m), 0); return pd ? `+ ${peso(pd)} past due · ` : ''; })() + ['Paid','Partial','Unpaid','On hold'].filter(k => ST.bt[k]).map(k => `${ST.bt[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nB} tenant(s) need SOA`, ''],
     [`Collected · ${mon}`, peso(coll), SUM.tp + SUM.tb ? `${Math.round(coll / (SUM.tp + SUM.tb) * 100)}% of ${peso0(SUM.tp + SUM.tb)}` : '', coll && coll >= SUM.tp + SUM.tb ? 'good' : ''],
     ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : ''],
   ];
@@ -987,7 +1018,8 @@ async function saveBills(silent){
   const rows = soaTenants().map(t => {
     const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
-    const tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
+    let tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
+    if (tDue < bd) tDue = dd >= bd ? dd : addDays(bd, 6);   // tenant's usual day already passed → use the grid's due date, else bill date + 6 days
     const row = { ...(b||{}), tenant_id:t.id, period:P, bill_date:bd, due_date:tDue,
       rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
       water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
@@ -1022,6 +1054,7 @@ function soaData(bill){
   const soaNo = `SOA-${bill.period.replace('-','')}-${(t.unit||t.tenant_name||'').replace(/[^\w]/g,'').slice(0,8).toUpperCase()}`;
   return { t, s, lines, amountDue, pdcs, soaNo };
 }
+const prevLabel = s => s.last && s.last.notes && /opening balance/i.test(s.last.notes) && s.last.other_label ? ` — ${s.last.other_label}` : '';
 function soaHTML(bill){
   const { t, s, lines, amountDue, pdcs, soaNo } = soaData(bill);
   const td = 'padding:7px 8px;border-bottom:1px solid #eee', tdr = td + ';text-align:right;white-space:nowrap';
@@ -1030,13 +1063,12 @@ function soaHTML(bill){
   <td style="vertical-align:top;text-align:right"><div style="font-size:16px;font-weight:800;letter-spacing:.04em">STATEMENT OF ACCOUNT</div><div>${soaNo}</div><div>Bill date: <b>${fmtDate(bill.bill_date)}</b></div><div>Due date: <b>${fmtDate(bill.due_date)}</b></div></td></tr></table>
   <div style="margin:16px 0;padding:12px 14px;background:#F4F6F8;border-radius:6px"><div style="font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;font-weight:700">Bill to</div><b style="font-size:14px">${esc(t.tenant_name)}</b>${t.trade_name?` (${esc(t.trade_name)})`:''}<div>${esc([t.floor,t.unit?'Unit '+t.unit:''].filter(Boolean).join(' · '))}${t.contact_person?' · Attn: '+esc(t.contact_person):''}</div>${t.tin?`<div>TIN ${esc(t.tin)}</div>`:''}</div>
   <table style="width:100%;border-collapse:collapse;margin-bottom:14px">
-    <tr><td style="${td}">Previous amount due</td><td style="${tdr}">${peso(s.opening)}</td></tr>
-    <tr><td style="${td}">Less: payments received${s.since.length?' ('+s.since.map(p=>`${fmtDate(p.date)}${p.reference?' #'+esc(p.reference):''}`).join(', ')+')':''}</td><td style="${tdr}">${s.received?'−'+peso(s.received):peso(0)}</td></tr>
-    <tr><td style="${td};font-weight:700">${s.unpaid<0?'Advance / credit':'Unpaid previous balance'}</td><td style="${tdr};font-weight:700">${peso(s.unpaid)}</td></tr>
+    <tr><td style="${td};font-weight:700">Previous balance${prevLabel(s)}</td><td style="${tdr};font-weight:700">${peso(s.opening)}</td></tr>
   </table>
   <div style="font-weight:800;margin:6px 0">Current charges — ${fmtMonth(bill.period)}</div>
   <table style="width:100%;border-collapse:collapse">${lines.map(([l,v])=>`<tr><td style="${td}">${esc(l)}</td><td style="${tdr}">${num(v)<0?'−'+peso(-num(v)):peso(v)}</td></tr>`).join('')}
-    <tr><td style="${td};font-weight:700">Total current charges</td><td style="${tdr};font-weight:700">${peso(bill.total)}</td></tr></table>
+    <tr><td style="${td};font-weight:700">Total current charges</td><td style="${tdr};font-weight:700">${peso(bill.total)}</td></tr>
+    ${s.received ? `<tr><td style="${td}">Less: payments received (${s.since.map(p=>`${fmtDate(p.date)}${p.reference?' #'+esc(p.reference):''}`).join(', ')})</td><td style="${tdr}">−${peso(s.received)}</td></tr>` : ''}</table>
   <table style="width:100%;border-collapse:collapse;margin-top:14px"><tr><td style="padding:12px 14px;background:#1C3F2F;color:#fff;font-size:15px;font-weight:800">TOTAL AMOUNT DUE on or before ${fmtDate(bill.due_date)}</td><td style="padding:12px 14px;background:#1C3F2F;color:#fff;font-size:17px;font-weight:800;text-align:right;white-space:nowrap">${peso(amountDue)}</td></tr></table>
   ${pdcs.length?`<div style="margin-top:14px"><div style="font-weight:700;margin-bottom:4px">Post-dated checks on file</div>${pdcs.map(p=>`<div>${fmtDate(p.check_date)} · ${esc(p.bank)} #${esc(p.check_no)} · ${peso(p.amount)}</div>`).join('')}</div>`:''}
   ${set('payment_instructions')?`<div style="margin-top:16px;padding:12px 14px;border:1px solid #D4EAE0;background:#F0F7F3;border-radius:6px;white-space:pre-line"><b>Payment instructions</b>\n${esc(set('payment_instructions'))}</div>`:''}
@@ -1078,12 +1110,11 @@ async function soaPDF(bill){
   txt(t.tenant_name + (t.trade_name ? ` (${t.trade_name})` : ''), L+4, y, {b:1, s:11}); y += 5;
   txt([t.floor, t.unit ? 'Unit ' + t.unit : '', t.contact_person ? 'Attn: ' + t.contact_person : '', t.tin ? 'TIN ' + t.tin : ''].filter(Boolean).join('  ·  '), L+4, y, {s:9}); y += 12;
   const row = (label, val, o={}) => { const h = wrap(label, L, y, W - 50, o); txt(val, R, y, {...o, r:1}); y += Math.max(5.5, h + 1.5); doc.setDrawColor(232,232,232); doc.line(L, y-3.5, R, y-3.5); };
-  row('Previous amount due', money(s.opening));
-  row('Less: payments received' + (s.since.length ? ' (' + s.since.map(p => fmtDate(p.date) + (p.reference ? ' #' + p.reference : '')).join(', ') + ')' : ''), s.received ? '-' + php(s.received) : php(0));
-  row(s.unpaid < 0 ? 'Advance / credit' : 'Unpaid previous balance', money(s.unpaid), {b:1});
+  row('Previous balance' + prevLabel(s).replace(/₱/g, 'PHP ').replace(/[–—]/g, '-').replace(/×/g, 'x'), money(s.opening), {b:1});
   y += 4; txt('Current charges — ' + fmtMonth(bill.period), L, y, {b:1, s:11}); y += 6;
   lines.forEach(([l, v]) => row(l.replace(/₱/g, 'PHP ').replace(/→/g, 'to').replace(/−/g, '-'), money(v)));
   row('Total current charges', php(bill.total), {b:1});
+  if (s.received) row('Less: payments received (' + s.since.map(p => fmtDate(p.date) + (p.reference ? ' #' + p.reference : '')).join(', ') + ')', '-' + php(s.received));
   y += 3; doc.setFillColor(28,63,47); doc.rect(L, y-6, W, 12, 'F');
   txt('TOTAL AMOUNT DUE on or before ' + fmtDate(bill.due_date), L+4, y+1.5, {b:1, s:11, c:[255,255,255]}); txt(php(amountDue), R-4, y+1.5, {b:1, s:13, c:[255,255,255], r:1}); y += 14;
   if (pdcs.length) { txt('Post-dated checks on file', L, y, {b:1}); y += 5; pdcs.forEach(p => { txt(`${fmtDate(p.check_date)}  ·  ${p.bank} #${p.check_no}  ·  ${php(p.amount)}`, L, y, {s:9}); y += 4.5; }); y += 3; }
