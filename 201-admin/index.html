@@ -943,9 +943,9 @@ function rCollectibles(m){
     }).filter(Boolean);
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').textContent = `Past due · before ${fmtMonth(m)}`;
-  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th><th class="num">+ ${fmtMonth(m).split(' ')[0]}</th><th class="num">Balance</th></tr>` + pdRows.map(r =>
-      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" style="max-width:200px" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:210px;white-space:normal">${esc(r.open)}</div>` : ''}</td><td class="num">${amt(r.pd)}</td><td class="num">${amt(r.now)}</td><td class="num"><b>${amt(r.pd + r.now)}</b></td></tr>`).join('')
-      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td><td class="num"><b>${amt(nowTot)}</b></td><td class="num"><b style="font-size:15px">${amt(pdTot + nowTot)}</b></td></tr>`
+  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th></tr>` + pdRows.map(r =>
+      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" style="max-width:200px" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:210px;white-space:normal">${esc(r.open)}</div>` : ''}</td><td class="num"><b>${amt(r.pd)}</b></td></tr>`).join('')
+      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b style="font-size:15px">${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
   // Payments received this month for rent & CUSA
