@@ -489,6 +489,63 @@ async function fixBedooCusa(){
     S.mig_bedoo_cusa_2026_11 = '1';
   } catch(e){ console.error('bedoo fix failed', e); }
 }
+// PDCs from ELA's PDC Monitoring screenshot (27 Nov 2026): [tenant match, account name, bank, check no., amount, check date]
+const PDC_IMPORT_2026_11 = [
+  ['akmas','TOLEDO, MARIA SANTA BENDO','SECURITY BANK','0000110080',69550.00,'2026-11-30'],
+  ['enerp','ENERPRO TECHNICAL SERVICES CO.','SECURITY BANK','0000099400',13910.00,'2026-01-01'],
+  ['enerp','ENERPRO TECHNICAL SERVICES CO.','SECURITY BANK','0000099400',13910.00,'2026-02-01'],
+  ['toothlu','FRANCESCA MAXINE M. JIMENEZ','PSBank','0000241595',36767.50,'2026-11-30'],
+  ['toothlu','FRANCESCA MAXINE M. JIMENEZ','PSBank','0000241596',36767.50,'2026-12-31'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191888',34896.25,'2026-10-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191889',34896.25,'2026-11-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191890',34896.25,'2026-12-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191891',34896.25,'2027-01-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191892',34896.25,'2027-02-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191893',34896.25,'2027-03-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191894',34896.25,'2027-04-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191895',34896.25,'2027-05-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191896',34896.25,'2027-06-20'],
+  ['v52','AUX, JEFFERSON RECTO','SECURITY BANK','0005191897',34896.25,'2027-07-20'],
+  ['ashcol','','','0020293354',22000.00,'2026-09-08'],
+  ['ashcol','','','0020293355',22000.00,'2026-10-08'],
+  ['ashcol','','','0020293356',22000.00,'2026-11-08'],
+  ['ashcol','','','0020293357',22000.00,'2026-12-08'],
+  ['ashcol','','','0020293359',22000.00,'2027-01-08'],
+  ['ashcol','','','0020293360',22000.00,'2027-02-08'],
+  ['ashcol','','','0020293361',22000.00,'2027-03-08'],
+  ['ashcol','','','0020293362',22000.00,'2027-04-08'],
+  ['ashcol','','','0020293363',22000.00,'2027-05-08'],
+  ['ashcol','','','0020293365',22000.00,'2027-06-08'],
+  ['neuera','','','0000447964',28728.00,'2026-09-24'],
+  ['neuera','','','0000447965',28728.00,'2026-10-24'],
+  ['neuera','','','0000447966',28728.00,'2026-11-24'],
+  ['neuera','','','0000447967',28728.00,'2026-12-24'],
+  ['neuera','','','0000447968',28728.00,'2027-01-24'],
+  ['neuera','','','0000447969',28728.00,'2027-02-24'],
+  ['neuera','','','0000447970',28728.00,'2027-03-24'],
+  ['neuera','','','0000447971',28728.00,'2027-04-24'],
+  ['neuera','','','0000447972',28728.00,'2027-05-24'],
+  ['neuera','','','0000447973',28728.00,'2027-06-24']
+];
+// Before Nov 2026 → Cleared (history only). Dated this month but already passed → Deposited (confirm Cleared to post the payment). Later → On hand.
+async function importPdcs(){
+  if (DEMO || S.mig_pdc_import_2026_11) return;
+  const rows = [], missing = new Set(), thisM = thisMonth(), td = today();
+  PDC_IMPORT_2026_11.forEach(([key, acct, bank, no, amount, date]) => {
+    const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key));
+    if (!t) return missing.add(key);
+    if (DB.PDCs.some(p => p.tenant_id === t.id && p.check_no === no && p.check_date === date)) return;   // already there
+    const status = date.slice(0,7) < thisM ? 'Cleared' : date < td ? 'Deposited' : 'On hand';
+    rows.push({ tenant_id: t.id, bank, check_no: no, amount, check_date: date, for_period: date.slice(0,7), status,
+      deposited_date: status === 'On hand' ? '' : date, cleared_date: status === 'Cleared' ? date : '', notes: acct ? 'Account: ' + acct : '' });
+  });
+  try {
+    if (rows.length) await saveMany('PDCs', rows);
+    await save('Settings', { id:'mig_pdc_import_2026_11', value: new Date().toISOString() + (missing.size ? ' · not found: ' + [...missing].join(', ') : '') });
+    S.mig_pdc_import_2026_11 = '1';
+    toast(`${rows.length} PDCs added` + (missing.size ? ` · tenant not found: ${[...missing].join(', ')}` : ''));
+  } catch(e){ console.error('pdc import failed', e); toast('PDC import failed: ' + e.message); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -496,6 +553,7 @@ async function reload(){
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
+    await importPdcs();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -952,7 +1010,7 @@ function rPdcs(){
   $('pdc-kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
   $('pdc-wrap').innerHTML = list.length ? `<table><tr><th>Check date</th><th>Tenant</th><th>Bank · Check no.</th><th class="num">Amount</th><th>For</th><th>Status</th><th></th></tr>${list.map(p => {
     const st = p.status || 'On hand', d = daysUntil(p.check_date), due = st === 'On hand' && p.check_date <= win;
-    return `<tr class="click" onclick="openForm('PDCs','${p.id}')"><td style="white-space:nowrap;${due?'color:var(--red);font-weight:800':''}">${fmtDate(p.check_date)}${st==='On hand'&&d!=null?`<div class="muted" style="${due?'color:var(--red)':''}">${d<0?Math.abs(d)+' days past':d===0?'today':'in '+d+' days'}</div>`:''}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td>${esc(p.bank)} · #${esc(p.check_no)}</td><td class="num"><b>${peso(p.amount)}</b></td><td>${p.for_period?fmtMonth(p.for_period):'—'}</td><td>${pill(st)}${p.deposited_date&&st!=='On hand'?`<div class="muted">dep. ${fmtDate(p.deposited_date)}</div>`:''}</td>
+    return `<tr class="click" onclick="openForm('PDCs','${p.id}')"><td style="white-space:nowrap;${due?'color:var(--red);font-weight:800':''}">${fmtDate(p.check_date)}${st==='On hand'&&d!=null?`<div class="muted" style="${due?'color:var(--red)':''}">${d<0?Math.abs(d)+' days past':d===0?'today':'in '+d+' days'}</div>`:''}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td>${p.bank ? esc(p.bank) + ' · ' : ''}#${esc(p.check_no)}</td><td class="num"><b>${peso(p.amount)}</b></td><td>${p.for_period?fmtMonth(p.for_period):'—'}</td><td>${pill(st)}${p.deposited_date&&st!=='On hand'?`<div class="muted">dep. ${fmtDate(p.deposited_date)}</div>`:''}</td>
       <td><div class="row-actions" onclick="event.stopPropagation()">${st==='On hand'?`<button class="btn sm" onclick="pdcAction('${p.id}','Deposited',this)">Deposited</button>`:''}${st==='Deposited'?`<button class="btn sm" onclick="pdcAction('${p.id}','Cleared',this)">Cleared</button><button class="btn danger sm" onclick="pdcAction('${p.id}','Bounced',this)">Bounced</button>`:''}</div></td></tr>`;}).join('')}</table>`
     : `<div class="empty"><b>No checks${fs?' marked '+fs:''}</b>Add each tenant's PDCs — use “Add check series” for a year's worth of monthly checks.</div>`;
 }
