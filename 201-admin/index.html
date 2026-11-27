@@ -214,7 +214,7 @@ table.condensed .muted{font-size:11px}
         <div class="bar"><i id="t-bar"></i></div>
         <div class="legend"><span style="--c:var(--green)">Collected</span><span style="--c:#C9D2DB">Remaining</span><span id="t-gap"></span></div>
       </div>
-      <div class="card box" style="margin-bottom:16px"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
+      <div class="card box" style="margin-bottom:16px"><h3>Rent, CUSA & collection per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
       <div class="grid2" style="margin-bottom:16px">
         <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
@@ -599,23 +599,28 @@ function rCollectibles(m){
   // per-tenant monthly rent & CUSA (from tenant setup)
   const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
   const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
-  let tr = 0, tc = 0;
+  let tr = 0, tc = 0, tDue = 0, tCol = 0;
   const rcRows = ts.map(t => {
     const rent = num(t.monthly_rent), cusa = cusaOf(t);
     tr += rent; tc += cusa;
-    const dd = num(t.due_day) || num(set('due_day')) || 5;
-    const pdcN = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').length;
+    const dd = num(t.due_day) || num(set('due_day')) || 5, dueDate = dayOf(m, dd);
     const rp = t.rent_payment || t.payment_mode || '', freq = t.rent_frequency || 'Monthly';
-    const nxt = freq !== 'Monthly' ? (t.lease_start ? `next: ${fmtMonth(nextRentMonth(t, m))}` : 'set lease start') : '';
-    return `<tr><td class="click" onclick="openTenant('${t.id}')"><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span>${soaHold(t) ? ' <span class="pill p-amber">SOA on hold</span>' : ''}</td>
-      <td class="num">${rent ? peso(rent) : '—'}${freq !== 'Monthly' ? `<div class="muted">${freq} · ${nxt}</div>` : ''}</td><td class="num">${cusa ? peso(cusa) : (noCusa(t) ? '<span class="muted">no CUSA</span>' : '—')}</td><td class="num"><b>${peso(rent + cusa)}</b></td>
-      <td><select class="cell-in" onchange="quickSet('${t.id}','rent_payment',this.value)">${opts(PAY_MODES, rp, '— set —')}</select>${rp === 'PDC' ? ` <span class="muted">${pdcN} on hand</span>` : ''}</td>
-      <td><select class="cell-in" onchange="quickSet('${t.id}','cusa_payment',this.value)">${opts(CUSA_PAY, t.cusa_payment || '', '— set —')}</select></td>
-      <td style="white-space:nowrap"><input class="cell-in" type="number" min="1" max="31" style="width:56px" value="${esc(t.due_day || '')}" placeholder="${dd}" onchange="quickSet('${t.id}','due_day',this.value)"> <span class="muted">${fmtDate(dayOf(m, dd)).replace(/, \d{4}$/, '')}${num(t.soa_days_before) ? ` · SOA ${t.soa_days_before}d before` : ''}</span></td></tr>`;
+    // this month's collection: what's due (saved bill, else projected) vs what was received
+    const bill = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
+    const due = bill ? num(bill.total) : computeBill(t, m, { bill_date: dayOf(m, set('bill_day')) }).total;
+    const got = DB.Payments.filter(p => p.tenant_id === t.id && String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0);
+    tDue += due; tCol += got;
+    const st = due <= 0 ? '' : got >= due - 0.005 ? 'Paid' : got ? 'Partial' : !bill ? 'Not billed' : today() > dueDate ? 'Overdue' : 'Pending';
+    const sub = (txt) => txt ? `<div class="muted">${esc(txt)}</div>` : '';
+    return `<tr class="click" onclick="openTenant('${t.id}')">
+      <td><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span>${soaHold(t) ? ' <span class="pill p-amber">SOA on hold</span>' : ''}</td>
+      <td class="num">${rent ? peso(rent) : '—'}${sub([rp, freq !== 'Monthly' ? freq : ''].filter(Boolean).join(' · '))}</td>
+      <td class="num">${noCusa(t) ? '<span class="muted">no CUSA</span>' : (cusa ? peso(cusa) : '—') + sub(t.cusa_payment === 'Combined with rent' ? 'with rent' : t.cusa_payment)}</td>
+      <td>${st ? pill(st) : '<span class="muted">nothing due</span>'} <span style="font-variant-numeric:tabular-nums">${got ? peso(got) + ' of ' : ''}${due > 0 ? peso(due) : ''}</span>${sub(due > 0 ? 'due ' + fmtDate(dueDate).replace(/, \d{4}$/, '') : '')}</td></tr>`;
   }).join('');
-  $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s)` : '';
-  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Monthly rent</th><th class="num">CUSA</th><th class="num">Total</th><th>Rent via</th><th>CUSA via</th><th>Due day</th></tr>${rcRows}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b>${peso(tr + tc)}</b></td><td colspan="3" class="muted">Rent: ${PAY_MODES.map(mo => { const n = ts.filter(t => (t.rent_payment || t.payment_mode) === mo).length; return n ? `${n} ${mo}` : ''; }).filter(Boolean).join(' · ') || '—'}</td></tr>`
+  $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s) · click a row to edit` : '';
+  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Collection · ${fmtMonth(m)}</th></tr>${rcRows}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td><b>${peso(tCol)} of ${peso(tDue)}</b> <span class="muted">collected</span></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants with their rent and CUSA in the Tenants tab.</div></td></tr>`;
 }
 
