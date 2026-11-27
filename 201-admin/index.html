@@ -61,7 +61,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .tools input,.tools select{border:1.5px solid var(--border);border-radius:var(--rs);padding:8px 10px;background:#fff}
 .card{background:#fff;border-radius:var(--r);box-shadow:var(--sh);border:1px solid #E5EAEF}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
 .kpi{padding:16px 18px}
 .kpi .l{font-size:12px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em}
 .kpi .v{font-size:24px;font-weight:800;margin-top:6px}
@@ -202,13 +202,17 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 
     <section class="pane" id="p-overview">
       <div class="hdr"><div><h1>Overview</h1><p id="ov-sub">Receivables, collections and checks at a glance.</p></div>
-        <div class="tools"><button class="btn ghost" onclick="reload()">Refresh</button></div></div>
+        <div class="tools"><input type="month" id="f-ov-month"><button class="btn ghost" onclick="reload()">Refresh</button></div></div>
       <div class="card target">
         <div class="row"><h3 id="t-title">Billed this month vs ₱600K target</h3><div><b id="t-roll">—</b> <span class="muted">of</span> <b id="t-target">—</b></div></div>
         <div class="bar"><i id="t-bar"></i></div>
         <div class="legend"><span style="--c:var(--green)">Total current charges billed</span><span id="t-gap"></span></div>
       </div>
       <div class="kpis" id="kpis"></div>
+      <div class="grid2" style="margin-bottom:16px">
+        <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
+        <div class="card box"><h3>Tenants <span class="muted" id="tn-count"></span></h3><div class="tbl"><table id="tn-sum"></table></div></div>
+      </div>
       <div class="grid2">
         <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
@@ -446,7 +450,9 @@ function showTab(t){
 }
 
 function rOverview(){
-  const m = thisMonth();
+  if (!$('f-ov-month').value) $('f-ov-month').value = thisMonth();
+  const m = $('f-ov-month').value;
+  rCollectibles(m);
   const billed = DB.Bills.filter(b => b.period === m).reduce((s,b)=>s+num(b.total),0);
   const coll = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
   const recv = activeTenants().concat(DB.Tenants.filter(t=>t.status==='Moved Out')).reduce((s,t)=>s+Math.max(0,balanceOf(t.id)),0);
@@ -457,7 +463,9 @@ function rOverview(){
   $('t-roll').textContent = peso0(billed); $('t-target').textContent = peso0(TARGET);
   $('t-bar').style.width = Math.min(100, billed / TARGET * 100) + '%';
   $('t-gap').innerHTML = billed >= TARGET ? `<b style="color:var(--green-d)">Target covered ✓</b>` : `<b style="color:var(--red)">Gap: ${peso0(TARGET - billed)}</b>`;
+  const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
   const k = [
+    ['Tenants', actv + notice, notice ? `${actv} active · ${notice} on notice` : 'active', ''],
     ['Total receivables', peso0(recv), `${DB.Tenants.filter(t=>balanceOf(t.id)>0).length} tenant(s) with balance`, ''],
     ['Overdue', peso0(overdue), `${DB.Tenants.filter(t=>overdueOf(t.id)>0).length} tenant(s) past due`, overdue ? 'bad' : 'good'],
     [`Collected · ${fmtMonth(m).split(' ')[0]}`, peso0(coll), billed ? `${Math.round(coll/billed*100)}% of ${peso0(billed)} billed` : 'no bills yet this month', ''],
@@ -479,6 +487,50 @@ function rOverview(){
   else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
   ts.forEach(t => { const d = daysUntil(t.lease_end); if (d != null && d <= 90) al.push([d < 0 ? 'var(--red)' : 'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'}`, 'tenants']); });
   $('alerts').innerHTML = al.length ? al.slice(0,16).map(([c,h,t])=>`<div class="alert" style="--c:${c};cursor:pointer" onclick="showTab('${t}')"><span class="dot"></span><div>${h}</div></div>`).join('') : `<div class="empty"><b>All clear</b>Nothing due, overdue or bounced.</div>`;
+}
+
+// ── Collectibles breakdown for a month: billed amounts, plus fixed charges projected for tenants not yet billed ──
+function rCollectibles(m){
+  const ts = activeTenants();
+  const keys = [['rent','Rent'],['rent_vat','VAT on rent'],['cusa','CUSA'],['water_amt','Water'],['elec_amt','Electricity / Meralco'],['waste','Waste hauling'],['other_amt','Other charges'],['penalty','Penalties'],['ewt','Less: EWT (BIR 2307)']];
+  const sum = Object.fromEntries(keys.map(([k]) => [k, 0]));
+  let unbilled = [];
+  ts.forEach(t => {
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
+    if (b) keys.forEach(([k]) => sum[k] += num(b[k]));
+    else {
+      unbilled.push(t);
+      const c = computeBill(t, m, { bill_date: dayOf(m, set('bill_day')) });   // no meter readings → utilities 0
+      ['rent','rent_vat','cusa','waste','ewt'].forEach(k => sum[k] += c[k]);
+    }
+  });
+  // closed bills for tenants who moved out still count if billed this month
+  DB.Bills.filter(b => b.period === m && !ts.some(t => t.id === b.tenant_id)).forEach(b => keys.forEach(([k]) => sum[k] += num(b[k])));
+  const current = r2(keys.reduce((s,[k]) => s + (k === 'ewt' ? -sum[k] : sum[k]), 0));
+  // unpaid from earlier months = what tenants owed before this month's charges
+  const prevUnpaid = DB.Tenants.reduce((s,t) => {
+    const before = billsOf(t.id).filter(b => b.period < m).reduce((a,b)=>a+num(b.total),0);
+    const paid = paysOf(t.id).filter(p => String(p.date).slice(0,7) <= m).reduce((a,p)=>a+num(p.amount),0);
+    return s + Math.max(0, r2(before - paid));
+  }, 0);
+  const collected = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
+  $('col-title').textContent = `Collectibles · ${fmtMonth(m)}`;
+  $('col-note').textContent = unbilled.length ? `${unbilled.length} tenant(s) not yet billed — utilities pending` : '';
+  const rows = keys.filter(([k]) => sum[k] || ['rent','cusa'].includes(k)).map(([k,l]) => `<tr><td>${l}</td><td class="num">${k==='ewt'?'−':''}${peso(sum[k])}</td></tr>`).join('');
+  $('col-tbl').innerHTML = `<tr><th>Charge</th><th class="num">Amount</th></tr>${rows}
+    <tr><td><b>Total current charges</b></td><td class="num"><b>${peso(current)}</b></td></tr>
+    <tr><td>Unpaid from previous months</td><td class="num">${peso(prevUnpaid)}</td></tr>
+    <tr style="background:var(--green-l)"><td><b>Total collectibles</b></td><td class="num"><b style="font-size:16px">${peso(current + prevUnpaid)}</b></td></tr>
+    <tr><td>Collected in ${fmtMonth(m).split(' ')[0]}</td><td class="num" style="color:var(--green-d)"><b>−${peso(collected)}</b></td></tr>
+    <tr><td><b>Remaining to collect</b></td><td class="num"><b style="color:${current+prevUnpaid-collected>0?'var(--red)':'var(--green-d)'}">${peso(Math.max(0, current + prevUnpaid - collected))}</b></td></tr>`;
+  // tenant summary
+  const all = DB.Tenants, by = s => all.filter(t => (t.status||'Active') === s).length;
+  $('tn-count').textContent = `· ${ts.length} occupying`;
+  const floors = FLOORS.map(f => { const x = ts.filter(t => t.floor === f); return x.length ? `<tr><td>${f}</td><td class="num">${x.length}</td><td class="num">${x.reduce((s,t)=>s+num(t.area_sqm),0).toLocaleString()} sqm</td><td class="num">${peso0(x.reduce((s,t)=>s+num(t.monthly_rent),0))}</td></tr>` : ''; }).join('');
+  $('tn-sum').innerHTML = ts.length ? `<tr><th>Floor</th><th class="num">Tenants</th><th class="num">Area</th><th class="num">Rent / mo</th></tr>${floors}
+    <tr><td><b>Total</b></td><td class="num"><b>${ts.length}</b></td><td class="num"><b>${ts.reduce((s,t)=>s+num(t.area_sqm),0).toLocaleString()} sqm</b></td><td class="num"><b>${peso0(ts.reduce((s,t)=>s+num(t.monthly_rent),0))}</b></td></tr>
+    <tr><td colspan="4" class="muted">${by('Active')} active · ${by('Notice to Vacate')} on notice · ${by('Moved Out')} moved out</td></tr>`
+    : `<tr><td><div class="empty"><b>No tenants yet</b></div></td></tr>`;
 }
 
 // ── Billing grid ──
@@ -896,6 +948,7 @@ document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.datas
 $('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
 ['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
 $('f-tn-q').addEventListener('input', render);
+$('f-ov-month').addEventListener('change', render);
 $('ovl').addEventListener('click', e => { if (e.target.id === 'ovl') closeForm(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeForm(); });
 function logout(){ if (DEMO) return location.href = '/201-admin'; idn.logout(); }
