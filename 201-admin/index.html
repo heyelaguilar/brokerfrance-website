@@ -852,12 +852,12 @@ function rCollectibles(m){
   $('t-roll').textContent = peso(colSum); $('t-target').textContent = peso(due);
   const segs = [
     ['Collected', colSum, '#1C3F2F'],
-    ['PDC deposited', ST.pdcAmt['Deposited'] || 0, '#4A90D9'],
-    ['PDC to deposit', ST.pdcAmt['To deposit'] || 0, '#E0A33B'],
-    ['PDC on hand', ST.pdcAmt['On hand'] || 0, '#9FD8B0'],
-    ['No check / bounced', (ST.pdcAmt['No check'] || 0) + (ST.pdcAmt['Bounced'] || 0), '#8E6BBF'],
-    ['Bank transfer unpaid', ST.btAmt['Unpaid'] || 0, '#E5484D'],
-    ['On hold', ST.btAmt['On hold'] || 0, '#E9ECEF'],
+    ['PDC deposited', ST.pdcAmt['Deposited'] || 0, '#4E8A68'],
+    ['PDC to deposit', ST.pdcAmt['To deposit'] || 0, '#C9A04A'],
+    ['PDC on hand', ST.pdcAmt['On hand'] || 0, '#A9CDB5'],
+    ['No check / bounced', (ST.pdcAmt['No check'] || 0) + (ST.pdcAmt['Bounced'] || 0), '#8A6F7A'],
+    ['Bank transfer unpaid', ST.btAmt['Unpaid'] || 0, '#B5533C'],
+    ['On hold', ST.btAmt['On hold'] || 0, '#DDE3DF'],
   ].filter(x => x[0] === 'Collected' || x[1] > 0.004);
   $('t-seg').innerHTML = due ? segs.map(([l,v,c]) => `<b title="${l}: ${peso(v)}" style="width:${v / due * 100}%;background:${c}"></b>`).join('') : '';
   $('t-legend').innerHTML = segs.map(([l,v,c]) => `<span style="--c:${c}">${l} <b>${peso(v)}</b></span>`).join('') + (due ? `<span class="muted">${(colSum / due * 100).toFixed(2)}% collected</span>` : '');
