@@ -171,6 +171,9 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .settings h3{grid-column:1/-1;font-size:15px;font-weight:800;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
 .settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
 .hint{font-size:12px;color:var(--ink4)}
+.cov-row{display:flex;gap:10px;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-top:6px;font-size:14px}
+.cov-row input{width:auto!important;margin:0}
+.cov-row span{flex:1}
 .dropzone{border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:#FAFBFC;transition:.15s}
 .dropzone:hover,.dropzone:focus,.dropzone.over{border-color:var(--green-d);background:var(--green-l);outline:none}
 .dropzone.has{border-style:solid;border-color:var(--green-m)}
@@ -1175,29 +1178,42 @@ async function saveElec(){
   catch(e){ toast('Save failed: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save readings'; }
 }
+// Mark one or more meters of the same tenant as paid with a single payment / proof
+function elSiblings(b){
+  const mt = byId('Meters', b.meter_id) || {};
+  const same = m => mt.tenant_id ? m.tenant_id === mt.tenant_id : (m.payer && m.payer === mt.payer);
+  return DB.ElecBills.filter(x => x.period === b.period && x.id !== b.id && x.status !== 'Paid' && same(byId('Meters', x.meter_id) || {}));
+}
 function elPay(id){
-  const b = byId('ElecBills', id), mt = byId('Meters', b.meter_id) || {};
+  const b = byId('ElecBills', id), mt = byId('Meters', b.meter_id) || {}, sib = b.status === 'Paid' ? [] : elSiblings(b);
   editing = { elec: id };
   $('modal').classList.remove('wide'); $('m-body').className = 'body';
-  $('m-title').textContent = `Meralco payment · ${meterName(mt)}${meterLabel(mt) ? ' · ' + meterLabel(mt) : ''}`;
-  $('m-body').innerHTML = `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
-    <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
+  $('m-title').textContent = `Meralco payment · ${meterName(mt)}`;
+  const line = (x, on, lock) => { const m = byId('Meters', x.meter_id) || {}; return `<div class="cov-row"><input type="checkbox" class="el-cov" value="${x.id}" ${on ? 'checked' : ''} ${lock ? 'disabled' : ''}><span>${esc(meterLabel(m) || m.unit)}</span><b>${peso(x.amount)}</b></div>`; };
+  $('m-body').innerHTML = (sib.length ? `<div class="fld wide"><label>Meters covered by this payment</label>${line(b, true, true)}${sib.map(x => line(x, true, false)).join('')}</div>` : '')
+    + `<div class="fld"><label>Date paid</label><input name="paid_date" type="date" value="${esc(b.paid_date || today())}"></div>
+    <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" id="el-pay-amt" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
     <div class="fld"><label>Method</label><select name="method">${opts(['Bank transfer','GCash','Maya','Cash','Check'], b.method || 'Bank transfer')}</select></div>
     <div class="fld"><label>Reference no.</label><input name="reference" value="${esc(b.reference || '')}"></div>
     <div class="fld wide"><label>Proof of payment</label>${proofZone(b.proof_url)}</div>`;
   wireProofZone();
+  const sum = () => { const ids = [id, ...[...$('m-body').querySelectorAll('.el-cov:checked')].map(c => c.value).filter(v => v !== id)]; $('el-pay-amt').value = r2(ids.reduce((x, i) => x + num(byId('ElecBills', i).amount), 0)); };
+  $('m-body').querySelectorAll('.el-cov').forEach(c => c.onchange = sum);
+  if (sib.length) sum();
   $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="elUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elPaySave('${id}')">Mark paid</button>`;
   $('ovl').classList.add('on');
 }
 async function elPaySave(id){
   const b = byId('ElecBills', id), btn = $('m-save');
-  const f = Object.fromEntries([...$('m-body').querySelectorAll('[name]')].map(el => [el.name, el.value.trim()]));
-  const file = proofPicked;
+  const f = Object.fromEntries([...$('m-body').querySelectorAll('.fld [name]')].map(el => [el.name, el.value.trim()]));
+  const ids = [id, ...[...$('m-body').querySelectorAll('.el-cov:checked')].map(c => c.value).filter(v => v !== id)];
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    if (file) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(file); }
-    await save('ElecBills', { ...b, ...f, status: 'Paid' });
-    closeForm(); rMeralco(); badges(); toast('Marked paid');
+    if (proofPicked) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(proofPicked); }
+    const bills = ids.map(i => byId('ElecBills', i));
+    const together = bills.length > 1 ? `Paid together: ${bills.map(x => { const m = byId('Meters', x.meter_id) || {}; return (meterLabel(m) || m.unit) + ' ' + peso(x.amount); }).join(' + ')} = ${peso(f.paid_amount)}` : '';
+    await saveMany('ElecBills', bills.map(x => ({ ...x, ...f, paid_amount: bills.length > 1 ? x.amount : f.paid_amount, status: 'Paid', notes: together || x.notes || '' })));
+    closeForm(); rMeralco(); badges(); toast(bills.length > 1 ? `${bills.length} meters marked paid` : 'Marked paid');
   } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid'; toast('Save failed: ' + e.message); }
 }
 async function elUnpay(id){
