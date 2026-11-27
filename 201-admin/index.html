@@ -171,6 +171,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .settings h3{grid-column:1/-1;font-size:15px;font-weight:800;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
 .settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
 .hint{font-size:12px;color:var(--ink4)}
+.dropzone{border:2px dashed var(--border);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:#FAFBFC;transition:.15s}
+.dropzone:hover,.dropzone:focus,.dropzone.over{border-color:var(--green-d);background:var(--green-l);outline:none}
+.dropzone.has{border-style:solid;border-color:var(--green-m)}
+.dropzone b{display:block;font-size:14px;color:var(--ink2)}
+.dropzone span{display:block;font-size:12px;color:var(--ink4);margin-top:3px}
+.dropzone span a{color:var(--red);font-weight:700}
+.dropzone img{max-height:160px;max-width:100%;border-radius:6px;display:block;margin:0 auto 6px}
 .ledger td{padding:7px 10px;font-size:13px}
 table.condensed th{padding:7px 10px}
 table.condensed td{padding:5px 10px;font-size:13px;vertical-align:middle}
@@ -1161,14 +1168,15 @@ function elPay(id){
     <div class="fld"><label>Amount paid (₱)</label><input name="paid_amount" type="number" step="any" value="${esc(b.paid_amount || b.amount)}"></div>
     <div class="fld"><label>Method</label><select name="method">${opts(['Bank transfer','GCash','Maya','Cash','Check'], b.method || 'Bank transfer')}</select></div>
     <div class="fld"><label>Reference no.</label><input name="reference" value="${esc(b.reference || '')}"></div>
-    <div class="fld wide"><label>Proof of payment</label><input type="file" id="proof-file" accept="image/*,application/pdf">${b.proof_url ? `<a href="${esc(b.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700;font-size:13px">View current proof ↗</a>` : ''}</div>`;
+    <div class="fld wide"><label>Proof of payment</label>${proofZone(b.proof_url)}</div>`;
+  wireProofZone();
   $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="elUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elPaySave('${id}')">Mark paid</button>`;
   $('ovl').classList.add('on');
 }
 async function elPaySave(id){
   const b = byId('ElecBills', id), btn = $('m-save');
   const f = Object.fromEntries([...$('m-body').querySelectorAll('[name]')].map(el => [el.name, el.value.trim()]));
-  const file = $('proof-file')?.files?.[0];
+  const file = proofPicked;
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     if (file) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(file); }
@@ -1518,7 +1526,7 @@ function openForm(t, id, preset){
     if (type === 'select') input = `<select name="${k}">${opts(o, v)}</select>`;
     else if (type === 'ref') input = `<select name="${k}">${tenantOpts(v, '—')}</select>`;
     else if (type === 'textarea') input = `<textarea name="${k}">${esc(v)}</textarea>`;
-    else if (type === 'proof') input = `<input type="hidden" name="${k}" value="${esc(v)}"><input type="file" id="proof-file" accept="image/*,application/pdf">${v ? `<a href="${esc(v)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700;font-size:13px">View current proof ↗</a>` : '<span class="hint">No proof attached yet</span>'}`;
+    else if (type === 'proof') input = `<input type="hidden" name="${k}" value="${esc(v)}">${proofZone(v)}`;
     else input = `<input name="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v)}">`;
     return `<div class="fld ${wide?'wide':''}"><label>${l}</label>${input}</div>`;
   }).join('');
@@ -1527,8 +1535,50 @@ function openForm(t, id, preset){
   if (id && t === 'Tenants') extra.push(`<button class="btn ghost" onclick="openForm('Payments',null,{tenant_id:'${id}'})">+ Payment</button><button class="btn ghost" onclick="openForm('PDCs',null,{tenant_id:'${id}'})">+ PDC</button>`);
   $('m-foot').innerHTML = `<div class="left">${extra.join('')}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="submitForm()">Save</button>`;
   $('ovl').classList.add('on');
+  wireProofZone();
 }
 function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, PDCs:{status:'On hand'} })[t]; }
+// Proof drop zone: click to choose, drag & drop, or paste a screenshot (Ctrl/Cmd+V) while the form is open
+let proofPicked = null;
+function proofZone(existing){
+  proofPicked = null;
+  return `<div id="proof-zone" class="dropzone" tabindex="0">
+      <input type="file" id="proof-file" accept="image/*,application/pdf" hidden>
+      <div id="proof-prev"><b>Drop, paste or click</b><span>Drag a screenshot here, press Ctrl/⌘+V to paste, or click to choose a file</span></div>
+    </div>${existing ? `<a href="${esc(existing)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700;font-size:13px">View current proof ↗</a>` : ''}`;
+}
+function setProof(file){
+  if (!file) return;
+  if (!/^image\/|application\/pdf/.test(file.type)) return toast('Use an image or a PDF');
+  if (file.size > 10 * 1024 * 1024) return toast('File is too big (max 10 MB)');
+  proofPicked = file;
+  const prev = $('proof-prev'); if (!prev) return;
+  prev.innerHTML = file.type.startsWith('image/')
+    ? `<img src="${URL.createObjectURL(file)}" alt=""><span>${esc(file.name || 'pasted image')} · <a href="#" onclick="event.stopPropagation();clearProof();return false">remove</a></span>`
+    : `<b>📄 ${esc(file.name)}</b><span><a href="#" onclick="event.stopPropagation();clearProof();return false">remove</a></span>`;
+  $('proof-zone').classList.add('has');
+}
+function clearProof(){ proofPicked = null; const z = $('proof-zone'); if (z) { z.classList.remove('has'); $('proof-prev').innerHTML = '<b>Drop, paste or click</b><span>Drag a screenshot here, press Ctrl/⌘+V to paste, or click to choose a file</span>'; } }
+function wireProofZone(){
+  const z = $('proof-zone'); if (!z) return;
+  const inp = $('proof-file');
+  z.onclick = () => inp.click();
+  z.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inp.click(); } };
+  inp.onchange = () => setProof(inp.files[0]);
+  z.ondragover = e => { e.preventDefault(); z.classList.add('over'); };
+  z.ondragleave = () => z.classList.remove('over');
+  z.ondrop = e => { e.preventDefault(); z.classList.remove('over'); setProof(e.dataTransfer.files[0]); };
+}
+document.addEventListener('paste', e => {
+  if (!$('proof-zone') || !$('ovl').classList.contains('on')) return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.kind === 'file' && /^image\/|application\/pdf/.test(i.type));
+  if (!item) return;
+  e.preventDefault();
+  const f = item.getAsFile();
+  setProof(f.name && f.name !== 'image.png' ? f : new File([f], `proof-${today()}.png`, { type: f.type }));
+  toast('Screenshot pasted');
+});
+
 // Proof of payment → same Cloudinary account the main admin uses for listing photos
 async function uploadProof(file){
   if (DEMO) return URL.createObjectURL(file);
@@ -1544,7 +1594,7 @@ async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
   const row = id ? {...byId(t,id)} : {};
   $('m-body').querySelectorAll('.fld [name]').forEach(el => row[el.name] = el.value.trim());
-  const proofFile = $('proof-file')?.files?.[0];
+  const proofFile = proofPicked;
   if (proofFile && proofFile.size > 10 * 1024 * 1024) return toast('Proof file is too big (max 10 MB)');
   if (t === 'Tenants' && !row.tenant_name) return toast('Tenant name is required');
   if (t === 'Payments' && (!row.tenant_id || !num(row.amount) || !row.date)) return toast('Tenant, date and amount are required');
