@@ -369,7 +369,7 @@ const prevMonth = m => { const [y,mo] = m.split('-').map(Number); return mo === 
 const lastDay = m => new Date(Date.UTC(+m.slice(0,4), +m.slice(5,7), 0)).getUTCDate();
 const dayOf = (m, d) => `${m}-${String(Math.min(lastDay(m), Math.max(1, num(d) || 1))).padStart(2,'0')}`;
 const ordinal = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
-const dueLabel = t => (t.rent_frequency && t.rent_frequency !== 'Monthly') ? t.rent_frequency.toLowerCase() : !num(t.due_day) ? '' : num(t.due_day) >= 30 ? 'EOM' : ordinal(num(t.due_day));
+const dueLabel = t => (t.rent_frequency && t.rent_frequency !== 'Monthly') ? t.rent_frequency : !num(t.due_day) ? '' : num(t.due_day) >= 30 ? 'EOM' : ordinal(num(t.due_day));
 const isCheck = mode => mode === 'PDC' || mode === 'Check';
 // Parts of a tenant's monthly dues that are NOT covered by a check → these need an SOA
 function soaParts(t, cusa){
@@ -541,7 +541,7 @@ function nextRentMonth(t, from){
 const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
 const soaHold = t => t.soa_status === 'Hold';
 function computeBill(t, period, inp){
-  const rent = rentDueIn(t, period) ? r2(num(t.monthly_rent) * rentMonths(t)) : 0;
+  const rent = rentMonths(t) === 1 ? num(t.monthly_rent) : 0;   // bi-annual / annual rent is paid in advance, not billed monthly
   const rent_vat = vatOn() && t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
   const mode = t.cusa_mode || 'Per sqm';
   const cusa = noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
@@ -612,10 +612,6 @@ function rOverview(){
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
     if ((!b || b.status !== 'Sent') && today() >= addDays(sendBy, -3) && today() <= due) al.push([today() >= sendBy ? 'var(--red)' : 'var(--amber)', `Send SOA to <b>${esc(t.tenant_name)}</b> by ${fmtDate(sendBy)} (due ${fmtDate(due)})`, 'billing']);
   });
-  ts.filter(t => rentMonths(t) > 1).forEach(t => {
-    if (!t.lease_start && !soaHold(t)) al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: ${esc(t.rent_frequency)} rent — set lease start so the rent month is known`, 'tenants']);
-    else if (rentDueIn(t, m)) al.push(['var(--blue)', `<b>${esc(t.tenant_name)}</b> ${esc(t.rent_frequency.toLowerCase())} rent due this month — ${peso(num(t.monthly_rent) * rentMonths(t))}`, 'billing']);
-  });
   ts.forEach(t => { const d = daysUntil(t.lease_end); if (d != null && d <= 90) al.push([d < 0 ? 'var(--red)' : 'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'}`, 'tenants']); });
   $('alerts').innerHTML = al.length ? al.slice(0,16).map(([c,h,t])=>`<div class="alert" style="--c:${c};cursor:pointer" onclick="showTab('${t}')"><span class="dot"></span><div>${h}</div></div>`).join('') : `<div class="empty"><b>All clear</b>Nothing due, overdue or bounced.</div>`;
 }
@@ -669,7 +665,7 @@ function rCollectibles(m){
   const income = [], coll = [];
   all.forEach(t => {
     const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
-    const rentNow = rentMonths(t) === 1 ? rent : rentDueIn(t, m) ? r2(rent * rentMonths(t)) : 0;   // bi-annual / annual: only in its month
+    const rentNow = rentMonths(t) === 1 ? rent : 0;   // bi-annual / annual rent is paid in advance — not a monthly collection
     const pdc = isCheck(t.rent_payment || t.payment_mode) ? rentNow + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
     const bt = (parts.includes('Rent') ? rentNow : 0) + (parts.includes('CUSA') ? cusa : 0);
     tr += rent; tc += cusa; tp += pdc; tb += bt;
