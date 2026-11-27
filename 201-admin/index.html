@@ -77,6 +77,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
 .grid2>*{min-width:0}
+.grid2.even{grid-template-columns:1fr 1fr}
+div.name{max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .box{padding:18px 20px}
 .box h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 table{width:100%;border-collapse:collapse}
@@ -214,7 +216,10 @@ table.condensed .muted{font-size:11px}
         <div class="bar"><i id="t-bar"></i></div>
         <div class="legend"><span style="--c:var(--green)">Collected</span><span style="--c:#C9D2DB">Remaining</span><span id="t-gap"></span></div>
       </div>
-      <div class="card box" style="margin-bottom:16px"><h3>Receivables <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
+      <div class="grid2 even" style="margin-bottom:16px">
+        <div class="card box"><h3>Monthly income <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
+        <div class="card box"><h3 id="mc-title">Monthly collections</h3><div class="tbl"><table id="mc-tbl" class="condensed"></table></div></div>
+      </div>
       <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
       <div hidden><span id="pdc-note"></span><table id="pdc-sum"></table><span id="bt-note"></span><table id="bt-sum"></table><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
     </section>
@@ -657,20 +662,35 @@ function rCollectibles(m){
   // per-tenant monthly rent & CUSA (from tenant setup)
   const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
   const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
-  // Simple receivables table: business | rent | CUSA | due | PDC amount | bank-transfer amount (needs SOA)
+  // Monthly income (contract: rent + CUSA)  vs  Monthly collections (what comes in this month: by check vs bank transfer/SOA)
   const all = ts.slice().sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || byUnit(a,b));
-  let tr = 0, tc = 0, tp = 0, tb = 0;
   const amt = v => v ? peso(v).slice(1) : '';
+  let tr = 0, tc = 0, tp = 0, tb = 0;
+  const income = [], coll = [];
+  all.forEach(t => {
+    const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
+    const rentNow = rentMonths(t) === 1 ? rent : rentDueIn(t, m) ? r2(rent * rentMonths(t)) : 0;   // bi-annual / annual: only in its month
+    const pdc = isCheck(t.rent_payment || t.payment_mode) ? rentNow + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
+    const bt = (parts.includes('Rent') ? rentNow : 0) + (parts.includes('CUSA') ? cusa : 0);
+    tr += rent; tc += cusa; tp += pdc; tb += bt;
+    const nm = `<td title="${esc(t.tenant_name)}"><div class="name">${esc(t.tenant_name)}</div></td>`;
+    income.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td class="num">${amt(rent + cusa)}</td></tr>`);
+    coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td></tr>`);
+  });
   $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
-  $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th>Due date</th><th class="num">PDC due amount</th><th class="num">For bank transfer</th></tr>` + all.map(t => {
-      const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
-      const rentNow = rentMonths(t) === 1 ? rent : rentDueIn(t, m) ? r2(rent * rentMonths(t)) : 0;   // bi-annual / annual: only in its month
-      const pdc = isCheck(t.rent_payment || t.payment_mode) ? rentNow + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
-      const bt = (parts.includes('Rent') ? rentNow : 0) + (parts.includes('CUSA') ? cusa : 0);
-      tr += rent; tc += cusa; tp += pdc; tb += bt;
-      return `<tr class="click" onclick="openTenant('${t.id}')"><td>${esc(t.tenant_name)}</td><td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td>${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td></tr>`;
-    }).join('') + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td></tr>`
+  $('mc-title').textContent = `Monthly collections · ${fmtMonth(m)}`;
+  $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td class="num"><b>${amt(tr + tc)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
+  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th></tr>${coll.join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td></tr>
+    <tr style="background:var(--green-l)"><td colspan="2"><b>Total to collect</b></td><td colspan="2" class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
+  // the bar on top follows the same numbers: collected this month vs total to collect
+  const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
+  $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
+  $('t-roll').textContent = peso0(got); $('t-target').textContent = peso0(due);
+  $('t-bar').style.width = (due ? Math.min(100, got / due * 100) : 0) + '%';
+  $('t-gap').innerHTML = due && !left ? `<b style="color:var(--green-d)">Fully collected ✓</b>` : `<b style="color:var(--red)">Remaining: ${peso0(left)}</b>${due ? ` <span class="muted">(${Math.round(got / due * 100)}% collected)</span>` : ''}`;
 
   // 2) PDC / check: amount per check = rent (+ CUSA when combined)
   const pdcT = all.filter(t => isCheck(t.rent_payment || t.payment_mode));
