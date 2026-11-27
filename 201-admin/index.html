@@ -302,6 +302,7 @@ table.condensed .muted{font-size:11px}
       <div class="card el-sum" id="el-sum"></div>
       <div class="card rates" id="el-head" style="display:none"></div>
       <div class="card tbl" id="el-wrap"></div>
+      <div id="el-hist"></div>
     </section>
 
     <section class="pane" id="p-payables">
@@ -788,6 +789,17 @@ async function seedMeralco(){
     toast('Meralco November 2026 added');
   } catch(e){ console.error('meralco seed failed', e); toast('Meralco setup failed: ' + e.message); }
 }
+const PW_HIST = [['2025-07',1435.62,25],['2025-08',2108.22,35],['2025-09',1829.90,31],['2025-10',2108.22,35],['2025-11',2038.64,34],['2025-12',1630.44,28],['2026-01',1969.06,33],['2026-02',1828.96,31],['2026-03',1579.18,25],['2026-04',1899.48,32],['2026-05',1760.32,30],['2026-06',1898.80,32],['2026-07',2108.22,35],['2026-08',2386.54,39],['2026-09',2177.80,36],['2026-10',1695.38,29]];
+async function seedPrimewaterHistory(){
+  if (DEMO || S.mig_pw_hist_2026_10) return;
+  try {
+    const rows = PW_HIST.filter(([m]) => !DB.ElecPeriods.some(p => p.id === 'PW-' + m))
+      .map(([m, php, cum]) => ({ id: 'PW-' + m, meralco_kwh: cum, meralco_total: php, rate: Math.round(php / cum * 100) / 100, notes: 'Primewater main bill (history)' }));
+    if (rows.length) await saveMany('ElecPeriods', rows);
+    await save('Settings', { id:'mig_pw_hist_2026_10', value: new Date().toISOString() });
+    S.mig_pw_hist_2026_10 = '1';
+  } catch(e){ console.error('primewater history failed', e); }
+}
 async function flagV52Reading(){
   if (DEMO || S.mig_v52_reading_2026_11) return;
   try {
@@ -880,6 +892,7 @@ async function reload(){
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
+    await seedPrimewaterHistory();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1218,8 +1231,18 @@ function elCalc(mt, per, rate){
   const amount = ov !== '' && ov != null ? num(ov) : usage != null ? r2(usage * num(rate)) : 0;
   return { b, prev, curr, usage, ov, amount };
 }
+function elHistory(){
+  const ps = utilPeriods().filter(p => num(p.meralco_total)).sort((a,b) => b.m.localeCompare(a.m));
+  if (!ps.length) { $('el-hist').innerHTML = ''; return; }
+  const tq = ps.reduce((x,p) => x + num(p.meralco_kwh), 0), tp = ps.reduce((x,p) => x + num(p.meralco_total), 0);
+  const q = v => num(v).toLocaleString('en-PH',{minimumFractionDigits:2});
+  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th></tr>
+    ${ps.map(p => `<tr><td>${fmtMonth(p.m)}</td><td class="num">${q(p.meralco_kwh)}</td><td class="num">${peso(num(p.meralco_total)).slice(1)}</td><td class="num">${num(p.meralco_kwh) ? (num(p.meralco_total)/num(p.meralco_kwh)).toFixed(2) : '—'}</td></tr>`).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${q(tq)}</b></td><td class="num"><b>${peso(tp).slice(1)}</b></td><td class="num"><b>${tq ? (tp/tq).toFixed(2) : ''}</b></td></tr></table></div>`;
+}
 function rMeralco(){
   $('el-h1').textContent = UTIL;
+  elHistory();
   const pe = $('f-el-period'); if (!pe.value) pe.value = utilPeriods().map(p => p.m).sort().pop() || thisMonth();
   const per = pe.value, P = DB.ElecPeriods.find(p => p.id === perId(per)) || {};
   if (pe.dataset.p !== per) { pe.dataset.p = per; elGrid = {}; }
