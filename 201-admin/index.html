@@ -331,6 +331,7 @@ const FORMS = {
     ['rent_payment','Rent paid via','select',['',...PAY_MODES]],['rent_frequency','Rent paid','select',RENT_FREQ],
     ['cusa_payment','CUSA paid via','select',['',...CUSA_PAY]],['due_day','Due day of month (blank = default)','number'],
     ['soa_status','SOA','select',['Send','Hold']],['soa_days_before','Send SOA this many days before due','number'],
+    ['check_lead_days','Sends one check a month, this many days before check date (blank = gives a set of PDCs)','number'],['pdc_follow_up','PDC follow-up (shows in Needs attention until checks are on file)','text'],
     ['ewt_pct','EWT withheld by tenant (%)','number'],
     ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
     ['security_deposit','Security deposit held (₱)','number'],
@@ -546,6 +547,21 @@ async function importPdcs(){
     toast(`${rows.length} PDCs added` + (missing.size ? ` · tenant not found: ${[...missing].join(', ')}` : ''));
   } catch(e){ console.error('pdc import failed', e); toast('PDC import failed: ' + e.message); }
 }
+const PDC_NOTES_2026_11 = [
+  ['akmas', { pdc_follow_up: 'requested new set of checks (Nov 27)' }],
+  ['toothlu', { pdc_follow_up: 'new checks needed — rent escalation from Jan 2027' }],
+  ['beautiful life', { check_lead_days: '3', soa_days_before: '' }],
+  ['enerp', { pdc_follow_up: 'looking for copies of the checks' }],
+];
+async function pdcNotes(){
+  if (DEMO || S.mig_pdc_notes_2026_11) return;
+  const rows = PDC_NOTES_2026_11.map(([key, f]) => { const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key)); return t && { ...t, ...f }; }).filter(Boolean);
+  try {
+    if (rows.length) await saveMany('Tenants', rows);
+    await save('Settings', { id:'mig_pdc_notes_2026_11', value: new Date().toISOString() });
+    S.mig_pdc_notes_2026_11 = '1';
+  } catch(e){ console.error('pdc notes failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -554,6 +570,7 @@ async function reload(){
     await fixSeoRent();
     await fixBedooCusa();
     await importPdcs();
+    await pdcNotes();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -667,6 +684,15 @@ function rOverview(){
   ts.filter(t => overdueOf(t.id) > 0).forEach(t => al.push(['var(--red)', `<b>${esc(t.tenant_name)}</b> overdue ${peso(overdueOf(t.id))}`, 'tenants']));
   if (ts.length && !DB.Bills.some(b => b.period === m)) al.push(['var(--amber)', `${fmtMonth(m)} bills not created yet`, 'billing']);
   else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
+  // PDC follow-ups: monthly check tenants with nothing on file for next month
+  const nextM = (() => { const [y,mo] = thisMonth().split('-').map(Number); return mo === 12 ? `${y+1}-01` : `${y}-${String(mo+1).padStart(2,'0')}`; })();
+  ts.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).forEach(t => {
+    const has = DB.PDCs.some(p => p.tenant_id === t.id && p.status !== 'Bounced' && p.status !== 'Returned to tenant' && String(p.check_date).slice(0,7) === nextM);
+    if (has) { if (t.pdc_follow_up) al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: ${esc(t.pdc_follow_up)}`, 'pdcs']); return; }
+    const dd = num(t.due_day) || num(set('due_day')) || 5, checkDate = dayOf(nextM, dd);
+    if (num(t.check_lead_days)) al.push([today() >= addDays(checkDate, -num(t.check_lead_days)) ? 'var(--red)' : 'var(--blue)', `<b>${esc(t.tenant_name)}</b> sends a check monthly — expect the ${fmtMonth(nextM)} check by ${fmtDate(addDays(checkDate, -num(t.check_lead_days)))} (dated ${fmtDate(checkDate)})`, 'pdcs']);
+    else al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: no PDC on file for ${fmtMonth(nextM)}${t.pdc_follow_up ? ' — ' + esc(t.pdc_follow_up) : ''}`, 'pdcs']);
+  });
   ts.filter(t => !soaHold(t) && num(t.soa_days_before)).forEach(t => {
     const due = dayOf(m, num(t.due_day) || num(set('due_day')) || 5), sendBy = addDays(due, -num(t.soa_days_before));
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
