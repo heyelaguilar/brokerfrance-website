@@ -285,6 +285,7 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','Parking','Other'];
 const TENANT_STATUS = ['Active','Notice to Vacate','Moved Out'];
 const PAY_METHODS = ['Bank transfer','Cash','GCash','Maya','Check','PDC','BIR 2307 (EWT)','Other'];
+const PAY_FOR = ['Rent & CUSA','Utilities','Other'];
 const PAY_MODES = ['PDC','Bank transfer','Check','Cash','GCash / Maya'];
 const CUSA_PAY = ['Combined with rent','Bank transfer','PDC','Check','Cash','GCash / Maya','No CUSA'];
 const RENT_FREQ = ['Monthly','Bi-annual','Annual'];
@@ -345,6 +346,7 @@ const FORMS = {
   Payments: { title:'Payment', fields:[
     ['tenant_id','Tenant','ref','Tenants'],['date','Date received','date'],
     ['amount','Amount (₱)','number'],['method','Method','select',PAY_METHODS],
+    ['applies_to','For','select',PAY_FOR],
     ['bank','Bank','text'],['reference','Reference / check no.','text'],
     ['or_no','Official receipt no.','text'],['proof_url','Proof of payment (screenshot or PDF)','proof',null,1],['notes','Notes','textarea',null,1]]},
   PDCs: { title:'Check', fields:[
@@ -624,6 +626,20 @@ async function coffeeStoryNovRent(){
     S.mig_cs_rent_2026_11 = '1';
   } catch(e){ console.error('coffee story payment failed', e); }
 }
+async function squeezeSpotNov(){
+  if (DEMO || S.mig_squeeze_nov_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('squeeze'));
+  const ref = '4047 057 925246', base = { date:'2026-11-09', method:'GCash', bank:'GCash Express Send', reference:ref, by:ME };
+  try {
+    if (t && !DB.Payments.some(p => p.tenant_id === t.id && p.reference === ref)) await saveMany('Payments', [
+      { ...base, tenant_id:t.id, amount:25000, applies_to:'Rent & CUSA', notes:'Rent and CUSA (Nov 1–30, 2026) · total sent ₱31,600' },
+      { ...base, tenant_id:t.id, amount:1600,  applies_to:'Utilities',   notes:'Primewater Sep 2026 ₱600 + Waste hauling Sep 2026 ₱1,000' },
+      { ...base, tenant_id:t.id, amount:5000,  applies_to:'Other',       notes:'Refrigerator (1/2)' },
+    ]);
+    await save('Settings', { id:'mig_squeeze_nov_2026_11', value: new Date().toISOString() });
+    S.mig_squeeze_nov_2026_11 = '1';
+  } catch(e){ console.error('squeeze payment failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -637,6 +653,7 @@ async function reload(){
     await fixBeautifulLifeRent();
     await bedooNoCusa();
     await coffeeStoryNovRent();
+    await squeezeSpotNov();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -648,6 +665,8 @@ async function reload(){
 
 // ───────────────── LEDGER MATH ─────────────────
 const billsOf = id => DB.Bills.filter(b => b.tenant_id === id).sort((a,b) => a.period.localeCompare(b.period));
+// Only rent & CUSA payments count toward monthly collections (utilities / other charges are tracked but excluded)
+const forRent = p => !p.applies_to || p.applies_to === 'Rent & CUSA';
 const paysOf = id => DB.Payments.filter(p => p.tenant_id === id && p.method !== 'PDC').sort(   // SOA ledger: PDCs are tracked separately
   (a,b) => String(a.date).localeCompare(b.date));
 const balanceOf = id => r2(billsOf(id).reduce((s,b)=>s+num(b.total),0) - paysOf(id).reduce((s,p)=>s+num(p.amount),0));
@@ -726,7 +745,7 @@ function rOverview(){
   const m = $('f-ov-month').value;
   rCollectibles(m);
   const billed = DB.Bills.filter(b => b.period === m).reduce((s,b)=>s+num(b.total),0);
-  const coll = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
+  const coll = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).reduce((s,p)=>s+num(p.amount),0);
   const recv = activeTenants().concat(DB.Tenants.filter(t=>t.status==='Moved Out')).reduce((s,t)=>s+Math.max(0,balanceOf(t.id)),0);
   const overdue = DB.Tenants.reduce((s,t)=>s+overdueOf(t.id),0);
   const onHand = DB.PDCs.filter(p => (p.status||'On hand') === 'On hand');
@@ -796,7 +815,7 @@ function rCollectibles(m){
     const paid = paysOf(t.id).filter(p => String(p.date).slice(0,7) <= m).reduce((a,p)=>a+num(p.amount),0);
     return s + Math.max(0, r2(before - paid));
   }, 0);
-  const collected = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
+  const collected = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).reduce((s,p)=>s+num(p.amount),0);
   const totalColl = current + prevUnpaid, remaining = Math.max(0, totalColl - collected);
   $('col-title').textContent = `Collectibles · ${fmtMonth(m)}`;
   $('col-note').textContent = unbilled.length ? `${unbilled.length} tenant(s) not yet billed — utilities & waste pending` : '';
@@ -832,7 +851,7 @@ function rCollectibles(m){
       ST.pdc[pSt] = (ST.pdc[pSt] || 0) + 1; ST.pdcAmt[pSt] = (ST.pdcAmt[pSt] || 0) + pdc; if (pSt === 'Paid') ST.pdcPaid += pdc;
     }
     if (bt) {
-      const got = DB.Payments.filter(p => p.tenant_id === t.id && String(p.date).slice(0,7) === m && p.method !== 'PDC').reduce((x,p) => x + num(p.amount), 0);
+      const got = DB.Payments.filter(p => p.tenant_id === t.id && String(p.date).slice(0,7) === m && p.method !== 'PDC' && forRent(p)).reduce((x,p) => x + num(p.amount), 0);
       bSt = soaHold(t) ? 'On hold' : got >= bt - 0.005 ? 'Paid' : got > 0 ? 'Partial' : 'Unpaid';
       ST.bt[bSt] = (ST.bt[bSt] || 0) + 1; ST.btPaid += Math.min(got, bt); ST.btAmt[bSt === 'On hold' ? 'On hold' : 'Unpaid'] = (ST.btAmt[bSt === 'On hold' ? 'On hold' : 'Unpaid'] || 0) + (bSt === 'On hold' ? bt : Math.max(0, bt - got));
     }
@@ -851,7 +870,7 @@ function rCollectibles(m){
   $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
   // the bar on top follows the same numbers: collected this month vs total to collect
-  const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
+  const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
   $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
   const colSum = Math.min(got, due);   // actual payments received this month (same as the Collected card)
   $('t-roll').textContent = peso(colSum); $('t-target').textContent = peso(due);
@@ -1112,7 +1131,7 @@ function rPayments(){
   const total = list.reduce((s,p)=>s+num(p.amount),0);
   const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
   $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
-  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b></td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '' : '<span class="muted">attach</span>')}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '' : '<span class="muted">attach</span>')}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
     : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
 }
 function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
@@ -1249,7 +1268,7 @@ function openForm(t, id, preset){
   $('m-foot').innerHTML = `<div class="left">${extra.join('')}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="submitForm()">Save</button>`;
   $('ovl').classList.add('on');
 }
-function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, PDCs:{status:'On hand'} })[t]; }
 // Proof of payment → same Cloudinary account the main admin uses for listing photos
 async function uploadProof(file){
   if (DEMO) return URL.createObjectURL(file);
