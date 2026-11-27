@@ -761,6 +761,21 @@ async function flagV52Reading(){
     S.mig_v52_reading_2026_11 = '1';
   } catch(e){ console.error('v52 flag failed', e); }
 }
+// ELA, 27 Nov: the yellow rows on the Meralco sheet are paid
+async function meralcoYellowPaid(){
+  if (DEMO || S.mig_meralco_yellow_2026_11) return;
+  try {
+    const keys = ['coffee story','toothlu','ashcol'], rows = [];
+    DB.ElecBills.filter(b => b.period === '2026-11' && b.status !== 'Paid').forEach(b => {
+      const mt = byId('Meters', b.meter_id) || {}, t = tn(mt.tenant_id);
+      const hit = (t && keys.some(k => [t.tenant_name, t.trade_name].join(' ').toLowerCase().includes(k))) || /puremed/i.test(mt.payer || '');
+      if (hit) rows.push({ ...b, status:'Paid', paid_date:'2026-11-27', paid_amount:b.amount, method:'Bank transfer', notes:'Marked paid from the Meralco sheet (yellow) — confirm date / reference' });
+    });
+    if (rows.length) await saveMany('ElecBills', rows);
+    await save('Settings', { id:'mig_meralco_yellow_2026_11', value: new Date().toISOString() });
+    S.mig_meralco_yellow_2026_11 = '1';
+  } catch(e){ console.error('meralco yellow failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -781,6 +796,7 @@ async function reload(){
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await flagV52Reading();
+    await meralcoYellowPaid();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
