@@ -346,7 +346,7 @@ const FORMS = {
     ['tenant_id','Tenant','ref','Tenants'],['date','Date received','date'],
     ['amount','Amount (₱)','number'],['method','Method','select',PAY_METHODS],
     ['bank','Bank','text'],['reference','Reference / check no.','text'],
-    ['or_no','Official receipt no.','text'],['notes','Notes','textarea',null,1]]},
+    ['or_no','Official receipt no.','text'],['proof_url','Proof of payment (screenshot or PDF)','proof',null,1],['notes','Notes','textarea',null,1]]},
   PDCs: { title:'Check', fields:[
     ['tenant_id','Tenant','ref','Tenants'],['bank','Bank','text'],
     ['check_no','Check no.','text'],['amount','Amount (₱)','number'],
@@ -613,6 +613,16 @@ async function bedooNoCusa(){
     S.mig_bedoo_nocusa_2026_11 = '1';
   } catch(e){ console.error('bedoo no-cusa failed', e); }
 }
+async function coffeeStoryNovRent(){
+  if (DEMO || S.mig_cs_rent_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('coffee story'));
+  try {
+    if (t && !DB.Payments.some(p => p.tenant_id === t.id && p.reference === '476744'))
+      await save('Payments', { tenant_id:t.id, date:'2026-11-12', amount:20300, method:'Bank transfer', bank:'BPI → Security Bank (Brookland Ventures, Inc.)', reference:'476744', notes:'cs rent Nov · Confirmation no. 1631608535426', by:ME });
+    await save('Settings', { id:'mig_cs_rent_2026_11', value: new Date().toISOString() });
+    S.mig_cs_rent_2026_11 = '1';
+  } catch(e){ console.error('coffee story payment failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -625,6 +635,7 @@ async function reload(){
     await markNovPdcPaid();
     await fixBeautifulLifeRent();
     await bedooNoCusa();
+    await coffeeStoryNovRent();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -1096,7 +1107,7 @@ function rPayments(){
   const total = list.reduce((s,p)=>s+num(p.amount),0);
   const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
   $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
-  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b></td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b></td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '' : '<span class="muted">attach</span>')}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
     : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
 }
 function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
@@ -1223,6 +1234,7 @@ function openForm(t, id, preset){
     if (type === 'select') input = `<select name="${k}">${opts(o, v)}</select>`;
     else if (type === 'ref') input = `<select name="${k}">${tenantOpts(v, '—')}</select>`;
     else if (type === 'textarea') input = `<textarea name="${k}">${esc(v)}</textarea>`;
+    else if (type === 'proof') input = `<input type="hidden" name="${k}" value="${esc(v)}"><input type="file" id="proof-file" accept="image/*,application/pdf">${v ? `<a href="${esc(v)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700;font-size:13px">View current proof ↗</a>` : '<span class="hint">No proof attached yet</span>'}`;
     else input = `<input name="${k}" type="${type}" ${type==='number'?'step="any"':''} value="${esc(v)}">`;
     return `<div class="fld ${wide?'wide':''}"><label>${l}</label>${input}</div>`;
   }).join('');
@@ -1233,17 +1245,30 @@ function openForm(t, id, preset){
   $('ovl').classList.add('on');
 }
 function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
+// Proof of payment → same Cloudinary account the main admin uses for listing photos
+async function uploadProof(file){
+  if (DEMO) return URL.createObjectURL(file);
+  const fd = new FormData();
+  fd.append('file', file); fd.append('upload_preset', 'francebrokerage'); fd.append('tags', '201-brookland-proof');
+  const res = await fetch('https://api.cloudinary.com/v1_1/dg5p9ccnu/auto/upload', { method:'POST', body: fd });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok || !d.secure_url) throw new Error('Proof upload failed' + (d.error ? ': ' + d.error.message : ''));
+  return d.secure_url;
+}
 function closeForm(){ $('ovl').classList.remove('on'); editing = null; }
 async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
   const row = id ? {...byId(t,id)} : {};
   $('m-body').querySelectorAll('.fld [name]').forEach(el => row[el.name] = el.value.trim());
+  const proofFile = $('proof-file')?.files?.[0];
+  if (proofFile && proofFile.size > 10 * 1024 * 1024) return toast('Proof file is too big (max 10 MB)');
   if (t === 'Tenants' && !row.tenant_name) return toast('Tenant name is required');
   if (t === 'Payments' && (!row.tenant_id || !num(row.amount) || !row.date)) return toast('Tenant, date and amount are required');
   if (t === 'PDCs' && (!row.tenant_id || !num(row.amount) || !row.check_date)) return toast('Tenant, amount and check date are required');
   if (t === 'Payments' && !row.by) row.by = ME;
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
+    if (proofFile) { btn.textContent = 'Uploading proof…'; row.proof_url = await uploadProof(proofFile); btn.textContent = 'Saving…'; }
     if (t === 'PDCs' && row.status === 'Cleared' && !row.payment_id) {
       row.cleared_date ||= today();
       const pay = await save('Payments', { tenant_id:row.tenant_id, date:row.cleared_date, amount:row.amount, method:'PDC', bank:row.bank, reference:row.check_no, pdc_id:row.id||'', notes: row.for_period ? 'For ' + fmtMonth(row.for_period) : '', by:ME });
