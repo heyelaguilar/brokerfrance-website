@@ -42,11 +42,10 @@ async function getAccessToken(sa) {
 }
 
 async function sheetsFromEnv() {
-  // Accept either the bare ID or the full sheet URL; strip quotes/whitespace
-  const raw = String(process.env.BROOKLAND_SHEET_ID || '').trim().replace(/^['"]|['"]$/g, '');
-  const sheetId = (raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/^([a-zA-Z0-9_-]{20,})$/) || [])[1];
-  if (!raw) return { error: 'BROOKLAND_SHEET_ID is not set in Netlify', setup: true };
-  if (!sheetId) return { error: 'BROOKLAND_SHEET_ID does not look like a Google Sheet ID or URL — paste the part between /d/ and /edit', setup: true };
+  // Sheet ID: from BROOKLAND_SHEET_ID (bare ID or full URL, any stray text ignored), else the default CRM sheet
+  const DEFAULT_SHEET_ID = '1q2UJYCdq5X2OtDexM7igwooxDMvtusGYL6OXHXR-aow';
+  const raw = String(process.env.BROOKLAND_SHEET_ID || '');
+  const sheetId = (raw.match(/\/d\/([a-zA-Z0-9_-]{30,})/) || raw.match(/([a-zA-Z0-9_-]{30,})/) || [])[1] || DEFAULT_SHEET_ID;
   let sa;
   try { sa = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON); } catch { return { error: 'GOOGLE_SERVICE_ACCOUNT_JSON is missing' }; }
   const token = await getAccessToken(sa);
