@@ -747,6 +747,17 @@ async function seedMeralco(){
     toast('Meralco November 2026 added');
   } catch(e){ console.error('meralco seed failed', e); toast('Meralco setup failed: ' + e.message); }
 }
+async function flagV52Reading(){
+  if (DEMO || S.mig_v52_reading_2026_11) return;
+  try {
+    const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('v52'));
+    const mt = t && DB.Meters.find(m => m.tenant_id === t.id);
+    const b = mt && DB.ElecBills.find(x => x.meter_id === mt.id && x.period === '2026-11');
+    if (b) await save('ElecBills', { ...b, needs_reading:'Yes', notes:'Temporary ₱8,000 — needs actual November reading' });
+    await save('Settings', { id:'mig_v52_reading_2026_11', value: new Date().toISOString() });
+    S.mig_v52_reading_2026_11 = '1';
+  } catch(e){ console.error('v52 flag failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -766,6 +777,7 @@ async function reload(){
     await akmasArrears();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
+    await flagV52Reading();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
@@ -895,6 +907,7 @@ function rOverview(){
   ts.filter(t => pastDueBefore(t.id, thisMonth()) > 0).forEach(t => al.push(['var(--red)', `<b>${esc(t.tenant_name)}</b> past due ${peso(pastDueBefore(t.id, thisMonth()))}`, 'billing']));
   if (ts.length && !DB.Bills.some(b => b.period === m)) al.push(['var(--amber)', `${fmtMonth(m)} bills not created yet`, 'billing']);
   else if (unsentBills().length) al.push(['var(--amber)', `${unsentBills().length} SOA(s) for ${fmtMonth(m)} not sent yet`, 'billing']);
+  DB.ElecBills.filter(b => b.needs_reading === 'Yes').forEach(b => { const mt = byId('Meters', b.meter_id); if (mt) al.push(['var(--amber)', `<b>${esc(meterName(mt))}</b>: get the actual Meralco reading for ${fmtMonth(b.period)}${num(b.amount_override) ? ` (billed ${peso(b.amount_override)} for now)` : ''}`, 'meralco']); });
   // PDC follow-ups: monthly check tenants with nothing on file for next month
   const nextM = (() => { const [y,mo] = thisMonth().split('-').map(Number); return mo === 12 ? `${y+1}-01` : `${y}-${String(mo+1).padStart(2,'0')}`; })();
   ts.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).forEach(t => {
@@ -1109,7 +1122,7 @@ function rMeralco(){
     const st = mt.type === 'Building' ? '<span class="muted">building</span>'
       : paid ? `<b>Paid ✓</b> <span class="muted">${fmtDate(c.b.paid_date).replace(/, \d{4}$/, '')}</span>${c.b.proof_url ? ` · <a href="${esc(c.b.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">proof ↗</a>` : ''}`
       : c.b ? `<button class="btn sm" onclick="elPay('${c.b.id}')">Mark paid</button>` : '<span class="muted">save first</span>';
-    return `<tr><td style="white-space:nowrap">${esc(mt.unit)}</td><td><b>${esc(meterName(mt))}</b>${meterLabel(mt) ? ` <span class="muted">${esc(meterLabel(mt))}</span>` : ''}</td>
+    return `<tr><td style="white-space:nowrap">${esc(mt.unit)}</td><td><b>${esc(meterName(mt))}</b>${meterLabel(mt) ? ` <span class="muted">${esc(meterLabel(mt))}</span>` : ''}${c.b && c.b.needs_reading === 'Yes' ? '<div style="color:var(--amber);font-size:12px;font-weight:700">⚠ Needs actual reading</div>' : ''}</td>
       <td class="num"><input class="grid-in" data-m="${mt.id}" data-k="curr" value="${esc(c.curr)}" inputmode="decimal"></td>
       <td class="num">${c.prev === '' ? '<span class="muted">—</span>' : num(c.prev).toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
       <td class="num" id="el-u-${mt.id}">${c.usage == null ? '' : c.usage.toLocaleString('en-PH',{minimumFractionDigits:1})}</td>
@@ -1152,7 +1165,10 @@ async function saveElec(){
   const rows = activeMeters().map(mt => {
     const c = elCalc(mt, per, rate);
     if (c.curr === '' && (c.ov === '' || c.ov == null) && !c.b) return null;
-    return { ...(c.b || {}), period: per, meter_id: mt.id, prev: c.prev, curr: c.curr, rate, amount_override: c.ov ?? '', amount: c.amount, status: c.b?.status || (mt.type === 'Building' ? '' : 'Unpaid') };
+    const read = c.b && c.b.needs_reading === 'Yes' && c.usage > 0 && String(c.curr) !== String(c.b.curr);
+    const ov = read && String(c.ov) === String(c.b.amount_override) ? '' : (c.ov ?? '');   // a real reading replaces the temporary fixed amount
+    const amount = ov !== '' ? num(ov) : c.usage != null ? r2(c.usage * num(rate)) : 0;
+    return { ...(c.b || {}), period: per, meter_id: mt.id, prev: c.prev, curr: c.curr, rate, amount_override: ov, amount, needs_reading: read ? '' : (c.b?.needs_reading || ''), status: c.b?.status || (mt.type === 'Building' ? '' : 'Unpaid') };
   }).filter(Boolean);
   btn.disabled = true; btn.textContent = 'Saving…';
   try { await save('ElecPeriods', head); await saveMany('ElecBills', rows); elGrid = {}; toast(`Saved ${rows.length} meter reading(s) for ${fmtMonth(per)}`); rMeralco(); badges(); }

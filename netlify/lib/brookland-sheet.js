@@ -13,7 +13,7 @@ const SCHEMA = {
   PDCs:     ['id','tenant_id','check_no','bank','amount','check_date','for_period','status','deposited_date','cleared_date','payment_id','notes','updated'],
   EmailLog: ['id','date','tenant_id','type','to','cc','subject','status','by','updated'],
   Meters:      ['id','unit','label','tenant_id','payer','type','sort','active','notes','updated'],
-  ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','paid_date','paid_amount','method','reference','proof_url','notes','updated'],
+  ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','needs_reading','paid_date','paid_amount','method','reference','proof_url','notes','updated'],
   ElecPeriods: ['id','billing_period','reading_period','billing_date','due_date','meralco_kwh','rate','meralco_total','common_amount','notes','updated'],
   Settings: ['id','value','updated'],
 };
