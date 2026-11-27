@@ -64,7 +64,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
 .kpi{padding:16px 18px}
 .kpi .l{font-size:12px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em}
-.kpi .v{font-size:24px;font-weight:800;margin-top:6px}
+.kpi .v{font-size:21px;font-weight:800;margin-top:6px}
 .kpi .s{font-size:12px;color:var(--ink3);margin-top:2px}
 .kpi.bad .v{color:var(--red)}.kpi.good .v{color:var(--green-d)}
 .target{padding:20px 22px;margin-bottom:18px}
@@ -352,6 +352,7 @@ const FORMS = {
 };
 
 // ───────────────── STATE / UTILS ─────────────────
+let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
 let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
@@ -586,13 +587,14 @@ function rOverview(){
   const onHand = DB.PDCs.filter(p => (p.status||'On hand') === 'On hand');
   const due = pdcsDue();
   const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
+  const mon = fmtMonth(m).split(' ')[0];
   const k = [
-    ['Tenants', actv + notice, notice ? `${actv} active · ${notice} on notice` : 'active', ''],
-    ['Total receivables', peso0(recv), `${DB.Tenants.filter(t=>balanceOf(t.id)>0).length} tenant(s) with balance`, ''],
-    ['Overdue', peso0(overdue), `${DB.Tenants.filter(t=>overdueOf(t.id)>0).length} tenant(s) past due`, overdue ? 'bad' : 'good'],
-    [`Collected · ${fmtMonth(m).split(' ')[0]}`, peso0(coll), billed ? `${Math.round(coll/billed*100)}% of ${peso0(billed)} billed` : 'no bills yet this month', ''],
-    ['PDCs on hand', peso0(onHand.reduce((s,p)=>s+num(p.amount),0)), `${onHand.length} check(s)`, ''],
-    ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : 'good'],
+    ['Monthly income', peso(SUM.tr + SUM.tc), `Rent ${peso(SUM.tr)} · CUSA ${peso(SUM.tc)}`, ''],
+    [`To collect · ${mon}`, peso(SUM.tp + SUM.tb), `${SUM.n} tenants`, ''],
+    ['PDC', peso(SUM.tp), `${SUM.nP} tenant(s) · ${onHand.length} check(s) on hand`, ''],
+    ['Bank transfer · SOA', peso(SUM.tb), `${SUM.nB} tenant(s) need SOA`, ''],
+    [`Collected · ${mon}`, peso(coll), SUM.tp + SUM.tb ? `${Math.round(coll / (SUM.tp + SUM.tb) * 100)}% of ${peso0(SUM.tp + SUM.tb)}` : '', coll && coll >= SUM.tp + SUM.tb ? 'good' : ''],
+    ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : ''],
   ];
   $('kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
   const ts = activeTenants();
@@ -673,6 +675,9 @@ function rCollectibles(m){
     income.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td class="num">${amt(rent + cusa)}</td></tr>`);
     coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(pdc + bt)}</b></td></tr>`);
   });
+  SUM = { tr, tc, tp, tb, n: all.length,
+    nP: all.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).length,
+    nB: all.filter(t => { const c = cusaOf(t), p = soaParts(t, c); return (p.includes('Rent') && rentMonths(t) === 1) || p.includes('CUSA'); }).length };
   $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
   $('mc-title').textContent = `Monthly collections · ${fmtMonth(m)}`;
   $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
