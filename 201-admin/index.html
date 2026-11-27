@@ -203,6 +203,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
     <section class="pane" id="p-overview">
       <div class="hdr"><div><h1>Overview</h1><p id="ov-sub">Receivables, collections and checks at a glance.</p></div>
         <div class="tools"><input type="month" id="f-ov-month"><button class="btn ghost" onclick="reload()">Refresh</button></div></div>
+      <div class="card box" style="margin-bottom:16px"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl"></table></div></div>
       <div class="card target">
         <div class="row"><h3 id="t-title">Billed this month vs ₱600K target</h3><div><b id="t-roll">—</b> <span class="muted">of</span> <b id="t-target">—</b></div></div>
         <div class="bar"><i id="t-bar"></i></div>
@@ -210,13 +211,10 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
       </div>
       <div class="kpis" id="kpis"></div>
       <div class="grid2" style="margin-bottom:16px">
-        <div class="card box"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl"></table></div></div>
         <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
-      </div>
-      <div class="grid2">
-        <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
       </div>
+      <div class="card box"><h3>Tenant balances</h3><div class="tbl"><table id="bal-tbl"></table></div></div>
     </section>
 
     <section class="pane" id="p-billing">
@@ -247,7 +245,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
     </section>
 
     <section class="pane" id="p-tenants">
-      <div class="hdr"><div><h1>Tenants</h1><p>Billing setup per tenant: rent, VAT, EWT, CUSA, utilities, waste and email recipients.</p></div>
+      <div class="hdr"><div><h1>Tenants</h1><p>Billing setup per tenant: rent, CUSA, EWT, utility rates and email recipients.</p></div>
         <div class="tools"><input id="f-tn-q" placeholder="Search tenant…"><select id="f-tn-status"></select><button class="btn" onclick="openForm('Tenants')">+ Add tenant</button></div></div>
       <div class="card tbl" id="tn-wrap"></div>
     </section>
@@ -320,7 +318,7 @@ const FORMS = {
     ['monthly_rent','Monthly rent (₱)','number'],['rent_vat','Add VAT on rent? (only if VAT is on in Settings)','select',['No','Yes']],
     ['ewt_pct','EWT withheld by tenant (%)','number'],['due_day','Due day (blank = default)','number'],
     ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
-    ['waste_fee','Waste hauling per month (₱)','number'],['security_deposit','Security deposit held (₱)','number'],
+    ['security_deposit','Security deposit held (₱)','number'],
     ['elec_rate','Own Meralco rate ₱/kWh (blank = monthly rate)','number'],['water_rate','Own water rate ₱/cu.m (blank = default)','number'],
     ['h','Lease'],
     ['lease_start','Lease start','date'],['lease_end','Lease end','date'],
@@ -425,7 +423,7 @@ function computeBill(t, period, inp){
   const wUse = Math.max(0, num(inp.water_curr) - num(inp.water_prev)), eUse = Math.max(0, num(inp.elec_curr) - num(inp.elec_prev));
   const water_amt = inp.water_curr !== '' && inp.water_curr != null ? r2(wUse * water_rate) : num(inp.water_amt);
   const elec_amt = inp.elec_curr !== '' && inp.elec_curr != null ? r2(eUse * elec_rate) : num(inp.elec_amt);
-  const waste = num(t.waste_fee);
+  const waste = num(inp.waste);   // entered monthly in the billing grid
   const other_amt = num(inp.other_amt);
   const ewt = r2(rent * num(t.ewt_pct) / 100);
   const summ = soaSummary(t.id, period, inp.bill_date);
@@ -503,7 +501,7 @@ function rCollectibles(m){
     else {
       unbilled.push(t);
       const c = computeBill(t, m, { bill_date: dayOf(m, set('bill_day')) });   // no meter readings → utilities 0
-      ['rent','rent_vat','cusa','waste','ewt'].forEach(k => sum[k] += c[k]);
+      ['rent','rent_vat','cusa','ewt'].forEach(k => sum[k] += c[k]);
     }
   });
   // closed bills for tenants who moved out still count if billed this month
@@ -517,7 +515,7 @@ function rCollectibles(m){
   }, 0);
   const collected = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
   $('col-title').textContent = `Collectibles · ${fmtMonth(m)}`;
-  $('col-note').textContent = unbilled.length ? `${unbilled.length} tenant(s) not yet billed — utilities pending` : '';
+  $('col-note').textContent = unbilled.length ? `${unbilled.length} tenant(s) not yet billed — utilities & waste pending` : '';
   const rows = keys.filter(([k]) => sum[k] || ['rent','cusa'].includes(k)).map(([k,l]) => `<tr><td>${l}</td><td class="num">${k==='ewt'?'−':''}${peso(sum[k])}</td></tr>`).join('');
   $('col-tbl').innerHTML = `<tr><th>Charge</th><th class="num">Amount</th></tr>${rows}
     <tr><td><b>Total current charges</b></td><td class="num"><b>${peso(current)}</b></td></tr>
@@ -558,7 +556,7 @@ function rBilling(){
     ts.forEach(t => {
       const b = existing.find(x => x.tenant_id === t.id);
       const prev = billsOf(t.id).filter(x => x.period < P).pop();
-      grid[t.id] = b ? { water_prev:b.water_prev, water_curr:b.water_curr, elec_prev:b.elec_prev, elec_curr:b.elec_curr, other_label:b.other_label, other_amt:b.other_amt, water_amt:b.water_amt, elec_amt:b.elec_amt }
+      grid[t.id] = b ? { water_prev:b.water_prev, water_curr:b.water_curr, elec_prev:b.elec_prev, elec_curr:b.elec_curr, other_label:b.other_label, other_amt:b.other_amt, waste:b.waste, water_amt:b.water_amt, elec_amt:b.elec_amt }
                      : { water_prev: prev?.water_curr ?? '', water_curr:'', elec_prev: prev?.elec_curr ?? '', elec_curr:'', other_label:'', other_amt:'' };
     });
   }
@@ -576,13 +574,13 @@ function rBilling(){
       <td class="num">${c.cusa?peso(c.cusa):'—'}</td>
       <td><div class="meter">${inp('water_prev')}→${inp('water_curr')}</div><small id="wa-${t.id}">${peso(c.water_amt)}</small></td>
       <td><div class="meter">${inp('elec_prev')}→${inp('elec_curr')}</div><small id="ea-${t.id}">${peso(c.elec_amt)}${c.elec_amt?` @ ${c.elec_rate}`:''}</small></td>
-      <td class="num">${c.waste?peso(c.waste):'—'}</td>
+      <td>${inp('waste',80)}</td>
       <td><div class="meter" style="flex-direction:column;align-items:stretch"><input class="grid-in" style="width:96px;text-align:left" placeholder="label" data-t="${t.id}" data-k="other_label" value="${esc(g.other_label||'')}">${inp('other_amt',96)}</div></td>
       <td class="num"><b id="tot-${t.id}">${peso(c.total)}</b>${c.penalty?`<small>penalty ${peso(c.penalty)}</small>`:''}</td>
       <td>${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at?`<div class="muted">${fmtDate(b.sent_at)}</div>`:'') : '<span class="muted">not saved</span>'}</td>
       <td><div class="row-actions">${b?`<button class="btn ghost sm" onclick="openSOA('${b.id}')">SOA</button><button class="btn sm" onclick="sendSOA('${b.id}',this)" ${dirty?'disabled title="Save bills first"':''}>✉ Send</button>`:''}</div></td></tr>`;
   }).join('');
-  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Water (cu.m)</th><th>Meralco (kWh)</th><th class="num">Waste</th><th>Other</th><th class="num">Current charges</th><th>Status</th><th></th></tr>${rows}
+  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Rent</th><th class="num">CUSA</th><th>Water (cu.m)</th><th>Meralco (kWh)</th><th>Waste (₱)</th><th>Other</th><th class="num">Current charges</th><th>Status</th><th></th></tr>${rows}
     <tr><td colspan="7" style="text-align:right;font-weight:800">Total current charges · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(sum)}</b></td><td colspan="2"></td></tr></table>`;
   $('bill-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { grid[e.target.dataset.t][e.target.dataset.k] = e.target.value.trim(); updateBillRow(e.target.dataset.t); }));
 }
@@ -824,7 +822,7 @@ function rTenants(){
     .sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
   $('tn-wrap').innerHTML = list.length ? `<table><tr><th>Tenant</th><th>Unit</th><th class="num">Rent</th><th>Charges</th><th>SOA email</th><th>Lease end</th><th class="num">Balance</th><th>Status</th></tr>${list.map(t => {
     const bal = balanceOf(t.id), d = daysUntil(t.lease_end);
-    const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco', num(t.waste_fee)?'Waste':''].filter(Boolean).join(' · ');
+    const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco'].filter(Boolean).join(' · ');
     return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.trade_name)}</div></td><td>${esc(t.floor)}<div class="muted">${esc(t.unit)}${t.area_sqm?' · '+t.area_sqm+' sqm':''}</div></td><td class="num">${t.monthly_rent?peso(t.monthly_rent):'—'}</td><td class="muted">${ch}</td><td>${t.email?esc(t.email):'<span class="pill p-red">missing</span>'}</td><td>${fmtDate(t.lease_end)}${d!=null&&d<=90&&t.status!=='Moved Out'?`<div class="muted" style="color:var(--amber)">${d<0?'expired':d+' days left'}</div>`:''}</td><td class="num">${bal>0?`<b ${overdueOf(t.id)?'style="color:var(--red)"':''}>${peso(bal)}</b>`:bal<0?`<span class="muted">${peso(-bal)} credit</span>`:'—'}</td><td>${pill(t.status||'Active')}</td></tr>`;}).join('')}</table>`
     : `<div class="empty"><b>${DB.Tenants.length?'No match':'No tenants yet'}</b>${DB.Tenants.length?'':'Add each tenant with their rent, CUSA, utilities and SOA email.'}</div>`;
 }
@@ -938,8 +936,8 @@ function demoData(){
   const meters = { TN1:[1200,1450,5200,6900], TN2:[800,950,3100,4200], TN3:[400,470,9000,11800], TN4:[300,360,2000,2600] };
   T.forEach(t => {
     const [wp,wc,ep,ec] = meters[t.id];
-    const c = computeBill(t, pm, { water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, bill_date:pm+'-01', elec_rate_month:12.1, water_rate_month:85 });
-    DB.Bills.push({ id:'BL-'+t.id, tenant_id:t.id, period:pm, bill_date:pm+'-01', due_date:pm+'-05', ...c, water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, status:'Sent', sent_at:pm+'-01' });
+    const c = computeBill(t, pm, { water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, bill_date:pm+'-01', elec_rate_month:12.1, water_rate_month:85, waste:1200 });
+    DB.Bills.push({ id:'BL-'+t.id, tenant_id:t.id, period:pm, bill_date:pm+'-01', due_date:pm+'-05', ...c, waste:1200, water_prev:wp, water_curr:wc, elec_prev:ep, elec_curr:ec, status:'Sent', sent_at:pm+'-01' });
   });
   DB.Payments = [['PA1','TN1',pm+'-04','Bank transfer'],['PA2','TN2',pm+'-05','GCash'],['PA3','TN3',pm+'-10','PDC']].map(([id,tenant_id,date,method]) => ({ id, tenant_id, date, amount: DB.Bills.find(b=>b.tenant_id===tenant_id).total, method, reference: method==='PDC'?'0001234':'TRX-'+id }));
   DB.Payments.push({ id:'PA4', tenant_id:'TN4', date:pm+'-08', amount:30000, method:'Cash', reference:'', or_no:'0451' });
