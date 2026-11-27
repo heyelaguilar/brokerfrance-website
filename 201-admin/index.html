@@ -80,6 +80,7 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
 .grid2>*{min-width:0}
+.grid2.half{grid-template-columns:1fr 1fr}
 .grid2.even2{grid-template-columns:1.2fr 0.8fr}
 .grid2.even{grid-template-columns:0.8fr 1.2fr}
 div.name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -224,10 +225,11 @@ table.condensed .muted{font-size:11px}
         <div class="card box"><h3>Monthly income <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
         <div class="card box"><h3 id="mc-title">Monthly collections</h3><div class="tbl"><table id="mc-tbl" class="condensed"></table></div></div>
       </div>
-      <div class="grid2 even2">
+      <div class="grid2 half" style="margin-bottom:16px">
         <div class="card box"><h3 id="pd-title">Past due</h3><div class="tbl"><table id="pd-tbl" class="condensed"></table></div></div>
-        <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
+        <div class="card box"><h3 id="pr-title">Payments received</h3><div class="tbl"><table id="pr-tbl" class="condensed"></table></div></div>
       </div>
+      <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
       <div hidden><span id="pdc-note"></span><table id="pdc-sum"></table><span id="bt-note"></span><table id="bt-sum"></table><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
     </section>
 
@@ -941,9 +943,20 @@ function rCollectibles(m){
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').textContent = `Past due · before ${fmtMonth(m)}`;
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th><th class="num">+ ${fmtMonth(m).split(' ')[0]}</th><th class="num">Balance</th></tr>` + pdRows.map(r =>
-      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" style="max-width:260px" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:260px;white-space:normal">${esc(r.open)}</div>` : ''}</td><td class="num">${amt(r.pd)}</td><td class="num">${amt(r.now)}</td><td class="num"><b>${amt(r.pd + r.now)}</b></td></tr>`).join('')
+      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" style="max-width:200px" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:210px;white-space:normal">${esc(r.open)}</div>` : ''}</td><td class="num">${amt(r.pd)}</td><td class="num">${amt(r.now)}</td><td class="num"><b>${amt(r.pd + r.now)}</b></td></tr>`).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td><td class="num"><b>${amt(nowTot)}</b></td><td class="num"><b style="font-size:15px">${amt(pdTot + nowTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
+
+  // Payments received this month for rent & CUSA
+  const pr = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).sort((a,b) => String(a.date).localeCompare(b.date));
+  $('pr-title').textContent = `Payments received · ${fmtMonth(m)} · rent & CUSA`;
+  $('pr-tbl').innerHTML = pr.length ? `<tr><th>Date</th><th>Business name</th><th>Mode</th><th class="num">Amount</th><th>Proof</th></tr>` + pr.map(p => {
+      const t = tn(p.tenant_id) || {};
+      const mode = p.method === 'PDC' ? `PDC${p.reference ? ' #' + esc(p.reference) : ''}` : esc(p.method) + (p.reference ? `<div class="muted">Ref ${esc(p.reference)}</div>` : '');
+      const proof = p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '<span class="muted">check</span>' : `<a href="#" onclick="event.stopPropagation();openForm('Payments','${p.id}');return false" style="color:var(--amber);font-weight:700">+ attach</a>`);
+      return `<tr class="click" onclick="openForm('Payments','${p.id}')"><td style="white-space:nowrap">${fmtDate(p.date).replace(/, \d{4}$/, '')}</td><td><div class="name" title="${esc(t.tenant_name)}">${esc(t.tenant_name || '—')}</div></td><td style="white-space:nowrap">${mode}</td><td class="num">${amt(num(p.amount))}</td><td>${proof}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td colspan="3"><b>Total</b></td><td class="num"><b>${amt(pr.reduce((x,p) => x + num(p.amount), 0))}</b></td><td></td></tr>`
+    : `<tr><td><div class="empty">No rent or CUSA payments recorded for ${fmtMonth(m)} yet.</div></td></tr>`;
 
   // the bar on top follows the same numbers: collected this month vs total to collect
   const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
