@@ -838,7 +838,7 @@ function rCollectibles(m){
   const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
   $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
   const colSum = Math.min(got, due);   // actual payments received this month (same as the Collected card)
-  $('t-roll').textContent = peso0(colSum); $('t-target').textContent = peso0(due);
+  $('t-roll').textContent = peso(colSum); $('t-target').textContent = peso(due);
   const segs = [
     ['Collected', colSum, '#1C3F2F'],
     ['PDC deposited', ST.pdcAmt['Deposited'] || 0, '#5FA67F'],
@@ -849,7 +849,7 @@ function rCollectibles(m){
     ['On hold', ST.btAmt['On hold'] || 0, '#E9ECEF'],
   ].filter(x => x[0] === 'Collected' || x[1] > 0.004);
   $('t-seg').innerHTML = due ? segs.map(([l,v,c]) => `<b title="${l}: ${peso(v)}" style="width:${v / due * 100}%;background:${c}"></b>`).join('') : '';
-  $('t-legend').innerHTML = segs.map(([l,v,c]) => `<span style="--c:${c}">${l} <b>${peso0(v)}</b></span>`).join('') + (due ? `<span class="muted">${Math.round(colSum / due * 100)}% collected</span>` : '');
+  $('t-legend').innerHTML = segs.map(([l,v,c]) => `<span style="--c:${c}">${l} <b>${peso(v)}</b></span>`).join('') + (due ? `<span class="muted">${(colSum / due * 100).toFixed(2)}% collected</span>` : '');
 
   // 2) PDC / check: amount per check = rent (+ CUSA when combined)
   const pdcT = all.filter(t => isCheck(t.rent_payment || t.payment_mode));
