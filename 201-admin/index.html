@@ -818,13 +818,12 @@ function rOverview(){
   const mon = fmtMonth(m).split(' ')[0];
   const toColl = SUM.tp + SUM.tb, unpaid = Math.max(0, toColl - Math.min(coll, toColl));
   const pdTenants = activeTenants().filter(t => pastDueBefore(t.id, m) > 0), pastDue = pdTenants.reduce((x,t) => x + pastDueBefore(t.id, m), 0);
-  const pdcLeft = Math.max(0, SUM.tp - ST.pdcPaid), btLeft = Math.max(0, SUM.tb - ST.btPaid);
   const k = [
-    ['Monthly income', peso(SUM.tr + SUM.tc), `Rent ${peso(SUM.tr)} · CUSA ${peso(SUM.tc)}`, ''],
-    [`Monthly actual collection · ${mon}`, peso(toColl), `PDC ${peso(SUM.tp)} · Bank transfer ${peso(SUM.tb)}`, ''],
-    [`Collection · ${mon}`, peso(coll), toColl ? `${(coll / toColl * 100).toFixed(2)}% of actual collection` : '', coll && coll >= toColl ? 'good' : ''],
-    [`Unpaid · ${mon}`, peso(unpaid), `PDC ${peso(pdcLeft)} · Bank transfer ${peso(btLeft)}`, unpaid ? 'bad' : 'good'],
-    ['Past due', peso(pastDue), pastDue ? `${pdTenants.length} tenant(s) · before ${fmtMonth(m)}` : 'none', pastDue ? 'bad' : 'good'],
+    ['Monthly income', peso(SUM.tr + SUM.tc), 'Rent + CUSA', ''],
+    ['Actual collection', peso(toColl), `Due this ${mon}`, ''],
+    ['Collected', peso(coll), toColl ? `${Math.round(coll / toColl * 100)}% collected` : '', coll && coll >= toColl ? 'good' : ''],
+    ['Unpaid', peso(unpaid), 'Still to collect', unpaid ? 'bad' : 'good'],
+    ['Past due', peso(pastDue), pastDue ? `${pdTenants.length} tenants` : 'None', pastDue ? 'bad' : 'good'],
   ];
   $('kpis').innerHTML = k.map(([l,v,s,c])=>`<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
   const ts = activeTenants();
