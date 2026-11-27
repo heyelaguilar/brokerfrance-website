@@ -304,7 +304,7 @@ table.condensed .muted{font-size:11px}
     </section>
 
     <section class="pane" id="p-payables">
-      <div class="hdr"><div><h1>Bills Payable</h1><p>Brookland's own bills — Meralco, Primewater, waste hauler — and whether they're paid.</p></div>
+      <div class="hdr"><div><h1>Bills Payable</h1></div>
         <div class="tools"><input type="month" id="f-pb-month"><select id="f-pb-cat"></select><button class="btn" onclick="openForm('Payables')">+ Add bill</button></div></div>
       <div class="kpis" id="pb-kpis"></div>
       <div class="card tbl" id="pb-wrap"></div>
@@ -1368,7 +1368,7 @@ function rPayables(){
   const list = DB.Payables.filter(b => String(b.due_date).slice(0,7) === m && (!cat || b.category === cat)).sort((a,b) => String(a.due_date).localeCompare(b.due_date));
   const tot = list.reduce((x,b) => x + num(b.amount), 0), paid = list.filter(b => b.status === 'Paid').reduce((x,b) => x + num(b.paid_amount || b.amount), 0);
   const od = pbOverdue();
-  $('pb-kpis').innerHTML = [['Total bills', peso(tot), `${list.length} bill(s) due in ${fmtMonth(m).split(' ')[0]}`, ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && paid >= tot ? 'good' : ''], ['Unpaid', peso(Math.max(0, tot - paid)), 'still to pay', tot - paid > 0 ? 'bad' : 'good'], ['Overdue', peso(od.reduce((x,b) => x + num(b.amount), 0)), od.length ? `${od.length} bill(s) past due` : 'none', od.length ? 'bad' : 'good']]
+  $('pb-kpis').innerHTML = [['Total bills', peso(tot), '', ''], ['Paid', peso(paid), '', paid && paid >= tot ? 'good' : ''], ['Unpaid', peso(Math.max(0, tot - paid)), '', tot - paid > 0 ? 'bad' : 'good'], ['Overdue', peso(od.reduce((x,b) => x + num(b.amount), 0)), '', od.length ? 'bad' : 'good']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
   $('pb-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Due date</th><th>Bill</th><th>Billing period</th><th class="num">Amount</th><th>Bill copy</th><th>Paid</th><th>From</th><th>Proof</th></tr>${list.map(b => {
       const paidB = b.status === 'Paid', late = !paidB && b.due_date < today();
