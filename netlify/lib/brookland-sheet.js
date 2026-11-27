@@ -42,8 +42,11 @@ async function getAccessToken(sa) {
 }
 
 async function sheetsFromEnv() {
-  const sheetId = process.env.BROOKLAND_SHEET_ID;
-  if (!sheetId) return { error: 'BROOKLAND_SHEET_ID is not set in Netlify', setup: true };
+  // Accept either the bare ID or the full sheet URL; strip quotes/whitespace
+  const raw = String(process.env.BROOKLAND_SHEET_ID || '').trim().replace(/^['"]|['"]$/g, '');
+  const sheetId = (raw.match(/\/d\/([a-zA-Z0-9_-]{20,})/) || raw.match(/^([a-zA-Z0-9_-]{20,})$/) || [])[1];
+  if (!raw) return { error: 'BROOKLAND_SHEET_ID is not set in Netlify', setup: true };
+  if (!sheetId) return { error: 'BROOKLAND_SHEET_ID does not look like a Google Sheet ID or URL — paste the part between /d/ and /edit', setup: true };
   let sa;
   try { sa = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT_JSON); } catch { return { error: 'GOOGLE_SERVICE_ACCOUNT_JSON is missing' }; }
   const token = await getAccessToken(sa);
@@ -51,7 +54,13 @@ async function sheetsFromEnv() {
   const api = async (path, method = 'GET', body) => {
     const r = await fetch(base + path, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
     const text = await r.text();
-    if (!r.ok) throw new Error(`Sheets ${r.status}: ${text.slice(0, 300)}`);
+    if (!r.ok) {
+      let msg = text.slice(0, 300);
+      try { msg = JSON.parse(text).error.message; } catch { if (/^\s*</.test(text)) msg = 'Google rejected the request (check BROOKLAND_SHEET_ID)'; }
+      if (r.status === 403) msg += ' — share the sheet with ' + sa.client_email + ' as Editor';
+      if (r.status === 404) msg += ' — sheet not found, check BROOKLAND_SHEET_ID';
+      throw new Error(`Sheets ${r.status}: ${msg}`);
+    }
     return text ? JSON.parse(text) : {};
   };
   return { api, sa };
