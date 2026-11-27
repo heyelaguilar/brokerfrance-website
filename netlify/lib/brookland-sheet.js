@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const SCHEMA = {
   Tenants:  ['id','tenant_name','trade_name','unit','floor','area_sqm','contact_person','email','cc_email','phone','tin',
              'monthly_rent','rent_vat','ewt_pct','cusa_mode','cusa_value','waste_fee','water_rate','elec_rate',
-             'due_day','lease_start','lease_end','security_deposit','status','notes','updated'],
+             'due_day','payment_mode','lease_start','lease_end','security_deposit','status','notes','updated'],
   Bills:    ['id','tenant_id','period','bill_date','due_date',
              'rent','rent_vat','cusa','water_prev','water_curr','water_rate','water_amt',
              'elec_prev','elec_curr','elec_rate','elec_amt','waste','other_label','other_amt','penalty','ewt',

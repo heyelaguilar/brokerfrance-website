@@ -165,6 +165,11 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
 .hint{font-size:12px;color:var(--ink4)}
 .ledger td{padding:7px 10px;font-size:13px}
+table.condensed th{padding:7px 10px}
+table.condensed td{padding:5px 10px;font-size:13px;vertical-align:middle}
+table.condensed .muted{font-size:11px}
+.cell-in{border:1.5px solid var(--border);border-radius:6px;padding:4px 6px;font-size:13px;background:#fff}
+.cell-in:focus{outline:none;border-color:var(--green-d)}
 .row-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
 </style>
 </head>
@@ -203,13 +208,13 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
     <section class="pane" id="p-overview">
       <div class="hdr"><div><h1>Overview</h1><p id="ov-sub">Receivables, collections and checks at a glance.</p></div>
         <div class="tools"><input type="month" id="f-ov-month"><button class="btn ghost" onclick="reload()">Refresh</button></div></div>
-      <div class="card box" style="margin-bottom:16px"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl"></table></div></div>
-      <div class="card target">
-        <div class="row"><h3 id="t-title">Billed this month vs ₱600K target</h3><div><b id="t-roll">—</b> <span class="muted">of</span> <b id="t-target">—</b></div></div>
-        <div class="bar"><i id="t-bar"></i></div>
-        <div class="legend"><span style="--c:var(--green)">Total current charges billed</span><span id="t-gap"></span></div>
-      </div>
       <div class="kpis" id="kpis"></div>
+      <div class="card target">
+        <div class="row"><h3 id="t-title">Collected vs remaining</h3><div><b id="t-roll">—</b> <span class="muted">collected of</span> <b id="t-target">—</b></div></div>
+        <div class="bar"><i id="t-bar"></i></div>
+        <div class="legend"><span style="--c:var(--green)">Collected</span><span style="--c:#C9D2DB">Remaining</span><span id="t-gap"></span></div>
+      </div>
+      <div class="card box" style="margin-bottom:16px"><h3>Monthly rent & CUSA per tenant <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
       <div class="grid2" style="margin-bottom:16px">
         <div class="card box"><h3><span id="col-title">Collectibles</span><span class="muted" id="col-note"></span></h3><div class="tbl"><table id="col-tbl"></table></div></div>
         <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
@@ -275,6 +280,7 @@ const DEMO = new URLSearchParams(location.search).has('demo');
 const FLOORS = ['Ground Floor','2nd Floor','3rd Floor','4th Floor','Roof Deck','Parking','Other'];
 const TENANT_STATUS = ['Active','Notice to Vacate','Moved Out'];
 const PAY_METHODS = ['Bank transfer','Cash','GCash','Maya','Check','PDC','BIR 2307 (EWT)','Other'];
+const PAY_MODES = ['PDC','Bank transfer','Cash','GCash / Maya','Check on due date'];
 const PDC_STATUS = ['On hand','Deposited','Cleared','Bounced','Replaced','Returned to tenant'];
 
 const SETTINGS_FIELDS = [
@@ -316,7 +322,8 @@ const FORMS = {
     ['email','SOA email (To)','text'],['cc_email','CC emails (comma-separated)','text'],
     ['h','Billing setup'],
     ['monthly_rent','Monthly rent (₱)','number'],['rent_vat','Add VAT on rent? (only if VAT is on in Settings)','select',['No','Yes']],
-    ['ewt_pct','EWT withheld by tenant (%)','number'],['due_day','Due day (blank = default)','number'],
+    ['payment_mode','Payment mode','select',['',...PAY_MODES]],['due_day','Due day of month (blank = default)','number'],
+    ['ewt_pct','EWT withheld by tenant (%)','number'],
     ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
     ['security_deposit','Security deposit held (₱)','number'],
     ['elec_rate','Own Meralco rate ₱/kWh (blank = monthly rate)','number'],['water_rate','Own water rate ₱/cu.m (blank = default)','number'],
@@ -459,10 +466,6 @@ function rOverview(){
   const overdue = DB.Tenants.reduce((s,t)=>s+overdueOf(t.id),0);
   const onHand = DB.PDCs.filter(p => (p.status||'On hand') === 'On hand');
   const due = pdcsDue();
-  $('t-title').textContent = `Billed for ${fmtMonth(m)} vs ₱600K target`;
-  $('t-roll').textContent = peso0(billed); $('t-target').textContent = peso0(TARGET);
-  $('t-bar').style.width = Math.min(100, billed / TARGET * 100) + '%';
-  $('t-gap').innerHTML = billed >= TARGET ? `<b style="color:var(--green-d)">Target covered ✓</b>` : `<b style="color:var(--red)">Gap: ${peso0(TARGET - billed)}</b>`;
   const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
   const k = [
     ['Tenants', actv + notice, notice ? `${actv} active · ${notice} on notice` : 'active', ''],
@@ -514,6 +517,11 @@ function rCollectibles(m){
     return s + Math.max(0, r2(before - paid));
   }, 0);
   const collected = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((s,p)=>s+num(p.amount),0);
+  const totalColl = current + prevUnpaid, remaining = Math.max(0, totalColl - collected);
+  $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
+  $('t-roll').textContent = peso0(collected); $('t-target').textContent = peso0(totalColl);
+  $('t-bar').style.width = (totalColl ? Math.min(100, collected / totalColl * 100) : 0) + '%';
+  $('t-gap').innerHTML = totalColl && !remaining ? `<b style="color:var(--green-d)">Fully collected ✓</b>` : `<b style="color:var(--red)">Remaining: ${peso0(remaining)}</b>${totalColl ? ` <span class="muted">(${Math.round(collected / totalColl * 100)}% collected)</span>` : ''}`;
   $('col-title').textContent = `Collectibles · ${fmtMonth(m)}`;
   $('col-note').textContent = unbilled.length ? `${unbilled.length} tenant(s) not yet billed — utilities & waste pending` : '';
   const rows = keys.filter(([k]) => sum[k] || ['rent','cusa'].includes(k)).map(([k,l]) => `<tr><td>${l}</td><td class="num">${k==='ewt'?'−':''}${peso(sum[k])}</td></tr>`).join('');
@@ -530,12 +538,23 @@ function rCollectibles(m){
   const rcRows = ts.map(t => {
     const rent = num(t.monthly_rent), cusa = cusaOf(t);
     tr += rent; tc += cusa;
-    return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.unit || '')}</div></td><td class="num">${rent ? peso(rent) : '—'}</td><td class="num">${cusa ? peso(cusa) : '—'}</td><td class="num"><b>${peso(rent + cusa)}</b></td></tr>`;
+    const dd = num(t.due_day) || num(set('due_day')) || 5;
+    const pdcN = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').length;
+    return `<tr><td class="click" onclick="openTenant('${t.id}')"><b>${esc(t.tenant_name)}</b> <span class="muted">${esc(t.unit || '')}</span></td>
+      <td class="num">${rent ? peso(rent) : '—'}</td><td class="num">${cusa ? peso(cusa) : '—'}</td><td class="num"><b>${peso(rent + cusa)}</b></td>
+      <td><select class="cell-in" onchange="quickSet('${t.id}','payment_mode',this.value)">${opts(PAY_MODES, t.payment_mode || '', '— set —')}</select>${t.payment_mode === 'PDC' ? ` <span class="muted">${pdcN} on hand</span>` : ''}</td>
+      <td style="white-space:nowrap"><input class="cell-in" type="number" min="1" max="31" style="width:56px" value="${esc(t.due_day || '')}" placeholder="${dd}" onchange="quickSet('${t.id}','due_day',this.value)"> <span class="muted">${fmtDate(dayOf(m, dd)).replace(/, \d{4}$/, '')}</span></td></tr>`;
   }).join('');
   $('rc-note').textContent = ts.length ? `· ${ts.length} tenant(s)` : '';
-  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Monthly rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${rcRows}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b style="font-size:15px">${peso(tr + tc)}</b></td></tr>`
+  $('rc-tbl').innerHTML = ts.length ? `<tr><th>Tenant</th><th class="num">Monthly rent</th><th class="num">CUSA</th><th class="num">Total</th><th>Payment mode</th><th>Due day</th></tr>${rcRows}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tr)}</b></td><td class="num"><b>${peso(tc)}</b></td><td class="num"><b>${peso(tr + tc)}</b></td><td colspan="2" class="muted">${PAY_MODES.map(mo => { const n = ts.filter(t => t.payment_mode === mo).length; return n ? `${n} ${mo}` : ''; }).filter(Boolean).join(' · ')}</td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants with their rent and CUSA in the Tenants tab.</div></td></tr>`;
+}
+
+async function quickSet(id, key, val){
+  const t = tn(id); if (!t) return;
+  try { await save('Tenants', { ...t, [key]: val }); toast('Saved'); rOverview(); }
+  catch(e){ toast('Save failed: ' + e.message); }
 }
 
 // ── Billing grid ──
@@ -929,7 +948,7 @@ function demoData(){
     ['TN2','Sample Bakeshop','','Ground Floor','GF-02',80,60000,'Yes',0,'Per sqm','',1000,'2024-06-01','2027-01-15','maria@example.com'],
     ['TN3','Sample BPO Inc.','','2nd Floor','2F-A',150,65000,'Yes',5,'Per sqm','',1500,'2025-03-01','2028-02-28','pedro@example.com'],
     ['TN4','Sample Review Center','','2nd Floor','2F-B',100,40000,'No',0,'Fixed',3000,800,'2024-01-01','2026-12-31',''],
-  ].map(([id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email]) => ({id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email,contact_person:'Sample Contact',status:'Active',due_day:''}));
+  ].map(([id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email]) => ({id,tenant_name,trade_name,floor,unit,area_sqm,monthly_rent,rent_vat,ewt_pct,cusa_mode,cusa_value,waste_fee,lease_start,lease_end,email,contact_person:'Sample Contact',status:'Active',due_day:'',payment_mode:{TN1:'PDC',TN2:'Bank transfer',TN3:'PDC',TN4:''}[id]}));
   const Set_ = [['company_name','201 Brookland Building'],['company_address','Sta. Rosa–Tagaytay Road, Sta. Rosa, Laguna'],['cusa_rate','50'],['elec_rate','12.5'],['water_rate','85'],['penalty_pct','2'],['notify_emails','ela@example.com'],['payment_instructions','Make checks payable to SAMPLE PAYEE NAME.\nBank transfer: Sample Bank · Account name: Sample Payee · Account no. 0000-0000-00']].map(([id,value])=>({id,value}));
   S = Object.fromEntries(Set_.map(r => [r.id, r.value]));
   DB = { Tenants:T, Bills:[], Payments:[], PDCs:[], EmailLog:[], Settings:Set_ };
