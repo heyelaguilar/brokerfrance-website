@@ -171,6 +171,12 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .settings h3{grid-column:1/-1;font-size:15px;font-weight:800;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
 .settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
 .hint{font-size:12px;color:var(--ink4)}
+.el-sum{padding:12px 18px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;color:var(--ink3)}
+.el-sum b{color:var(--ink)}
+.el-view td{padding:12px 14px;vertical-align:middle}
+.el-view .meters{font-size:12px;color:var(--ink4);margin-top:2px}
+.el-view .paid{color:var(--green-d);font-weight:800}
+.el-view .warn{color:var(--amber);font-size:12px;font-weight:700}
 .cov-row{display:flex;gap:10px;align-items:center;padding:7px 10px;border:1px solid var(--border);border-radius:8px;margin-top:6px;font-size:14px}
 .cov-row input{width:auto!important;margin:0}
 .cov-row span{flex:1}
@@ -278,10 +284,11 @@ table.condensed .muted{font-size:11px}
     </section>
 
     <section class="pane" id="p-meralco">
-      <div class="hdr"><div><h1>Meralco</h1><p>Submeter readings per tenant, amount due, and who has paid.</p></div>
-        <div class="tools"><input type="month" id="f-el-period"><button class="btn ghost" id="btn-el-save" onclick="saveElec()">Save readings</button></div></div>
+      <div class="hdr"><div><h1>Meralco</h1><p>Who owes what for electricity this month, and who has paid.</p></div>
+        <div class="tools"><input type="month" id="f-el-period"><button class="btn ghost" id="btn-el-mode" onclick="elToggle()">Enter readings</button><button class="btn" id="btn-el-save" onclick="saveElec()" style="display:none">Save readings</button></div></div>
       <div class="kpis" id="el-kpis"></div>
-      <div class="card rates" id="el-head"></div>
+      <div class="card el-sum" id="el-sum"></div>
+      <div class="card rates" id="el-head" style="display:none"></div>
       <div class="card tbl" id="el-wrap"></div>
     </section>
 
@@ -1136,6 +1143,11 @@ function rMeralco(){
   const ms = activeMeters();
   if (!ms.length) { $('el-wrap').innerHTML = `<div class="empty"><b>No meters yet</b>Meters are added from the November 2026 Meralco sheet on first load.</div>`; $('el-kpis').innerHTML = ''; return; }
   const tenantM = ms.filter(mt => mt.type !== 'Building'), bldgM = ms.filter(mt => mt.type === 'Building');
+  // summary line + view/edit switch
+  const kwh = num(P.meralco_kwh), tot = num(P.meralco_total);
+  $('el-sum').innerHTML = `<span>Billing period <b>${esc(P.billing_period || '—')}</b></span><span>Billed <b>${P.billing_date ? fmtDate(P.billing_date) : '—'}</b></span><span>Due <b>${P.due_date ? fmtDate(P.due_date) : '—'}</b></span><span>Rate <b>${rate ? '₱' + num(rate).toFixed(2) + '/kWh' : '—'}</b></span><span>Meralco bill <b>${tot ? peso(tot) : '—'}</b>${kwh ? ` (${kwh.toLocaleString()} kWh)` : ''}</span>`;
+  $('el-head').style.display = elEdit ? '' : 'none'; $('btn-el-save').style.display = elEdit ? '' : 'none'; $('btn-el-mode').textContent = elEdit ? 'Done' : 'Enter readings';
+  if (!elEdit) { elView(per, rate, tenantM, bldgM); elUpdateAll(); return; }
   const row = mt => {
     const c = elCalc(mt, per, rate), paid = c.b && c.b.status === 'Paid';
     const st = mt.type === 'Building' ? '<span class="muted">building</span>'
@@ -1159,6 +1171,32 @@ function rMeralco(){
   $('el-common').addEventListener('input', elUpdateAll);
   elUpdateAll();
 }
+let elEdit = false;
+function elToggle(){ elEdit = !elEdit; if (!elEdit) elGrid = {}; rMeralco(); }
+function elView(per, rate, tenantM, bldgM){
+  // one row per tenant (their meters combined)
+  const groups = [];
+  tenantM.forEach(mt => { const k = mt.tenant_id || mt.payer || mt.id; let g = groups.find(x => x.k === k); if (!g) groups.push(g = { k, ms: [] }); g.ms.push(mt); });
+  const kwh = v => v == null ? '' : v.toLocaleString('en-PH', { minimumFractionDigits: 1 }) + ' kWh';
+  const rows = groups.map(g => {
+    const cs = g.ms.map(mt => ({ mt, c: elCalc(mt, per, rate) }));
+    const amount = cs.reduce((x, y) => x + y.c.amount, 0), bills = cs.map(y => y.c.b).filter(Boolean);
+    const paidAll = bills.length && bills.every(b => b.status === 'Paid'), paidSome = bills.some(b => b.status === 'Paid');
+    const firstUnpaid = bills.find(b => b.status !== 'Paid'), pb = bills.find(b => b.status === 'Paid');
+    const units = [...new Set(g.ms.map(mt => mt.unit))].join(', ');
+    const meters = cs.length > 1 ? cs.map(y => `${esc(meterLabel(y.mt) || y.mt.unit)} ${kwh(y.c.usage)}`).join(' · ') : kwh(cs[0].c.usage);
+    const warn = bills.some(b => b.needs_reading === 'Yes') ? '<div class="warn">⚠ Needs actual reading</div>' : '';
+    const st = paidAll ? `<span class="paid">Paid ✓</span> <span class="muted">${fmtDate(pb.paid_date).replace(/, \d{4}$/, '')}</span>${pb.proof_url ? ` · <a href="${esc(pb.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">proof ↗</a>` : ''}`
+      : firstUnpaid ? `${paidSome ? '<span class="muted">part paid · </span>' : ''}<button class="btn sm" onclick="elPay('${firstUnpaid.id}')">Mark paid</button>` : '<span class="muted">no reading</span>';
+    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td></tr>`;
+  }).join('');
+  const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td></td></tr>`; }).join('');
+  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th></tr>${rows}
+    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td></tr>
+    <tr><td colspan="3" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
+    <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td></td></tr>
+    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td></tr></table>`;
+}
 function elUpdateAll(){
   const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
   let tot = 0, paid = 0, bldg = 0, nPaid = 0, nT = 0;
@@ -1175,7 +1213,7 @@ function elUpdateAll(){
   $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
   $('el-bvi').textContent = peso(bldg + common).slice(1);
   const unpaid = Math.max(0, tot - paid);
-  $('el-kpis').innerHTML = [['Total collectible', peso(tot), `${nT} meters`, ''], ['Paid', peso(paid), `${nPaid} of ${nT} meters`, paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI share', peso(bldg + common), 'building meters + common', '']]
+  $('el-kpis').innerHTML = [['Total collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI share', peso(bldg + common), 'building meters + common', '']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
 async function saveElec(){
@@ -1190,7 +1228,7 @@ async function saveElec(){
     return { ...(c.b || {}), period: per, meter_id: mt.id, prev: c.prev, curr: c.curr, rate, amount_override: ov, amount, needs_reading: read ? '' : (c.b?.needs_reading || ''), status: c.b?.status || (mt.type === 'Building' ? '' : 'Unpaid') };
   }).filter(Boolean);
   btn.disabled = true; btn.textContent = 'Saving…';
-  try { await save('ElecPeriods', head); await saveMany('ElecBills', rows); elGrid = {}; toast(`Saved ${rows.length} meter reading(s) for ${fmtMonth(per)}`); rMeralco(); badges(); }
+  try { await save('ElecPeriods', head); await saveMany('ElecBills', rows); elGrid = {}; elEdit = false; toast(`Saved ${rows.length} meter reading(s) for ${fmtMonth(per)}`); rMeralco(); badges(); }
   catch(e){ toast('Save failed: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Save readings'; }
 }
