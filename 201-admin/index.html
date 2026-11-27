@@ -442,7 +442,7 @@ const SUMMARY_2026_11 = [
   ['toothlu','Ground Floor','Toothluscent Dental Corp.','PDC','31',55,32367.50,4400,'Combined with rent','Monthly','Send'],
   ['enerp','2nd Floor','Enerpo Technical Services Co.','PDC','1',20,13910.00,0,'No CUSA','Monthly','Send'],
   ['akmas','2nd Floor','AKMAS Modular Kitchen & Cabinet Solutions Modular Cabinet Trading','PDC','31',150,69550.00,7500,'Bank transfer','Monthly','Send'],
-  ['seo vas','2nd Floor','Philippine SEO VAS OPC','Bank transfer','',120,33333.33,9600,'Bank transfer','Bi-annual','Send'],
+  ['seo vas','2nd Floor','Philippine SEO VAS OPC','Check','',120,33333.33,9600,'Bank transfer','Bi-annual','Send'],
   ['storage room','3rd Floor','Relly Fajardo','Bank transfer','',13,5000.00,0,'No CUSA','Monthly','Send'],
   ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
   ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4400,'Bank transfer','Monthly','Send'],
@@ -464,11 +464,21 @@ async function syncSummary(){
     toast(`Tenant list synced to SUMMARY (${rows.length} tenants)`);
   } catch(e){ console.error('summary sync failed', e); toast('Tenant sync failed: ' + e.message); }
 }
+async function fixSeoRent(){
+  if (DEMO || S.mig_seo_rent_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('seo vas'));
+  try {
+    if (t) await save('Tenants', { ...t, rent_payment:'Check', rent_frequency:'Bi-annual', cusa_payment:'Bank transfer' });
+    await save('Settings', { id:'mig_seo_rent_2026_11', value: new Date().toISOString() });
+    S.mig_seo_rent_2026_11 = '1';
+  } catch(e){ console.error('seo fix failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
     DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
+    await fixSeoRent();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -643,8 +653,9 @@ function rCollectibles(m){
   $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
   $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th>Due date</th><th class="num">PDC due amount</th><th class="num">For bank transfer</th></tr>` + all.map(t => {
       const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
-      const pdc = isCheck(t.rent_payment || t.payment_mode) ? rent + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
-      const bt = (parts.includes('Rent') ? rent : 0) + (parts.includes('CUSA') ? cusa : 0);
+      const rentNow = rentMonths(t) === 1 ? rent : rentDueIn(t, m) ? r2(rent * rentMonths(t)) : 0;   // bi-annual / annual: only in its month
+      const pdc = isCheck(t.rent_payment || t.payment_mode) ? rentNow + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
+      const bt = (parts.includes('Rent') ? rentNow : 0) + (parts.includes('CUSA') ? cusa : 0);
       tr += rent; tc += cusa; tp += pdc; tb += bt;
       return `<tr class="click" onclick="openTenant('${t.id}')"><td>${esc(t.tenant_name)}</td><td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td>${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td></tr>`;
     }).join('') + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td></tr>`
