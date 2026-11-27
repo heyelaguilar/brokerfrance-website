@@ -11,5 +11,7 @@
 /submit      /index.html   200
 /troy-listing /index.html   200
 /developers  /   302
+/201-admin    /201-admin/index.html   200
+/201-admin/*  /201-admin/index.html   200
 /admin       /admin/index.html   200
 /admin/*     /admin/index.html   200
