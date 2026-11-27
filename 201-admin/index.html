@@ -801,17 +801,31 @@ async function seedPrimewaterHistory(){
     S.mig_pw_hist_2026_10 = '1';
   } catch(e){ console.error('primewater history failed', e); }
 }
+const DOPE_NOTE = 'Jul 2025 – Oct 2026 · 122.5 → 215.1 = 92.6 cu.m';
+// Dopeboy total ₱4,886.18 (corrected) + 4th floor ₱600/month water, Sep 2025 – Nov 2026
+async function pwDopeFix(){
+  if (DEMO || S.mig_pw_dope4f_2026_11) return;
+  try {
+    const dm = DB.Meters.find(m => m.utility === 'Primewater' && /dopeboy/i.test(m.payer || ''));
+    const db = dm && DB.ElecBills.find(b => b.meter_id === dm.id && b.period === '2026-10');
+    if (db && db.status !== 'Paid') await save('ElecBills', { ...db, amount_override: 4886.18, amount: 4886.18, rate: r2(4886.18 / 92.6), notes: DOPE_NOTE });
+    let fm = DB.Meters.find(m => m.utility === 'Primewater' && /^4th/i.test(m.payer || ''));
+    if (!fm) fm = await save('Meters', { utility:'Primewater', payer:'4th Floor', unit:'4F', label:'', tenant_id:'', type:'Tenant', sort:2, active:'Yes', notes:'Fixed ₱600 per month' });
+    if (!DB.ElecBills.some(b => b.meter_id === fm.id && b.period === '2026-10'))
+      await save('ElecBills', { period:'2026-10', meter_id: fm.id, prev:'', curr:'', rate:'', amount_override: 9000, amount: 9000, status:'Unpaid', notes:'Sep 2025 – Nov 2026 · ₱600 × 15 months' });
+    await save('Settings', { id:'mig_pw_dope4f_2026_11', value: new Date().toISOString() });
+    S.mig_pw_dope4f_2026_11 = '1';
+  } catch(e){ console.error('dopeboy/4F fix failed', e); }
+}
 // Dopeboy water submeter: one reading for Jul 2025 – Oct 2026, charged at the average Primewater rate for those months
 async function seedDopeboyWater(){
   if (DEMO || S.mig_pw_dopeboy_2026_10) return;
   try {
     let mt = DB.Meters.find(m => m.utility === 'Primewater' && /dopeboy/i.test(m.payer || ''));
     if (!mt) mt = await save('Meters', { utility:'Primewater', payer:'Dopeboy', unit:'', label:'', tenant_id:'', type:'Tenant', sort:1, active:'Yes', notes:'' });
-    const ps = DB.ElecPeriods.filter(p => /^PW-(2025-(0[7-9]|1[0-2])|2026-(0\d|10))$/.test(p.id));
-    const rate = r2(ps.reduce((x,p) => x + num(p.meralco_total), 0) / ps.reduce((x,p) => x + num(p.meralco_kwh), 0)) || 59.72;
-    const amt = r2((215.1 - 122.5) * rate);
+    const amt = 4886.18, rate = r2(amt / 92.6);
     if (!DB.ElecBills.some(b => b.meter_id === mt.id && b.period === '2026-10'))
-      await save('ElecBills', { period:'2026-10', meter_id: mt.id, prev:122.5, curr:215.1, rate, amount_override: amt, amount: amt, status:'Unpaid', notes:`Jul 2025 – Oct 2026 reading (122.5 → 215.1 = 92.6 cu.m) × average Primewater rate ₱${rate.toFixed(2)}/cu.m` });
+      await save('ElecBills', { period:'2026-10', meter_id: mt.id, prev:122.5, curr:215.1, rate, amount_override: amt, amount: amt, status:'Unpaid', notes: DOPE_NOTE });
     await save('Settings', { id:'mig_pw_dopeboy_2026_10', value: new Date().toISOString() });
     S.mig_pw_dopeboy_2026_10 = '1';
   } catch(e){ console.error('dopeboy water failed', e); }
@@ -910,6 +924,7 @@ async function reload(){
     await seedPayables();
     await seedPrimewaterHistory();
     await seedDopeboyWater();
+    await pwDopeFix();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1325,7 +1340,8 @@ function elView(per, rate, tenantM, bldgM){
     const proof = pb ? proofThumb(pb.proof_url, `elPay('${pb.id}')`) : '';
     const flag = bills.some(b => b.needs_reading === 'Yes') ? ' <span class="warn" title="Needs actual reading">⚠</span>' : '';
     g.sortKey = paidAll ? (pb.paid_date || '') : '9999';
-    return g.html = `<tr><td><b>${esc(meterName(g.ms[0]))}</b>${flag}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${esc((pb && pb.paid_to) || (bills.find(b => b.paid_to) || {}).paid_to || '')}</td><td>${proof}</td></tr>`;
+    const det = UTIL === 'Primewater' ? bills.map(b => b.notes).filter(Boolean).join(' · ') : '';
+    return g.html = `<tr><td><b>${esc(meterName(g.ms[0]))}</b>${flag}${det ? `<div class="muted" style="font-size:12px">${esc(det)}</div>` : ''}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${esc((pb && pb.paid_to) || (bills.find(b => b.paid_to) || {}).paid_to || '')}</td><td>${proof}</td></tr>`;
   });
   const rowsSorted = groups.map((g, i) => [g.sortKey, i, rows[i]]).sort((a, b) => a[0].localeCompare(b[0]) || a[1] - b[1]).map(x => x[2]).join('');
   const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td colspan="4"></td></tr>`; }).join('');
