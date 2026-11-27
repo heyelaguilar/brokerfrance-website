@@ -77,8 +77,8 @@ input,select,textarea{font-family:inherit;font-size:14px;color:var(--ink)}
 .legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c)}
 .grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
 .grid2>*{min-width:0}
-.grid2.even{grid-template-columns:0.85fr 1.15fr}
-div.name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.grid2.even{grid-template-columns:0.8fr 1.2fr}
+div.name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .box{padding:18px 20px}
 .box h3{font-size:15px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 table{width:100%;border-collapse:collapse}
@@ -353,6 +353,7 @@ const FORMS = {
 };
 
 // ───────────────── STATE / UTILS ─────────────────
+let ST = { pdc:{}, bt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
 let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[]};
 let S = {};      // settings key → value
@@ -666,8 +667,8 @@ function rOverview(){
   const k = [
     ['Monthly income', peso(SUM.tr + SUM.tc), `Rent ${peso(SUM.tr)} · CUSA ${peso(SUM.tc)}`, ''],
     [`To collect · ${mon}`, peso(SUM.tp + SUM.tb), `${SUM.n} tenants`, ''],
-    ['PDC', peso(SUM.tp), `${SUM.nP} tenant(s) · ${onHand.length} check(s) on hand`, ''],
-    ['Bank transfer · SOA', peso(SUM.tb), `${SUM.nB} tenant(s) need SOA`, ''],
+    ['PDC', peso(SUM.tp), ['Paid','Deposited','To deposit','On hand','No check','Bounced'].filter(k => ST.pdc[k]).map(k => `${ST.pdc[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nP} tenant(s)`, ''],
+    ['Bank transfer · SOA', peso(SUM.tb), ['Paid','Partial','Unpaid','On hold'].filter(k => ST.bt[k]).map(k => `${ST.bt[k]} ${k.toLowerCase()}`).join(' · ') || `${SUM.nB} tenant(s) need SOA`, ''],
     [`Collected · ${mon}`, peso(coll), SUM.tp + SUM.tb ? `${Math.round(coll / (SUM.tp + SUM.tb) * 100)}% of ${peso0(SUM.tp + SUM.tb)}` : '', coll && coll >= SUM.tp + SUM.tb ? 'good' : ''],
     ['PDCs to deposit', due.length, due.length ? `${peso0(due.reduce((s,p)=>s+num(p.amount),0))} dated by ${fmtDate(pdcWindow())}` : 'nothing due', due.length ? 'bad' : ''],
   ];
@@ -749,6 +750,7 @@ function rCollectibles(m){
   const amt = v => v ? peso(v).slice(1) : '';
   let tr = 0, tc = 0, tp = 0, tb = 0;
   const income = [], coll = [];
+  ST = { pdc:{}, bt:{}, pdcPaid:0, btPaid:0 };
   all.forEach(t => {
     const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
     const rentNow = rentMonths(t) === 1 ? rent : 0;   // bi-annual / annual rent is paid in advance — not a monthly collection
@@ -757,7 +759,21 @@ function rCollectibles(m){
     tr += rent; tc += cusa; tp += pdc; tb += bt;
     const nm = `<td title="${esc(t.tenant_name)}"><div class="name">${esc(t.tenant_name)}</div></td>`;
     income.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td class="num">${amt(rent + cusa)}</td></tr>`);
-    coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(pdc + bt)}</b></td></tr>`);
+    // status this month — PDC: from the check dated this month; bank transfer: non-PDC payments received this month
+    let pSt = '', bSt = '';
+    if (pdc) {
+      const ck = DB.PDCs.filter(p => p.tenant_id === t.id && String(p.check_date).slice(0,7) === m && p.status !== 'Returned to tenant').sort((a,b) => String(b.check_date).localeCompare(a.check_date))[0];
+      pSt = !ck ? 'No check' : ck.status === 'Cleared' ? 'Paid' : ck.status === 'Deposited' ? 'Deposited' : ck.status === 'Bounced' ? 'Bounced' : ck.check_date <= today() ? 'To deposit' : 'On hand';
+      ST.pdc[pSt] = (ST.pdc[pSt] || 0) + 1; if (pSt === 'Paid') ST.pdcPaid += pdc;
+    }
+    if (bt) {
+      const got = DB.Payments.filter(p => p.tenant_id === t.id && String(p.date).slice(0,7) === m && p.method !== 'PDC').reduce((x,p) => x + num(p.amount), 0);
+      bSt = soaHold(t) ? 'On hold' : got >= bt - 0.005 ? 'Paid' : got > 0 ? 'Partial' : 'Unpaid';
+      ST.bt[bSt] = (ST.bt[bSt] || 0) + 1; ST.btPaid += Math.min(got, bt);
+    }
+    const stTxt = pSt && bSt ? `PDC: ${pSt}<br>BT: ${bSt}` : (pSt || bSt);
+    const done = (!pSt || pSt === 'Paid') && (!bSt || bSt === 'Paid');
+    coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(pdc + bt)}</b></td><td style="white-space:nowrap;font-size:12px;line-height:1.3">${stTxt ? (done ? '<b>Paid ✓</b>' : stTxt) : ''}</td></tr>`);
   });
   SUM = { tr, tc, tp, tb, n: all.length,
     nP: all.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).length,
@@ -767,8 +783,8 @@ function rCollectibles(m){
   $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td class="num"><b>${amt(tr + tc)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
-  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
+  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th><th>Status</th></tr>${coll.join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td><td class="muted" style="white-space:nowrap">${Object.values(ST.pdc).reduce((a,b)=>a+b,0) + Object.values(ST.bt).reduce((a,b)=>a+b,0) ? `${(ST.pdc.Paid||0) + (ST.bt.Paid||0)} paid` : ''}</td></tr>` : '';
   // the bar on top follows the same numbers: collected this month vs total to collect
   const got = DB.Payments.filter(p => String(p.date).slice(0,7) === m).reduce((x,p)=>x+num(p.amount),0), due = tp + tb, left = Math.max(0, due - got);
   $('t-title').textContent = `Collected vs remaining · ${fmtMonth(m)}`;
