@@ -1370,12 +1370,12 @@ function rPayables(){
   const od = pbOverdue();
   $('pb-kpis').innerHTML = [['Total bills', peso(tot), `${list.length} bill(s) due in ${fmtMonth(m).split(' ')[0]}`, ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && paid >= tot ? 'good' : ''], ['Unpaid', peso(Math.max(0, tot - paid)), 'still to pay', tot - paid > 0 ? 'bad' : 'good'], ['Overdue', peso(od.reduce((x,b) => x + num(b.amount), 0)), od.length ? `${od.length} bill(s) past due` : 'none', od.length ? 'bad' : 'good']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
-  $('pb-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Due date</th><th>Bill</th><th>Billing period</th><th class="num">Amount</th><th>Payment</th><th>Paid date</th><th>Paid from</th><th>Proof</th><th>Bill copy</th></tr>${list.map(b => {
+  $('pb-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Due date</th><th>Bill</th><th>Billing period</th><th class="num">Amount</th><th>Bill copy</th><th>Paid</th><th>From</th><th>Proof</th></tr>${list.map(b => {
       const paidB = b.status === 'Paid', late = !paidB && b.due_date < today();
-      return `<tr class="click" onclick="openForm('Payables','${b.id}')"><td style="white-space:nowrap;${late ? 'color:var(--red);font-weight:800' : ''}">${fmtDate(b.due_date)}</td><td><b>${esc(b.category)}</b>${b.payee && b.payee !== b.category ? ` <span class="muted">${esc(b.payee)}</span>` : ''}</td><td class="muted">${esc(b.billing_period)}</td><td class="num"><b>${peso(b.amount).slice(1)}</b></td>
-        <td style="white-space:nowrap">${paidB ? '<span class="paid">Paid</span>' : `<button class="btn sm" onclick="event.stopPropagation();pbPay('${b.id}')">Mark paid</button>`}</td>
-        <td style="white-space:nowrap">${paidB ? fmtDate(b.paid_date) : ''}</td><td style="white-space:nowrap">${esc(b.paid_from || '')}</td><td>${proofThumb(b.proof_url)}</td><td>${proofThumb(b.bill_url)}</td></tr>`;
-    }).join('')}<tr style="background:var(--green-l)"><td colspan="3"><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="5"></td></tr></table>`
+      return `<tr class="click" onclick="openForm('Payables','${b.id}')"><td style="white-space:nowrap;${late ? 'color:var(--red);font-weight:800' : ''}">${fmtDate(b.due_date)}</td><td><b>${esc(b.category)}</b>${b.payee && b.payee !== b.category ? ` <span class="muted">${esc(b.payee)}</span>` : ''}</td><td class="muted">${esc(b.billing_period)}</td><td class="num"><b>${peso(b.amount).slice(1)}</b></td><td>${proofThumb(b.bill_url)}</td>
+        <td style="white-space:nowrap">${paidB ? `<a href="#" style="color:var(--ink);text-decoration:none" onclick="event.stopPropagation();pbPay('${b.id}');return false" title="Edit payment">${fmtDate(b.paid_date)}</a>` : `<button class="btn sm" onclick="event.stopPropagation();pbPay('${b.id}')">Mark paid</button>`}</td>
+        <td style="white-space:nowrap">${esc(b.paid_from || '')}</td><td>${proofThumb(b.proof_url)}</td></tr>`;
+    }).join('')}<tr style="background:var(--green-l)"><td colspan="3"><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="4"></td></tr></table>`
     : `<div class="empty"><b>No bills due in ${fmtMonth(m)}</b>Click “+ Add bill” to add Meralco, Primewater, waste hauler or other bills.</div>`;
 }
 function pbPay(id){
