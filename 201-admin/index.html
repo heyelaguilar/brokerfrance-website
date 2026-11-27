@@ -664,6 +664,18 @@ async function coffeeStoryArrears(){
     S.mig_cs_arrears_2026_11 = '1';
   } catch(e){ console.error('CS arrears failed', e); }
 }
+async function akmasArrears(){
+  if (DEMO || S.mig_akmas_arrears_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('akmas'));
+  try {
+    if (t && !DB.Bills.some(b => b.tenant_id === t.id && /opening balance/i.test(b.notes || '')))
+      await save('Bills', { tenant_id:t.id, period:'2026-10', bill_date:'2026-10-31', due_date:'2026-10-31', rent:0, rent_vat:0, cusa:0,
+        other_label:'CUSA 150 sqm × ₱50 (Aug 16 – Sep 15 and Sep 16 – Oct 15, 2026), ₱7,500 × 2', other_amt:15000, penalty:0, ewt:0, total:15000, status:'Sent',
+        notes:'Opening balance — CUSA arrears, 2 months (Oct 16 – Nov 15 is on the November bill)' });
+    await save('Settings', { id:'mig_akmas_arrears_2026_11', value: new Date().toISOString() });
+    S.mig_akmas_arrears_2026_11 = '1';
+  } catch(e){ console.error('AKMAS arrears failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -680,6 +692,7 @@ async function reload(){
     await squeezeSpotNov();
     await beautifulLifeArrears();
     await coffeeStoryArrears();
+    await akmasArrears();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
