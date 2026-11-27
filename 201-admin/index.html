@@ -214,13 +214,9 @@ table.condensed .muted{font-size:11px}
         <div class="bar"><i id="t-bar"></i></div>
         <div class="legend"><span style="--c:var(--green)">Collected</span><span style="--c:#C9D2DB">Remaining</span><span id="t-gap"></span></div>
       </div>
-      <div class="card box" style="margin-bottom:16px"><h3>Tenants <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
-      <div class="grid2" style="margin-bottom:16px">
-        <div class="card box"><h3>PDC / Check <span class="muted" id="pdc-note"></span></h3><div class="tbl"><table id="pdc-sum" class="condensed"></table></div></div>
-        <div class="card box"><h3>Bank transfer — needs SOA <span class="muted" id="bt-note"></span></h3><div class="tbl"><table id="bt-sum" class="condensed"></table></div></div>
-      </div>
+      <div class="card box" style="margin-bottom:16px"><h3>Receivables <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
       <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
-      <div hidden><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
+      <div hidden><span id="pdc-note"></span><table id="pdc-sum"></table><span id="bt-note"></span><table id="bt-sum"></table><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
     </section>
 
     <section class="pane" id="p-billing">
@@ -640,24 +636,18 @@ function rCollectibles(m){
   // per-tenant monthly rent & CUSA (from tenant setup)
   const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
   const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
-  // 1) Summary — same columns as the SUMMARY sheet
+  // Simple receivables table: business | rent | CUSA | due | PDC amount | bank-transfer amount (needs SOA)
   const all = ts.slice().sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || byUnit(a,b));
-  let ta = 0, tr = 0, tc = 0;
-  const modeOf = t => { const r = t.rent_payment || t.payment_mode || ''; return isCheck(r) ? 'Check' : r; };
-  $('rc-note').textContent = all.length ? `· ${all.length} · click a row to edit` : '';
-  $('rc-tbl').innerHTML = all.length ? `<tr><th>Level</th><th>Business name</th><th>Mode of payment</th><th>Due date</th><th class="num">Area (sqm)</th><th class="num">Monthly rental</th><th class="num">CUSA</th><th>SOA · ${fmtMonth(m).split(' ')[0]}</th></tr>` + all.map(t => {
-      const area = num(t.area_sqm), rent = num(t.monthly_rent), cusa = cusaOf(t);
-      ta += area; tr += rent; tc += cusa;
-      const parts = soaParts(t, cusa), b = DB.Bills.find(x => x.tenant_id === t.id && x.period === m);
-      const modeCell = isCheck(t.rent_payment || t.payment_mode)
-        ? `<span class="pill p-blue">Check</span>${parts.length ? ' <span class="pill p-amber">CUSA: Bank transfer</span>' : ''}`
-        : `<span class="pill p-amber">Bank transfer</span>`;
-      const soaCell = !parts.length ? '<span class="muted">No SOA · check</span>'
-        : soaHold(t) ? '<span class="pill">On hold</span>'
-        : b && b.status === 'Sent' ? `${pill('Sent')} <span class="muted">${parts.join(' + ')}</span>`
-        : `<span class="pill p-red">Needs SOA</span> <span class="muted">${parts.join(' + ')}</span>`;
-      return `<tr class="click" onclick="openTenant('${t.id}')"><td style="white-space:nowrap">${esc(t.floor)}</td><td><b>${esc(t.tenant_name)}</b></td><td>${modeCell}</td><td>${esc(dueLabel(t))}</td><td class="num">${area || ''}</td><td class="num">${rent ? peso(rent).slice(1) : '—'}</td><td class="num">${cusa ? peso(cusa).slice(1) : '-'}</td><td style="white-space:nowrap">${soaCell}</td></tr>`;
-    }).join('') + `<tr style="background:var(--green-l)"><td colspan="4"><b>ACTUAL RENTAL INCOME</b></td><td class="num"><b>${ta.toLocaleString()}</b></td><td class="num"><b>${peso(tr).slice(1)}</b></td><td class="num"><b>${peso(tc).slice(1)}</b></td><td class="muted">${all.filter(t => soaParts(t, cusaOf(t)).length && !soaHold(t)).length} need SOA · ${all.filter(t => !soaParts(t, cusaOf(t)).length).length} check only</td></tr>`
+  let tr = 0, tc = 0, tp = 0, tb = 0;
+  const amt = v => v ? peso(v).slice(1) : '';
+  $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
+  $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th>Due date</th><th class="num">PDC due amount</th><th class="num">For bank transfer</th></tr>` + all.map(t => {
+      const rent = num(t.monthly_rent), cusa = cusaOf(t), parts = soaParts(t, cusa);
+      const pdc = isCheck(t.rent_payment || t.payment_mode) ? rent + (t.cusa_payment === 'Combined with rent' ? cusa : 0) : 0;
+      const bt = (parts.includes('Rent') ? rent : 0) + (parts.includes('CUSA') ? cusa : 0);
+      tr += rent; tc += cusa; tp += pdc; tb += bt;
+      return `<tr class="click" onclick="openTenant('${t.id}')"><td>${esc(t.tenant_name)}</td><td class="num">${amt(rent)}</td><td class="num">${amt(cusa) || '-'}</td><td>${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td></tr>`;
+    }).join('') + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
 
   // 2) PDC / check: amount per check = rent (+ CUSA when combined)
