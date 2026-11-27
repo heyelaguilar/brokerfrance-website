@@ -393,7 +393,7 @@ async function reload(){
     const d = await call({action:'load'});
     DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
-      : (!DB.Settings.length ? `<div class="banner"><b>First time here?</b> Fill in <a href="#" onclick="showTab('settings');return false"><b>Settings</b></a> (payment instructions, default rates, reminder emails), then add your tenants.</div>` : '');
+      : '';
     $('boot').style.display='none'; render();
   } catch(e) {
     $('boot').style.display='none';
