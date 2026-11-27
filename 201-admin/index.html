@@ -228,7 +228,7 @@ table.condensed .muted{font-size:11px}
     </section>
 
     <section class="pane" id="p-billing">
-      <div class="hdr"><div><h1>Billing & SOA</h1><p>Enter meter readings, save the month's bills, then send each tenant their Statement of Account.</p></div>
+      <div class="hdr"><div><h1>Billing & SOA</h1><p>Only what's paid by bank transfer goes on the SOA — rent or CUSA covered by a check stays on the PDC. Enter readings, save bills, then send.</p></div>
         <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Save bills</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
       <div class="card rates">
         <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
@@ -392,6 +392,7 @@ const tName = id => tn(id)?.tenant_name || '—';
 const tLabel = t => `${t.tenant_name}${t.unit ? ' · ' + t.unit : ''}`;
 // sort by unit number (natural order: 101, 102, 201…); tenants without a unit go last
 const byUnit = (a, b) => (!a.unit) - (!b.unit) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true, sensitivity:'base'}) || String(a.tenant_name).localeCompare(b.tenant_name);
+const soaTenants = () => activeTenants().filter(t => { const m = t.cusa_mode || 'Per sqm'; const c = noCusa(t) ? 0 : m === 'Fixed' ? num(t.cusa_value) : num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))); return soaParts(t, c).some(x => x === 'CUSA' || rentMonths(t) === 1); });
 const activeTenants = () => DB.Tenants.filter(t => (t.status || 'Active') !== 'Moved Out').sort(byUnit);
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),3000); }
 function opts(list, sel, blank){ return (blank!=null?`<option value="">${esc(blank)}</option>`:'') + list.map(o=>`<option ${o===sel?'selected':''}>${esc(o)}</option>`).join(''); }
@@ -647,7 +648,8 @@ async function reload(){
 
 // ───────────────── LEDGER MATH ─────────────────
 const billsOf = id => DB.Bills.filter(b => b.tenant_id === id).sort((a,b) => a.period.localeCompare(b.period));
-const paysOf = id => DB.Payments.filter(p => p.tenant_id === id).sort((a,b) => String(a.date).localeCompare(b.date));
+const paysOf = id => DB.Payments.filter(p => p.tenant_id === id && p.method !== 'PDC').sort(   // SOA ledger: PDCs are tracked separately
+  (a,b) => String(a.date).localeCompare(b.date));
 const balanceOf = id => r2(billsOf(id).reduce((s,b)=>s+num(b.total),0) - paysOf(id).reduce((s,p)=>s+num(p.amount),0));
 function overdueOf(id){
   const dueBills = billsOf(id).filter(b => b.due_date && b.due_date < today()).reduce((s,b)=>s+num(b.total),0);
@@ -682,10 +684,13 @@ function nextRentMonth(t, from){
 const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
 const soaHold = t => t.soa_status === 'Hold';
 function computeBill(t, period, inp){
-  const rent = rentMonths(t) === 1 ? num(t.monthly_rent) : 0;   // bi-annual / annual rent is paid in advance, not billed monthly
-  const rent_vat = vatOn() && t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
+  // The SOA only bills what's paid by bank transfer: rent paid by check and CUSA "with rent" stay on the PDC
   const mode = t.cusa_mode || 'Per sqm';
-  const cusa = noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
+  const cusaFull = noCusa(t) ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
+  const parts = soaParts(t, cusaFull);
+  const rent = rentMonths(t) === 1 && parts.includes('Rent') ? num(t.monthly_rent) : 0;   // bi-annual / annual rent is paid in advance
+  const rent_vat = vatOn() && t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
+  const cusa = parts.includes('CUSA') ? cusaFull : 0;
   const water_rate = rateFor(t, 'water_rate', inp.water_rate_month), elec_rate = rateFor(t, 'elec_rate', inp.elec_rate_month);
   const wUse = Math.max(0, num(inp.water_curr) - num(inp.water_prev)), eUse = Math.max(0, num(inp.elec_curr) - num(inp.elec_prev));
   const water_amt = inp.water_curr !== '' && inp.water_curr != null ? r2(wUse * water_rate) : num(inp.water_amt);
@@ -901,7 +906,7 @@ async function quickSet(id, key, val){
 let grid = {};  // tenant_id → inputs
 function rBilling(){
   const per = $('f-bill-period'); if (!per.value) per.value = thisMonth();
-  const P = per.value, ts = activeTenants();
+  const P = per.value, ts = soaTenants();
   const existing = DB.Bills.filter(b => b.period === P);
   if ($('r-bill-date').dataset.p !== P) {
     $('r-bill-date').dataset.p = P;
@@ -929,8 +934,8 @@ function rBilling(){
     const inp = (k, w) => `<input class="grid-in" data-t="${t.id}" data-k="${k}" value="${esc(g[k] ?? '')}" ${w?`style="width:${w}px"`:''} inputmode="decimal">`;
     return `<tr>
       <td><b>${esc(t.tenant_name)}</b><div class="muted">${esc([t.floor,t.unit].filter(Boolean).join(' · '))}</div></td>
-      <td class="num">${peso(c.rent + c.rent_vat)}${rentMonths(t) > 1 ? `<small>${c.rent ? esc(t.rent_frequency) + ' rent due' : esc(t.rent_frequency) + ' · not due'}</small>` : ''}${c.rent_vat?`<small>incl. VAT ${peso(c.rent_vat)}</small>`:''}${c.ewt?`<small>EWT −${peso(c.ewt)}</small>`:''}</td>
-      <td class="num">${c.cusa?peso(c.cusa):'—'}</td>
+      <td class="num">${c.rent ? peso(c.rent + c.rent_vat) : '<span class="muted">' + (rentMonths(t) > 1 ? '' : 'via PDC') + '</span>'}${rentMonths(t) > 1 ? `<small>${c.rent ? esc(t.rent_frequency) + ' rent due' : esc(t.rent_frequency) + ' · not due'}</small>` : ''}${c.rent_vat?`<small>incl. VAT ${peso(c.rent_vat)}</small>`:''}${c.ewt?`<small>EWT −${peso(c.ewt)}</small>`:''}</td>
+      <td class="num">${c.cusa ? peso(c.cusa) : '<span class="muted">' + (t.cusa_payment === 'Combined with rent' ? 'via PDC' : '—') + '</span>'}</td>
       <td><div class="meter">${inp('water_prev')}→${inp('water_curr')}</div><small id="wa-${t.id}">${peso(c.water_amt)}</small></td>
       <td><div class="meter">${inp('elec_prev')}→${inp('elec_curr')}</div><small id="ea-${t.id}">${peso(c.elec_amt)}${c.elec_amt?` @ ${c.elec_rate}`:''}</small></td>
       <td>${inp('waste',80)}</td>
@@ -948,7 +953,7 @@ function updateBillRow(tid){
   $('wa-' + tid).textContent = peso(c.water_amt);
   $('ea-' + tid).textContent = peso(c.elec_amt) + (c.elec_amt ? ' @ ' + c.elec_rate : '');
   $('tot-' + tid).textContent = peso(c.total);
-  $('bill-sum').textContent = peso(activeTenants().reduce((s,t) => s + computeBill(t, P, inputsFor(t.id)).total, 0));
+  $('bill-sum').textContent = peso(soaTenants().reduce((s,t) => s + computeBill(t, P, inputsFor(t.id)).total, 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P);
   const row = $('tot-' + tid).closest('tr');
   if (b && Math.abs(num(b.total) - c.total) > 0.004) { row.cells[8].innerHTML = pill('Unsaved changes'); row.querySelector('.row-actions .btn:not(.ghost)')?.setAttribute('disabled', ''); }
@@ -960,7 +965,7 @@ function inputsFor(tid){
 async function saveBills(silent){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value, dd = $('r-due-date').value;
   if (!bd || !dd) return toast('Set the bill date and due date');
-  const rows = activeTenants().map(t => {
+  const rows = soaTenants().map(t => {
     const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
     const tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
@@ -984,7 +989,7 @@ function soaData(bill){
   const s = soaSummary(t.id, bill.period, bill.bill_date);
   const lines = [];
   const rm = rentMonths(t);
-  if (num(bill.rent) || rm === 1) lines.push([rm === 1 ? `Rent — ${fmtMonth(bill.period)}` : `Rent — ${t.rent_frequency} (${rm} months from ${fmtMonth(bill.period)})`, bill.rent]);
+  if (num(bill.rent)) lines.push([rm === 1 ? `Rent — ${fmtMonth(bill.period)}` : `Rent — ${t.rent_frequency} (${rm} months from ${fmtMonth(bill.period)})`, bill.rent]);
   if (num(bill.rent_vat)) lines.push([`VAT ${num(set('vat_pct'))}% on rent`, bill.rent_vat]);
   if (num(bill.cusa)) lines.push([`CUSA${t.cusa_mode==='Fixed'?'':` (${num(t.area_sqm)} sqm × ${peso(num(t.cusa_value)||num(set('cusa_rate')))})`}`, bill.cusa]);
   if (num(bill.water_amt) || bill.water_curr !== '') lines.push([`Water${bill.water_curr!==''?` (${bill.water_prev} → ${bill.water_curr} = ${r2(num(bill.water_curr)-num(bill.water_prev))} cu.m × ${peso(bill.water_rate)})`:''}`, bill.water_amt]);
