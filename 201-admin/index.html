@@ -171,6 +171,15 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .settings h3{grid-column:1/-1;font-size:15px;font-weight:800;margin-top:8px;padding-top:12px;border-top:1px solid var(--border)}
 .settings h3:first-child{border-top:none;margin-top:0;padding-top:0}
 .hint{font-size:12px;color:var(--ink4)}
+img.thumb{width:44px;height:44px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;display:block}
+img.thumb:hover{border-color:var(--green-d);box-shadow:var(--sh)}
+.pdf-chip{display:inline-block;font-size:12px;font-weight:800;color:var(--green-d);border:1px solid var(--green-m);border-radius:6px;padding:4px 8px}
+a.attach{font-size:12px;font-weight:700;color:var(--amber)}
+#lightbox{position:fixed;inset:0;background:rgba(14,17,23,.85);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:1000;cursor:zoom-out;padding:24px}
+#lightbox.on{display:flex}
+#lightbox img{max-width:92vw;max-height:84vh;border-radius:8px;box-shadow:var(--shl);background:#fff}
+#lightbox .lb-bar{color:#fff;font-size:13px;margin-top:12px}
+#lightbox .lb-bar a{color:#9FD8B0;font-weight:700}
 .el-sum{padding:12px 18px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;color:var(--ink3)}
 .el-sum b{color:var(--ink)}
 .el-view td{padding:12px 14px;vertical-align:middle}
@@ -1050,7 +1059,7 @@ function rCollectibles(m){
   $('pr-tbl').innerHTML = pr.length ? `<tr><th>Date</th><th>Business name</th><th>Mode</th><th class="num">Amount</th><th>Proof</th></tr>` + pr.map(p => {
       const t = tn(p.tenant_id) || {};
       const mode = p.method === 'PDC' ? `PDC${p.reference ? ' #' + esc(p.reference) : ''}` : esc(p.method) + (p.reference ? `<div class="muted">Ref ${esc(p.reference)}</div>` : '');
-      const proof = p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '<span class="muted">check</span>' : `<a href="#" onclick="event.stopPropagation();openForm('Payments','${p.id}');return false" style="color:var(--amber);font-weight:700">+ attach</a>`);
+      const proof = p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '<span class="muted">check</span>' : proofThumb('', `openForm('Payments','${p.id}')`));
       return `<tr class="click" onclick="openForm('Payments','${p.id}')"><td style="white-space:nowrap">${fmtDate(p.date).replace(/, \d{4}$/, '')}</td><td><div class="name" title="${esc(t.tenant_name)}">${esc(t.tenant_name || '—')}</div></td><td style="white-space:nowrap">${mode}</td><td class="num">${amt(num(p.amount))}</td><td>${proof}</td></tr>`;
     }).join('') + `<tr style="background:var(--green-l)"><td colspan="3"><b>Total</b></td><td class="num"><b>${amt(pr.reduce((x,p) => x + num(p.amount), 0))}</b></td><td></td></tr>`
     : `<tr><td><div class="empty">No rent or CUSA payments recorded for ${fmtMonth(m)} yet.</div></td></tr>`;
@@ -1186,16 +1195,17 @@ function elView(per, rate, tenantM, bldgM){
     const units = [...new Set(g.ms.map(mt => mt.unit))].join(', ');
     const meters = cs.length > 1 ? cs.map(y => `${esc(meterLabel(y.mt) || y.mt.unit)} ${kwh(y.c.usage)}`).join(' · ') : kwh(cs[0].c.usage);
     const warn = bills.some(b => b.needs_reading === 'Yes') ? '<div class="warn">⚠ Needs actual reading</div>' : '';
-    const st = paidAll ? `<span class="paid">Paid ✓</span> <span class="muted">${fmtDate(pb.paid_date).replace(/, \d{4}$/, '')}</span>${pb.proof_url ? ` · <a href="${esc(pb.proof_url)}" target="_blank" rel="noopener" style="color:var(--green-d);font-weight:700">proof ↗</a>` : ''}`
+    const st = paidAll ? `<span class="paid">Paid ✓</span> <span class="muted">${fmtDate(pb.paid_date).replace(/, \d{4}$/, '')}</span>`
       : firstUnpaid ? `${paidSome ? '<span class="muted">part paid · </span>' : ''}<button class="btn sm" onclick="elPay('${firstUnpaid.id}')">Mark paid</button>` : '<span class="muted">no reading</span>';
-    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td></tr>`;
+    const proof = pb ? proofThumb(pb.proof_url, `elPay('${pb.id}')`) : '';
+    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td>${proof}</td></tr>`;
   }).join('');
-  const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td></td></tr>`; }).join('');
-  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th></tr>${rows}
-    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td></tr>
-    <tr><td colspan="3" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
-    <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td></td></tr>
-    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td></tr></table>`;
+  const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td></td><td></td></tr>`; }).join('');
+  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Proof</th></tr>${rows}
+    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td></td><td></td></tr>
+    <tr><td colspan="4" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
+    <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td></td><td></td></tr>
+    <tr style="background:#FFF8E1"><td><b>BVI Meralco total due</b></td><td class="num"><b id="el-bvi">—</b></td><td></td><td></td></tr></table>`;
 }
 function elUpdateAll(){
   const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
@@ -1213,7 +1223,7 @@ function elUpdateAll(){
   $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
   $('el-bvi').textContent = peso(bldg + common).slice(1);
   const unpaid = Math.max(0, tot - paid);
-  $('el-kpis').innerHTML = [['Total collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI share', peso(bldg + common), 'building meters + common', '']]
+  $('el-kpis').innerHTML = [['Total amount due', peso(num($('el-total').value)), 'Meralco bill', ''], ['Collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI', peso(bldg + common), 'building share', '']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
 async function saveElec(){
@@ -1485,7 +1495,7 @@ function rPayments(){
   const total = list.reduce((s,p)=>s+num(p.amount),0);
   const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
   $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
-  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? `<a href="${esc(p.proof_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:var(--green-d);font-weight:700">View ↗</a>` : (p.method === 'PDC' ? '' : '<span class="muted">attach</span>')}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '' : proofThumb('', `openForm('Payments','${p.id}')`))}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
     : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
 }
 function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
@@ -1624,6 +1634,22 @@ function openForm(t, id, preset){
   wireProofZone();
 }
 function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_frequency:'Monthly', soa_status:'Send', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer', applies_to:'Rent & CUSA'}, PDCs:{status:'On hand'} })[t]; }
+// Proof thumbnail (click to enlarge) and lightbox
+const isPdf = u => /\.pdf($|\?)/i.test(u || '');
+function proofThumb(url, attachJs){
+  if (url) return isPdf(url)
+    ? `<a href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="pdf-chip">PDF ↗</a>`
+    : `<img class="thumb" src="${esc(url)}" alt="proof" onclick="event.stopPropagation();openProof('${esc(url)}')">`;
+  return attachJs ? `<a href="#" onclick="event.stopPropagation();${attachJs};return false" class="attach">+ attach</a>` : '';
+}
+function openProof(url){
+  let lb = $('lightbox');
+  if (!lb) { lb = document.createElement('div'); lb.id = 'lightbox'; lb.onclick = () => lb.classList.remove('on'); document.body.appendChild(lb); }
+  lb.innerHTML = `<img src="${esc(url)}" alt="proof"><div class="lb-bar"><a href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open full size ↗</a> · click anywhere to close</div>`;
+  lb.classList.add('on');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lightbox')?.classList.remove('on'); });
+
 // Proof drop zone: click to choose, drag & drop, or paste a screenshot (Ctrl/Cmd+V) while the form is open
 let proofPicked = null;
 function proofZone(existing){
