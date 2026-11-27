@@ -817,6 +817,23 @@ async function pwDopeFix(){
     S.mig_pw_dope4f_2026_11 = '1';
   } catch(e){ console.error('dopeboy/4F fix failed', e); }
 }
+// JED (PH SEO VAS): the rest of the Primewater bills Jul 2025 – Oct 2026 after Dopeboy and 4th Floor
+async function pwJed(){
+  if (DEMO || S.mig_pw_jed_2026_11) return;
+  try {
+    const t = DB.Tenants.find(x => /\bjed\b|seo vas/i.test([x.tenant_name, x.trade_name].join(' ')));
+    let mt = DB.Meters.find(m => m.utility === 'Primewater' && (t ? m.tenant_id === t.id : /jed/i.test(m.payer || '')));
+    if (!mt) mt = await save('Meters', { utility:'Primewater', payer: t ? '' : 'JED', unit:'204', label:'', tenant_id: t ? t.id : '', type:'Tenant', sort:3, active:'Yes', notes:'' });
+    const total = r2(DB.ElecPeriods.filter(p => /^PW-(2025-(0[7-9]|1[0-2])|2026-(0\d|10))$/.test(p.id)).reduce((x,p) => x + num(p.meralco_total), 0));
+    const others = DB.Meters.filter(m => m.utility === 'Primewater' && m.id !== mt.id).map(m => DB.ElecBills.find(b => b.meter_id === m.id && b.period === '2026-10')).filter(Boolean);
+    const less = r2(others.reduce((x,b) => x + num(b.amount), 0)), amt = r2(total - less);
+    if (amt > 0 && !DB.ElecBills.some(b => b.meter_id === mt.id && b.period === '2026-10'))
+      await save('ElecBills', { period:'2026-10', meter_id: mt.id, prev:'', curr:'', rate:'', amount_override: amt, amount: amt, status:'Unpaid',
+        notes:`Jul 2025 – Oct 2026 · Primewater ₱${total.toLocaleString('en-PH',{minimumFractionDigits:2})} less Dopeboy & 4th Floor ₱${less.toLocaleString('en-PH',{minimumFractionDigits:2})}` });
+    await save('Settings', { id:'mig_pw_jed_2026_11', value: new Date().toISOString() });
+    S.mig_pw_jed_2026_11 = '1';
+  } catch(e){ console.error('jed water failed', e); }
+}
 // Dopeboy water submeter: one reading for Jul 2025 – Oct 2026, charged at the average Primewater rate for those months
 async function seedDopeboyWater(){
   if (DEMO || S.mig_pw_dopeboy_2026_10) return;
@@ -925,6 +942,7 @@ async function reload(){
     await seedPrimewaterHistory();
     await seedDopeboyWater();
     await pwDopeFix();
+    await pwJed();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
