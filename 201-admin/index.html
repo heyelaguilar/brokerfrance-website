@@ -446,7 +446,7 @@ const SUMMARY_2026_11 = [
   ['storage room','3rd Floor','Relly Fajardo','Bank transfer','',13,5000.00,0,'No CUSA','Monthly','Send'],
   ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
   ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4400,'Bank transfer','Monthly','Send'],
-  ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,0,'No CUSA','Annual','Hold'],
+  ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,480,'Bank transfer','Annual','Hold'],
   ["andrei",'4th Floor',"Andrei's Billiards",'Bank transfer','1',50,8000.00,2000,'Bank transfer','Monthly','Send'],
   ['squeeze','4th Floor','Squeeze Spot','Bank transfer','1',60,20200.00,4800,'Bank transfer','Monthly','Send'],
 ];
@@ -473,12 +473,23 @@ async function fixSeoRent(){
     S.mig_seo_rent_2026_11 = '1';
   } catch(e){ console.error('seo fix failed', e); }
 }
+// Bedoo: annual rent already settled; monthly collection is CUSA only at ₱80/sqm (SOA on hold until ELA notifies them)
+async function fixBedooCusa(){
+  if (DEMO || S.mig_bedoo_cusa_2026_11) return;
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes('bedoo'));
+  try {
+    if (t) await save('Tenants', { ...t, cusa_mode:'Per sqm', cusa_value:'80', cusa_payment:'Bank transfer', rent_frequency:'Annual', soa_status:'Hold' });
+    await save('Settings', { id:'mig_bedoo_cusa_2026_11', value: new Date().toISOString() });
+    S.mig_bedoo_cusa_2026_11 = '1';
+  } catch(e){ console.error('bedoo fix failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
     DB = d.data; S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
+    await fixBedooCusa();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -597,7 +608,7 @@ function rOverview(){
     if ((!b || b.status !== 'Sent') && today() >= addDays(sendBy, -3) && today() <= due) al.push([today() >= sendBy ? 'var(--red)' : 'var(--amber)', `Send SOA to <b>${esc(t.tenant_name)}</b> by ${fmtDate(sendBy)} (due ${fmtDate(due)})`, 'billing']);
   });
   ts.filter(t => rentMonths(t) > 1).forEach(t => {
-    if (!t.lease_start) al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: ${esc(t.rent_frequency)} rent — set lease start so the rent month is known`, 'tenants']);
+    if (!t.lease_start && !soaHold(t)) al.push(['var(--amber)', `<b>${esc(t.tenant_name)}</b>: ${esc(t.rent_frequency)} rent — set lease start so the rent month is known`, 'tenants']);
     else if (rentDueIn(t, m)) al.push(['var(--blue)', `<b>${esc(t.tenant_name)}</b> ${esc(t.rent_frequency.toLowerCase())} rent due this month — ${peso(num(t.monthly_rent) * rentMonths(t))}`, 'billing']);
   });
   ts.forEach(t => { const d = daysUntil(t.lease_end); if (d != null && d <= 90) al.push([d < 0 ? 'var(--red)' : 'var(--amber)', `<b>${esc(t.tenant_name)}</b> lease ${d<0?'expired '+fmtDate(t.lease_end):'ends in '+d+' days'}`, 'tenants']); });
