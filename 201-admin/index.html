@@ -182,7 +182,8 @@ a.attach{font-size:12px;font-weight:700;color:var(--amber)}
 #lightbox .lb-bar a{color:#9FD8B0;font-weight:700}
 .el-sum{padding:12px 18px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:6px 22px;font-size:13px;color:var(--ink3)}
 .el-sum b{color:var(--ink)}
-.el-view td{padding:12px 14px;vertical-align:middle}
+.el-view td{padding:6px 12px;vertical-align:middle;font-size:13.5px}
+.el-view img.thumb{width:30px;height:30px}
 .el-view .meters{font-size:12px;color:var(--ink4);margin-top:2px}
 .el-view .paid{color:var(--green-d);font-weight:800}
 .el-view .warn{color:var(--amber);font-size:12px;font-weight:700}
@@ -795,6 +796,24 @@ async function meralcoYellowPaid(){
 }
 // ELA, 27 Nov: where each November Meralco payment went (these tenants are paid)
 const EL_PAIDTO_2026_11 = [['v52','Security Bank (BVI)'],['coffee story','Security Bank (BVI)'],['toothlu','Security Bank (BVI)'],['seo vas','GCash (MFRG)'],['ashcol','Security Bank (BVI)'],['puremed','Security Bank (BVI)'],['neuera','GCash (MFRG)'],['bedoo','Security Bank (BVI)']];
+async function meralcoPaidToOnly(){
+  if (DEMO || S.mig_el_paidto_v2_2026_11) return;
+  try {
+    const rows = [];
+    DB.ElecBills.filter(b => b.period === '2026-11').forEach(b => {
+      const mt = byId('Meters', b.meter_id) || {}, t = tn(mt.tenant_id);
+      if (mt.type === 'Building') return;
+      const name = [t?.tenant_name, t?.trade_name, mt.payer].join(' ').toLowerCase();
+      const hit = EL_PAIDTO_2026_11.find(([k]) => name.includes(k));
+      const noProofPaid = b.status === 'Paid' && !b.proof_url;
+      if (!hit && !noProofPaid) return;
+      rows.push({ ...b, paid_to: hit ? hit[1] : (b.paid_to || ''), ...(noProofPaid ? { status:'Unpaid', paid_date:'', paid_amount:'' } : {}) });
+    });
+    if (rows.length) await saveMany('ElecBills', rows);
+    await save('Settings', { id:'mig_el_paidto_v2_2026_11', value: new Date().toISOString() });
+    S.mig_el_paidto_v2_2026_11 = '1';
+  } catch(e){ console.error('meralco paid-to failed', e); }
+}
 async function meralcoPaidTo(){
   if (DEMO || S.mig_el_paidto_2026_11) return;
   try {
@@ -832,8 +851,7 @@ async function reload(){
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await flagV52Reading();
-    await meralcoYellowPaid();
-    await meralcoPaidTo();
+    await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
@@ -1219,10 +1237,13 @@ function elView(per, rate, tenantM, bldgM){
     const st = paidAll ? `<a href="#" class="paid" style="text-decoration:none" onclick="elPay('${pb.id}');return false" title="Edit payment">Paid ✓</a>`
       : firstUnpaid ? `${paidSome ? '<span class="muted">part paid · </span>' : ''}<button class="btn sm" onclick="elPay('${firstUnpaid.id}')">Mark paid</button>` : '<span class="muted">no reading</span>';
     const proof = pb ? proofThumb(pb.proof_url, `elPay('${pb.id}')`) : '';
-    return `<tr><td><b>${esc(meterName(g.ms[0]))}</b><div class="meters">${esc(units)}${meters ? ' · ' + meters : ''}</div>${warn}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${pb ? esc(pb.paid_to || '') || '<span class="muted">—</span>' : ''}</td><td>${proof}</td></tr>`;
-  }).join('');
+    const flag = bills.some(b => b.needs_reading === 'Yes') ? ' <span class="warn" title="Needs actual reading">⚠</span>' : '';
+    g.sortKey = paidAll ? (pb.paid_date || '') : '9999';
+    return g.html = `<tr><td><b>${esc(meterName(g.ms[0]))}</b>${flag}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${esc((pb && pb.paid_to) || (bills.find(b => b.paid_to) || {}).paid_to || '')}</td><td>${proof}</td></tr>`;
+  });
+  const rowsSorted = groups.map((g, i) => [g.sortKey, i, rows[i]]).sort((a, b) => a[0].localeCompare(b[0]) || a[1] - b[1]).map(x => x[2]).join('');
   const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td colspan="4"></td></tr>`; }).join('');
-  $('el-wrap').innerHTML = `<table class="el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>${rows}
+  $('el-wrap').innerHTML = `<table class="el-view condensed"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>${rowsSorted}
     <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td colspan="4"></td></tr>
     <tr><td colspan="6" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
     <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td colspan="4"></td></tr>
@@ -1286,13 +1307,14 @@ function elPay(id){
   const sum = () => { const ids = [id, ...[...$('m-body').querySelectorAll('.el-cov:checked')].map(c => c.value).filter(v => v !== id)]; $('el-pay-amt').value = r2(ids.reduce((x, i) => x + num(byId('ElecBills', i).amount), 0)); };
   $('m-body').querySelectorAll('.el-cov').forEach(c => c.onchange = sum);
   if (sib.length) sum();
-  $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="elUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elPaySave('${id}')">Mark paid</button>`;
+  $('m-foot').innerHTML = `<div class="left">${b.status === 'Paid' ? `<button class="btn danger" onclick="elUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elPaySave('${id}')">Mark paid (with proof)</button>`;
   $('ovl').classList.add('on');
 }
 async function elPaySave(id){
   const b = byId('ElecBills', id), btn = $('m-save');
   const f = Object.fromEntries([...$('m-body').querySelectorAll('.fld [name]')].map(el => [el.name, el.value.trim()]));
   const ids = [id, ...[...$('m-body').querySelectorAll('.el-cov:checked')].map(c => c.value).filter(v => v !== id)];
+  if (!proofPicked && !b.proof_url) return toast('Attach the proof of payment first');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
     if (proofPicked) { btn.textContent = 'Uploading proof…'; f.proof_url = await uploadProof(proofPicked); }
