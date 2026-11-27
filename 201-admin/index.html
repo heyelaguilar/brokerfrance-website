@@ -366,7 +366,9 @@ const byId = (t, id) => DB[t].find(r => r.id === id);
 const tn = id => byId('Tenants', id);
 const tName = id => tn(id)?.tenant_name || '—';
 const tLabel = t => `${t.tenant_name}${t.unit ? ' · ' + t.unit : ''}`;
-const activeTenants = () => DB.Tenants.filter(t => (t.status || 'Active') !== 'Moved Out').sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+// sort by unit number (natural order: 101, 102, 201…); tenants without a unit go last
+const byUnit = (a, b) => (!a.unit) - (!b.unit) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true, sensitivity:'base'}) || String(a.tenant_name).localeCompare(b.tenant_name);
+const activeTenants = () => DB.Tenants.filter(t => (t.status || 'Active') !== 'Moved Out').sort(byUnit);
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('on'),3000); }
 function opts(list, sel, blank){ return (blank!=null?`<option value="">${esc(blank)}</option>`:'') + list.map(o=>`<option ${o===sel?'selected':''}>${esc(o)}</option>`).join(''); }
 const PILL = {'Active':'p-green','Paid':'p-green','Cleared':'p-green','Sent':'p-green','On hand':'p-blue','Deposited':'p-amber','Draft':'p-amber','Unsent':'p-amber','Notice to Vacate':'p-amber','Partial':'p-amber','Bounced':'p-red','Overdue':'p-red','Unpaid':'p-red','Failed':'p-red'};
@@ -838,7 +840,7 @@ function rTenants(){
   if (!$('f-tn-status').options.length) $('f-tn-status').innerHTML = opts(TENANT_STATUS, null, 'All statuses');
   const q = $('f-tn-q').value.toLowerCase(), fs = $('f-tn-status').value;
   const list = DB.Tenants.filter(t => (!fs || (t.status||'Active') === fs) && (!q || [t.tenant_name,t.trade_name,t.unit,t.contact_person,t.email].join(' ').toLowerCase().includes(q)))
-    .sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
+    .sort(byUnit);
   $('tn-wrap').innerHTML = list.length ? `<table><tr><th>Tenant</th><th>Unit</th><th class="num">Rent</th><th>Charges</th><th>SOA email</th><th>Lease end</th><th class="num">Balance</th><th>Status</th></tr>${list.map(t => {
     const bal = balanceOf(t.id), d = daysUntil(t.lease_end);
     const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco'].filter(Boolean).join(' · ');
