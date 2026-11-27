@@ -289,7 +289,8 @@ const SETTINGS_FIELDS = [
   ['payment_instructions','Payment instructions','textarea','Please make checks payable to ____. Bank transfer: Bank ____, Account name ____, Account no. ____. Send proof of payment to this email.'],
   ['soa_notes','Footer notes','textarea','Please settle on or before the due date to avoid penalties. Kindly disregard if payment has been made.'],
   ['h','Billing defaults'],
-  ['vat_pct','VAT % on rent','number','12'],
+  ['vat_on','Charge VAT on rent','select','off',['off','on']],
+  ['vat_pct','VAT % on rent (used only when VAT is on)','number','12'],
   ['penalty_pct','Late penalty % per month on unpaid balance (0 = none)','number','0'],
   ['cusa_rate','Default CUSA rate (₱ per sqm)','number','0'],
   ['elec_rate','Default Meralco rate (₱/kWh)','number','0'],
@@ -316,7 +317,7 @@ const FORMS = {
     ['contact_person','Contact person','text'],['phone','Phone / Viber','text'],
     ['email','SOA email (To)','text'],['cc_email','CC emails (comma-separated)','text'],
     ['h','Billing setup'],
-    ['monthly_rent','Monthly rent, VAT-exclusive (₱)','number'],['rent_vat','Add VAT on rent?','select',['Yes','No']],
+    ['monthly_rent','Monthly rent (₱)','number'],['rent_vat','Add VAT on rent? (only if VAT is on in Settings)','select',['No','Yes']],
     ['ewt_pct','EWT withheld by tenant (%)','number'],['due_day','Due day (blank = default)','number'],
     ['cusa_mode','CUSA','select',['Per sqm','Fixed','None']],['cusa_value','CUSA rate per sqm or fixed amount (blank = default rate)','number'],
     ['waste_fee','Waste hauling per month (₱)','number'],['security_deposit','Security deposit held (₱)','number'],
@@ -365,6 +366,7 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); c
 function opts(list, sel, blank){ return (blank!=null?`<option value="">${esc(blank)}</option>`:'') + list.map(o=>`<option ${o===sel?'selected':''}>${esc(o)}</option>`).join(''); }
 const PILL = {'Active':'p-green','Paid':'p-green','Cleared':'p-green','Sent':'p-green','On hand':'p-blue','Deposited':'p-amber','Draft':'p-amber','Unsent':'p-amber','Notice to Vacate':'p-amber','Partial':'p-amber','Bounced':'p-red','Overdue':'p-red','Unpaid':'p-red','Failed':'p-red'};
 const pill = s => s ? `<span class="pill ${PILL[String(s).split(':')[0]] || ''}">${esc(s)}</span>` : '';
+const vatOn = () => String(set('vat_on')).toLowerCase() === 'on';
 const set = k => S[k] ?? (SETTINGS_FIELDS.find(f => f[0] === k) || [])[3] ?? '';
 
 // ───────────────── API ─────────────────
@@ -416,7 +418,7 @@ function soaSummary(tid, period, billDate){
 function rateFor(t, key, monthRate){ return num(t[key]) || num(monthRate) || num(set(key)); }
 function computeBill(t, period, inp){
   const rent = num(t.monthly_rent);
-  const rent_vat = t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
+  const rent_vat = vatOn() && t.rent_vat === 'Yes' ? r2(rent * num(set('vat_pct')) / 100) : 0;
   const mode = t.cusa_mode || 'Per sqm';
   const cusa = mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate'))));
   const water_rate = rateFor(t, 'water_rate', inp.water_rate_month), elec_rate = rateFor(t, 'elec_rate', inp.elec_rate_month);
@@ -525,7 +527,7 @@ function rCollectibles(m){
     <tr><td><b>Remaining to collect</b></td><td class="num"><b style="color:${current+prevUnpaid-collected>0?'var(--red)':'var(--green-d)'}">${peso(Math.max(0, current + prevUnpaid - collected))}</b></td></tr>`;
   // per-tenant monthly rent & CUSA (from tenant setup)
   const cusaOf = t => { const mode = t.cusa_mode || 'Per sqm'; return mode === 'None' ? 0 : mode === 'Fixed' ? num(t.cusa_value) : r2(num(t.area_sqm) * (num(t.cusa_value) || num(set('cusa_rate')))); };
-  const vatOf = t => t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
+  const vatOf = t => vatOn() && t.rent_vat === 'Yes' ? r2(num(t.monthly_rent) * num(set('vat_pct')) / 100) : 0;
   let tr = 0, tc = 0;
   const rcRows = ts.map(t => {
     const rent = num(t.monthly_rent), cusa = cusaOf(t);
@@ -822,7 +824,7 @@ function rTenants(){
     .sort((a,b) => FLOORS.indexOf(a.floor) - FLOORS.indexOf(b.floor) || String(a.unit).localeCompare(String(b.unit), undefined, {numeric:true}));
   $('tn-wrap').innerHTML = list.length ? `<table><tr><th>Tenant</th><th>Unit</th><th class="num">Rent</th><th>Charges</th><th>SOA email</th><th>Lease end</th><th class="num">Balance</th><th>Status</th></tr>${list.map(t => {
     const bal = balanceOf(t.id), d = daysUntil(t.lease_end);
-    const ch = [t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco', num(t.waste_fee)?'Waste':''].filter(Boolean).join(' · ');
+    const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco', num(t.waste_fee)?'Waste':''].filter(Boolean).join(' · ');
     return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.trade_name)}</div></td><td>${esc(t.floor)}<div class="muted">${esc(t.unit)}${t.area_sqm?' · '+t.area_sqm+' sqm':''}</div></td><td class="num">${t.monthly_rent?peso(t.monthly_rent):'—'}</td><td class="muted">${ch}</td><td>${t.email?esc(t.email):'<span class="pill p-red">missing</span>'}</td><td>${fmtDate(t.lease_end)}${d!=null&&d<=90&&t.status!=='Moved Out'?`<div class="muted" style="color:var(--amber)">${d<0?'expired':d+' days left'}</div>`:''}</td><td class="num">${bal>0?`<b ${overdueOf(t.id)?'style="color:var(--red)"':''}>${peso(bal)}</b>`:bal<0?`<span class="muted">${peso(-bal)} credit</span>`:'—'}</td><td>${pill(t.status||'Active')}</td></tr>`;}).join('')}</table>`
     : `<div class="empty"><b>${DB.Tenants.length?'No match':'No tenants yet'}</b>${DB.Tenants.length?'':'Add each tenant with their rent, CUSA, utilities and SOA email.'}</div>`;
 }
@@ -882,7 +884,7 @@ function openForm(t, id, preset){
   $('m-foot').innerHTML = `<div class="left">${extra.join('')}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="submitForm()">Save</button>`;
   $('ovl').classList.add('on');
 }
-function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'Yes', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
+function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', cusa_mode:'Per sqm', floor:'Ground Floor'}, Payments:{date:today(), method:'Bank transfer'}, PDCs:{status:'On hand'} })[t]; }
 function closeForm(){ $('ovl').classList.remove('on'); editing = null; }
 async function submitForm(){
   const {t, id} = editing, btn = $('m-save');
