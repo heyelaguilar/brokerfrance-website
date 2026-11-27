@@ -793,6 +793,25 @@ async function meralcoYellowPaid(){
     S.mig_meralco_yellow_2026_11 = '1';
   } catch(e){ console.error('meralco yellow failed', e); }
 }
+// ELA, 27 Nov: where each November Meralco payment went (these tenants are paid)
+const EL_PAIDTO_2026_11 = [['v52','Security Bank (BVI)'],['coffee story','Security Bank (BVI)'],['toothlu','Security Bank (BVI)'],['seo vas','GCash (MFRG)'],['ashcol','Security Bank (BVI)'],['puremed','Security Bank (BVI)'],['neuera','GCash (MFRG)'],['bedoo','Security Bank (BVI)']];
+async function meralcoPaidTo(){
+  if (DEMO || S.mig_el_paidto_2026_11) return;
+  try {
+    const rows = [];
+    DB.ElecBills.filter(b => b.period === '2026-11').forEach(b => {
+      const mt = byId('Meters', b.meter_id) || {}, t = tn(mt.tenant_id);
+      const name = [t?.tenant_name, t?.trade_name, mt.payer].join(' ').toLowerCase();
+      const hit = EL_PAIDTO_2026_11.find(([k]) => name.includes(k)); if (!hit || mt.type === 'Building') return;
+      const paid = b.status === 'Paid';
+      rows.push({ ...b, paid_to: hit[1], status: 'Paid', paid_date: b.paid_date || '2026-11-27', paid_amount: b.paid_amount || b.amount,
+        method: hit[1].startsWith('GCash') ? 'GCash' : (b.method || 'Bank transfer'), notes: paid ? b.notes : 'Paid per ELA (27 Nov) — confirm date / reference' });
+    });
+    if (rows.length) await saveMany('ElecBills', rows);
+    await save('Settings', { id:'mig_el_paidto_2026_11', value: new Date().toISOString() });
+    S.mig_el_paidto_2026_11 = '1';
+  } catch(e){ console.error('meralco paid-to failed', e); }
+}
 async function reload(){
   try {
     const d = await call({action:'load'});
@@ -814,6 +833,7 @@ async function reload(){
     await seedMeralco();
     await flagV52Reading();
     await meralcoYellowPaid();
+    await meralcoPaidTo();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
