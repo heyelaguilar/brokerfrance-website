@@ -171,6 +171,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .bill-tbl tr:not(:first-child):hover td{background:#FAFBFC}
 .bill-tbl .row-actions .btn{white-space:nowrap}
 .bill-tbl td.st{white-space:nowrap}
+.sent-btn.on{background:var(--green-d,#1F4D3A);color:#fff}
+.sent-btn:not(.on){color:var(--ink3)}
 .bill-tbl td.st .pill+.pill{margin-left:4px}
 .bill-tbl small{display:block;color:var(--ink4);font-size:11px;margin-top:2px;text-align:right}
 .soa-wrap{background:#E9EDF1;padding:18px;border-radius:10px;max-height:62vh;overflow:auto}
@@ -2591,10 +2593,10 @@ function rBilling(){
       <td class="num">${f(kind('Primewater'))}</td>
       <td class="num">${f(kind('Waste'))}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
-      <td class="st">${soaHold(t) ? '<span class="pill p-amber">On hold</span>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="pill">Not generated</span>'}</td>
+      <td class="st">${b && b.sent_at ? `<button class="btn sm sent-btn on" title="Click to undo" onclick="soaToggleSent('${t.id}', this)">✓ Sent ${fmtDate(b.sent_at)}</button>` : `<button class="btn sm ghost sent-btn" onclick="soaToggleSent('${t.id}', this)">Not sent</button>`}</td>
       <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button>${b && b.status === 'Sent' ? '' : ''}</div></td></tr>`;
   }).join('');
-  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste</th><th class="num">Total due</th><th>Status</th><th></th></tr>${rows}
+  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste</th><th class="num">Total due</th><th>Sent out?</th><th></th></tr>${rows}
     <tr><td colspan="7" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
   $('bill-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { grid[e.target.dataset.t][e.target.dataset.k] = e.target.value.trim(); updateBillRow(e.target.dataset.t); }));
 }
@@ -2605,11 +2607,23 @@ function updateBillRow(tid){
   $('bill-sum').textContent = peso(soaList().reduce((x, t) => x + due(t), 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P), c = computeBill(tn(tid), P, inputsFor(tid));
   const row = $('tot-' + tid).closest('tr');
-  if (b && Math.abs(num(b.total) - c.total) > 0.004) { row.cells[8].innerHTML = pill('Unsaved changes'); row.querySelector('.row-actions .btn:not(.ghost)')?.setAttribute('disabled', ''); }
+  void row; void b; void c;
 }
 function inputsFor(tid){
   const g = grid[tid] || {};
   return { ...g, bill_date: $('r-bill-date').value, elec_rate_month: $('r-elec').value, water_rate_month: $('r-water').value };
+}
+async function soaToggleSent(tid, btn){
+  const P = $('f-bill-period').value;
+  let b = DB.Bills.find(x => x.tenant_id === tid && x.period === P);
+  if (b && b.sent_at && !confirm('Mark this SOA as NOT sent?')) return;
+  btn.disabled = true;
+  try {
+    if (!b) { if (!await saveBills(true, tid)) return; b = DB.Bills.find(x => x.tenant_id === tid && x.period === P); }
+    await save('Bills', b.sent_at ? { ...b, sent_at: '', status: 'Draft' } : { ...b, sent_at: new Date().toISOString(), status: 'Sent' });
+    rBilling(); badges();
+  } catch(e){ toast('Save failed: ' + e.message); }
+  finally { btn.disabled = false; }
 }
 async function generateSOA(tid, btn){
   if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
