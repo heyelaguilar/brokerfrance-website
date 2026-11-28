@@ -937,7 +937,7 @@ async function seedMeralcoHistory(){
   try {
     const H = [['2026-10',70830.34,10038.14,0],['2026-09',60508.50,4615.27,0],['2026-08',54564.85,5791.49,0],['2026-07',58570.95,9202.73,2609.50],['2026-06',62044.93,13740.35,2330.30],
       ['2026-05',56313.27,9989.35,2844.86],['2026-04',46174.73,5542.08,2778.77],['2026-03',45330.72,7555.53,2361.20],['2026-02',40832.32,14452.10,2482.75],['2026-01',33302.04,5156.40,2255.28],
-      ['2025-12',41325.35,3769.25,2824.32],['2025-11','',10495.41,2283.11],['2025-10',35261.92,11974.05,2481.84]];
+      ['2025-12',41325.35,3769.25,2824.32],['2025-11',41828.50,10495.41,2283.11],['2025-10',35261.92,11974.05,2481.84]];
     const rows = H.map(([m, bill, bvi, bedoo]) => { const ex = DB.ElecPeriods.find(p => p.id === m) || {};
       return { ...ex, id: m, meralco_total: ex.meralco_total || bill, bvi_share: bvi, bvi_incl: bedoo || '', bvi_incl_label: bedoo ? 'Bedoo' : '', notes: ex.notes || (bill === '' ? 'Meralco history · bill amount to check' : 'Meralco history') }; });
     await saveMany('ElecPeriods', rows);
@@ -952,6 +952,14 @@ async function meralcoNov26Bvi(){
     await save('ElecPeriods', { ...ex, meralco_total: ex.meralco_total || 69952.18, bvi_share: -6206.50, due_date: ex.due_date || '2026-11-24' });
     await save('Settings', { id:'mig_el_nov26_bvi_v2', value: new Date().toISOString() }); S.mig_el_nov26_bvi_v2 = '1';
   } catch(e){ console.error('meralco nov 2026 bvi failed', e); }
+}
+async function meralcoNov25(){
+  if (DEMO || S.mig_el_nov25_bill) return;
+  try {
+    const ex = DB.ElecPeriods.find(p => p.id === '2025-11') || { id:'2025-11' };
+    await save('ElecPeriods', { ...ex, meralco_total: 41828.50, bvi_share: 10495.41, bvi_incl: 2283.11, bvi_incl_label: 'Bedoo', notes: 'Meralco history' });
+    await save('Settings', { id:'mig_el_nov25_bill', value: new Date().toISOString() }); S.mig_el_nov25_bill = '1';
+  } catch(e){ console.error('meralco nov 2025 failed', e); }
 }
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
@@ -1082,6 +1090,7 @@ async function reload(){
     await whNovIsOct();
     await seedMeralcoHistory();
     await meralcoNov26Bvi();
+    await meralcoNov25();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
