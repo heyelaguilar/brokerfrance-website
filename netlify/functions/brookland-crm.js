@@ -75,7 +75,7 @@ exports.handler = async (event, context) => {
 
     if (body.action === 'remove') {
       const ids = await ensureTabs(api);
-      const col = (await api(`/values/${encodeURIComponent(tab + '!A:A')}`)).values || [];
+      const col = (await api(`/values/${encodeURIComponent(`'${tab}'!A:A`)}`)).values || [];
       const idx = col.findIndex(r => r[0] === String(body.id));
       if (idx < 1) return reply(404, { error: 'Row not found' });
       await api(':batchUpdate', 'POST', { requests: [{ deleteDimension: { range: { sheetId: ids[tab], dimension: 'ROWS', startIndex: idx, endIndex: idx + 1 } } }] });
@@ -97,7 +97,7 @@ const colLetter = n => { let s = ''; n++; while (n) { const m = (n - 1) % 26; s 
 // Upsert by id: existing ids are overwritten in place, new rows appended in one call.
 async function saveRows(api, tab, rows) {
   const head = (await api(`/values/${encodeURIComponent(tab + '!1:1')}`)).values?.[0] || SCHEMA[tab];
-  const ids = ((await api(`/values/${encodeURIComponent(tab + '!A:A')}`)).values || []).map(r => r[0]);
+  const ids = ((await api(`/values/${encodeURIComponent(`'${tab}'!A:A`)}`)).values || []).map(r => r[0]);
   const now = new Date().toISOString();
   const updates = [], appends = [], out = [];
   for (const r of rows) {
@@ -105,11 +105,11 @@ async function saveRows(api, tab, rows) {
     if (!row.id) row.id = newId(tab);
     const values = head.map(h => row[h] == null ? '' : String(row[h]));
     const idx = ids.indexOf(String(row.id));
-    if (idx > 0) updates.push({ range: `${tab}!A${idx + 1}:${colLetter(head.length - 1)}${idx + 1}`, values: [values] });
+    if (idx > 0) updates.push({ range: `'${tab}'!A${idx + 1}:${colLetter(head.length - 1)}${idx + 1}`, values: [values] });
     else { appends.push(values); ids.push(String(row.id)); }
     out.push(row);
   }
   if (updates.length) await api('/values:batchUpdate', 'POST', { valueInputOption: 'RAW', data: updates });
-  if (appends.length) await api(`/values/${encodeURIComponent(tab + '!A1')}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, 'POST', { values: appends });
+  if (appends.length) await api(`/values/${encodeURIComponent(`'${tab}'!A1`)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`, 'POST', { values: appends });
   return out;
 }

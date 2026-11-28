@@ -17,6 +17,7 @@ const SCHEMA = {
   ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','needs_reading','paid_date','paid_amount','method','paid_to','reference','proof_url','notes','updated'],
   Disbursements: ['id','date','description','category','vendor','amount','paid_by','receipt_url','status','reimbursed_date','reimbursed_ref','reimbursed_proof','notes','updated'],
   'PAST DUE': ['Business name','Due','REMARKS'],
+  'PAST DUE DETAILS': ['Business name','Description','Amount','Billing date','Due date','Scope','id'],
   'MONTHLY INCOME': ['Business name','Rent','CUSA','Total'],
   'MONTHLY COLLECTION': ['Business name','Due','PDC','Bank transfer','Subtotal'],
   Charges: ['id','tenant_id','description','amount','bill_date','due_date','status','paid_date','paid_amount','method','paid_to','reference','proof_url','sent_at','notes','updated'],

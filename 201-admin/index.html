@@ -549,7 +549,7 @@ const daysUntil = d => d ? Math.round((new Date(d) - new Date(today())) / 864e5)
 const fmtDate = d => d ? new Date(d.slice(0,10) + 'T00:00:00').toLocaleDateString('en-PH',{month:'short',day:'numeric',year:'numeric'}) : '—';
 const fmtMonth = m => m ? new Date(m + '-01T00:00:00').toLocaleDateString('en-PH',{month:'long',year:'numeric'}) : '—';
 const byId = (t, id) => DB[t].find(r => r.id === id);
-const tn = id => byId('Tenants', id);
+const tn = id => String(id || '').startsWith('PAST:') ? { id, tenant_name: String(id).slice(5) } : byId('Tenants', id);   // PAST:<name> = a moved-out tenant from the PAST DUE tabs
 const tName = id => tn(id)?.tenant_name || '—';
 const tLabel = t => `${t.tenant_name}${t.unit ? ' · ' + t.unit : ''}`;
 // sort by unit number (natural order: 101, 102, 201…); tenants without a unit go last
@@ -1324,6 +1324,24 @@ async function seedPastDueTab(){
     await save('Settings', { id:'mig_pastdue_seed', value: new Date().toISOString() }); S.mig_pastdue_seed = '1';
   } catch(e){ console.error('past due seed failed', e); }
 }
+async function seedPastDetails(){
+  if (DEMO || S.mig_past_details || (DB['PAST DUE DETAILS'] || []).length) return;
+  try {
+    const Z = 'ZSThree Software Trading', D = 'Dopeboy Ventures OPC';
+    const rows = [
+      [Z, 'CUSA 20 SQM x 80 (Oct 2026)', 1600, '2026-11-04', 'PAY IMMEDIATELY', 'CUSA and RENT'],
+      [Z, 'Unit Rental (Oct 2026)', 13910],
+      [D, 'CUSA 120SQM x ₱80 = ₱9,600 x 13months (Sep 2025 to Sep 2026)', 124800, '2026-11-04', 'PAY IMMEDIATELY', 'RENTAL, CUSA and PRIMEWATER'],
+      [D, 'PRIMEWATER (Reading from 07/19/25 to 10/23/26 | 122.5 - 215.1)', 4886.18],
+      [D, 'MONTHLY RENT ₱60,000 (August 17 2026)', 60000],
+      [D, 'MONTHLY RENT ₱60,000 (September 17, 2026)', 60000],
+      [D, 'LESS: Payment Made on Sep 14, 2026 for the month of Aug 2026', -60000],
+      [D, '1 month Advance (last month of the lease term)', -30000],
+    ].map(([n, d, a, bd, dd, sc]) => ({ 'Business name': n, Description: d, Amount: a, 'Billing date': bd || '', 'Due date': dd || '', Scope: sc || '' }));
+    await saveMany('PAST DUE DETAILS', rows);
+    await save('Settings', { id:'mig_past_details', value: new Date().toISOString() }); S.mig_past_details = '1';
+  } catch(e){ console.error('past details seed failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1434,7 +1452,7 @@ async function seedPayables(){
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PAST DUE','MONTHLY INCOME','MONTHLY COLLECTION'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PAST DUE','PAST DUE DETAILS','MONTHLY INCOME','MONTHLY COLLECTION'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -1494,6 +1512,7 @@ async function reload(){
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
+    await seedPastDetails();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -1817,7 +1836,7 @@ function rCollectibles(m){
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th></tr>` + pdRows.map((r, i) => {
       const items = String(r.rem || '').split(/\s*;\s*/).filter(Boolean);
       return `<tr class="click" onclick="pdToggle(${i})"><td><span class="pd-caret" id="pdc-${i}">▸</span> <div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td></tr>`
-        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-wrap"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}</div>${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button></div>` : ''}</div></td></tr>`; }).join('')
+        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-wrap"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}</div>${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button></div>` : pdDetails(r.name).length ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();openSOA('PAST:${esc(r.name).replace(/'/g, '&#39;')}')">View SOA</button></div>` : ''}</div></td></tr>`; }).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
@@ -2855,8 +2874,10 @@ const cusaLine = (t, period) => {
   const sq = area ? (rate && Math.abs(rate - Math.round(rate * 100) / 100) < 1e-9 && Number.isInteger(Math.round(rate * 100) / 100) ? ` ${area}SQM x ${rate}` : ` ${area}SQM`) : '';
   return `CUSA${sq} (${cusaCover(t, period)})`;
 };
-const dmy = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
+const dmy = d => { if (!d) return ''; if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return String(d); const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
 function soaRows(bill, noSheetPD){
+  if (bill.kind === 'past') { const t = tn(bill.tenant_id), total = r2(bill.lines.reduce((x, r) => x + r[1], 0));
+    return { t, rows: bill.lines, scope: bill.scope || 'PAST DUE', total, soaNo: `SOA-${bill.bill_date.replace(/-/g, '').slice(0, 6)}-PAST` }; }
   if (bill.kind === 'charge') { const t = tn(bill.tenant_id) || {}; const d = String(bill.description || 'CHARGE').toUpperCase();
     return { t, rows: [[d, num(bill.amount)]], scope: d.replace(/\s*\(.*\)\s*$/, ''), total: num(bill.amount), soaNo: `SOA-${String(bill.bill_date).replace(/-/g, '').slice(0, 6)}-${String(bill.id).replace(/[^a-z0-9]/gi, '').slice(-5).toUpperCase()}` }; }
   // only what's still unpaid: payments received are applied to this month's rent/CUSA first, then to the past due
@@ -2967,12 +2988,23 @@ function soaHTML(bill){
       <div style="margin-top:5px">Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b></div></td></tr>
   </table></div>`;
 }
-const billish = id => byId('Bills', id) || chargeBill(id);
+// SOA for anyone listed in PAST DUE DETAILS (e.g. moved-out Dopeboy, ZSThree): Business name | Description | Amount | Billing date | Due date | Scope
+const pdDetails = name => (DB['PAST DUE DETAILS'] || []).map(pdNorm).filter(r => String(r.business_name || '').trim().toLowerCase() === String(name).trim().toLowerCase() && String(r.description || '').trim());
+function pastBill(id){
+  if (!String(id).startsWith('PAST:')) return null;
+  const name = String(id).slice(5), L = pdDetails(name); if (!L.length) return null;
+  const first = k => (L.find(r => String(r[k] || '').trim()) || {})[k] || '';
+  const bd = String(first('billing_date')).trim(), dd = String(first('due_date')).trim();
+  const iso = v => { const d = new Date(v); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const bdi = iso(bd) || today();
+  return { kind: 'past', id, tenant_id: id, name, bill_date: bdi, due_date: iso(dd) || dd || 'PAY IMMEDIATELY', period: bdi.slice(0, 7), scope: String(first('scope')).trim(), lines: L.map(r => [String(r.description).trim(), num(r.amount)]) };
+}
+const billish = id => byId('Bills', id) || chargeBill(id) || pastBill(id);
 function openSOA(billId){
   const b = billish(billId), t = tn(b.tenant_id);
   editing = null;
   $('modal').classList.add('wide');
-  $('m-title').textContent = b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
+  $('m-title').textContent = b.kind === 'past' ? `SOA · ${b.name}` : b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
   $('m-body').className = 'body one';
   $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
   $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ PDF</button><button class="btn ghost" onclick="soaJPG('${b.id}', this)">⬇ JPG</button><button class="btn ghost" onclick="soaCopy('${b.id}', this)">Copy image</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
