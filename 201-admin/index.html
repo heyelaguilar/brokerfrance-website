@@ -896,6 +896,16 @@ async function seedWasteHistory2(){
     S.mig_wh_hist_2026_10 = '1';
   } catch(e){ console.error('waste history 2 failed', e); }
 }
+async function seedWasteAprMay(){
+  if (DEMO || S.mig_wh_aprmay_2026) return;
+  try {
+    const rows = ['2026-04','2026-05'].filter(m => !DB.Payables.some(x => x.id === 'PB-WH-' + m))
+      .map(m => ({ id: 'PB-WH-' + m, category: 'Waste hauler', payee: 'Waste hauler', billing_period: fmtMonth(m), amount: '', status: 'Paid', paid_amount: '', notes: 'History · amount unknown' }));
+    if (rows.length) await saveMany('Payables', rows);
+    await save('Settings', { id:'mig_wh_aprmay_2026', value: new Date().toISOString() });
+    S.mig_wh_aprmay_2026 = '1';
+  } catch(e){ console.error('waste apr/may failed', e); }
+}
 // Dopeboy water submeter: one reading for Jul 2025 – Oct 2026, charged at the average Primewater rate for those months
 async function seedDopeboyWater(){
   if (DEMO || S.mig_pw_dopeboy_2026_10) return;
@@ -1009,6 +1019,7 @@ async function reload(){
     await pwJedV3();
     await seedWasteHistory();
     await seedWasteHistory2();
+    await seedWasteAprMay();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
