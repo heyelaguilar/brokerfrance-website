@@ -802,7 +802,7 @@ async function seedMeralco(){
         const t = key ? DB.Tenants.find(x => [x.tenant_name, x.trade_name].join(' ').toLowerCase().includes(key)) : null;
         return { sort, unit, label, payer: t ? '' : payer, tenant_id: t ? t.id : '', type, active: 'Yes', notes: key === 'v52' ? 'Fixed ₱8,000 (no usage recorded Nov 2026)' : (key === 'squeeze' || label === 'Drinks') ? 'Nov 2026 amount taken from the Meralco sheet — sheet usage differs from current − previous' : '' };
       }));
-      await save('ElecPeriods', { id:'2026-11', billing_period:'11 Oct 2026 to 10 Nov 2026', reading_period:'11 Oct 2026 to 14 Nov 2026', billing_date:'2026-11-13', due_date:'2026-11-24', meralco_kwh:4189, rate:16.70, meralco_total:69952.18, common_amount:1645.14 });
+      await save('ElecPeriods', { id:'2026-11', billing_period:'11 Oct 2026 to 10 Nov 2026', reading_period:'11 Oct 2026 to 24 Nov 2026', billing_date:'2026-11-13', due_date:'2026-11-24', meralco_kwh:4189, rate:16.70, meralco_total:69952.18, common_amount:1645.14 });
       await saveMany('ElecBills', ELEC_SEED_2026_11.map((r, i) => {
         const [,, , , , type, curr, prev, fixed] = r, amount = fixed !== '' ? fixed : Math.round((curr - prev) * 16.70 * 100) / 100;
         return { period:'2026-11', meter_id: meters[i].id, prev, curr, rate:16.70, amount_override: fixed, amount, status: type === 'Building' ? '' : 'Unpaid' };
@@ -1117,6 +1117,14 @@ async function v52MeralcoPart(){
   } catch(e){ console.error('v52 meralco part failed', e); }
 }
 // V52 Nov Meralco was marked Paid at the temporary ₱8,000 — the actual is ₱17,150.90, so the ₱8,000 (with its proof) is a part payment
+async function meralcoNovReading(){
+  if (DEMO || S.mig_mer_nov_reading) return;
+  try {
+    const p = DB.ElecPeriods.find(x => x.id === '2026-11');
+    if (p && /14 Nov 2026/.test(p.reading_period || '')) await save('ElecPeriods', { ...p, reading_period: '11 Oct 2026 to 24 Nov 2026' });
+    await save('Settings', { id:'mig_mer_nov_reading', value: new Date().toISOString() }); S.mig_mer_nov_reading = '1';
+  } catch(e){ console.error('meralco nov reading failed', e); }
+}
 async function v52MeralcoFixPaid(){
   if (DEMO || S.mig_v52_mer_fix_paid) return;
   try {
@@ -1295,6 +1303,7 @@ async function reload(){
     await v52WasteSep();
     await v52MeralcoPart();
     await v52MeralcoFixPaid();
+    await meralcoNovReading();
     await akmasArrears();
     await autoFixedBills();
     await wasteFees();
