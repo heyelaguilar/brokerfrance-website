@@ -255,6 +255,11 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 /* box titles match the card labels */
 .box h3,#bvi-title{font-size:12px!important;font-weight:700!important;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
 .box h3 .muted,#bvi-title .muted{font-size:12px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em}
+#pd-tbl .pd-caret{color:var(--ink4);display:inline-block;width:12px}
+#pd-tbl tr.pd-det td{background:#FAFBFC}
+#app #pd-tbl .pd-lines{display:block!important;padding-left:18px}
+#app #pd-tbl .pd-lines>div{display:flex!important;justify-content:space-between;gap:24px;color:var(--ink3)}
+#app #pd-tbl .pd-lines span{display:inline!important}
 /* ── Uniform: one font family, one size, one line per row (SOA document excluded) ── */
 #app table:not(.soa-doc *),#app table :not(.soa-doc):not(.soa-doc *){font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;line-height:1.4!important;letter-spacing:0!important}
 #app table :is(th,b,strong):not(.soa-doc *){font-weight:700!important}
@@ -322,7 +327,7 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
         <div class="card box"><h3>Monthly income <span class="muted" id="rc-note"></span></h3><div class="tbl"><table id="rc-tbl" class="condensed"></table></div></div>
         <div class="card box"><h3 id="mc-title">Monthly collections</h3><div class="tbl"><table id="mc-tbl" class="condensed"></table></div></div>
       </div>
-      <div class="grid2 half" style="margin-bottom:16px">
+      <div class="grid2 even" style="margin-bottom:16px">
         <div class="card box"><h3 id="pd-title">Past due</h3><div class="tbl"><table id="pd-tbl" class="condensed"></table></div></div>
         <div class="card box"><h3 id="pr-title">Payments received</h3><div class="tbl"><table id="pr-tbl" class="condensed"></table></div></div>
       </div>
@@ -1689,6 +1694,7 @@ function rOverview(){
 }
 
 // ── Collectibles breakdown for a month: billed amounts, plus fixed charges projected for tenants not yet billed ──
+function pdToggle(i){ const d = $('pdd-' + i), on = d.style.display === 'none'; d.style.display = on ? '' : 'none'; $('pdc-' + i).textContent = on ? '▾' : '▸'; }
 function rCollectibles(m){
   const ts = activeTenants();
   const keys = [['rent','Rent'],['rent_vat','VAT on rent'],['cusa','CUSA'],['water_amt','Primewater'],['elec_amt','Electricity / Meralco'],['waste','Waste hauling'],['other_amt','Other charges'],['penalty','Penalties'],['ewt','Less: EWT (BIR 2307)']];
@@ -1775,9 +1781,10 @@ function rCollectibles(m){
     }).filter(Boolean);
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').innerHTML = `Past due <span class="muted">as of ${fmtMonth(m)} SOA</span>`;
-  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th></tr>` + pdRows.map(r =>
-      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:640px" title="${esc(r.open)}">${esc(r.open)}</div>` : ''}</td><td class="num"><b>${amt(r.pd)}</b></td></tr>`).join('')
-      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b style="font-size:15px">${amt(pdTot)}</b></td></tr>`
+  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th></tr>` + pdRows.map((r, i) =>
+      `<tr class="click" onclick="pdToggle(${i})"><td><span class="pd-caret" id="pdc-${i}">▸</span> <div class="name" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td></tr>`
+      + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-lines">${soaPastDue(r.t, m).items.map(x => `<div><span>${esc(x[0].replace(/^PAST DUE:?\s*/i, ''))}</span><span>${amt(x[1])}</span></div>`).join('')}</div></td></tr>`).join('')
+      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
   // Payments received this month for rent & CUSA
