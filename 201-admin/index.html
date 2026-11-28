@@ -516,7 +516,7 @@ const FORMS = {
 // ───────────────── STATE / UTILS ─────────────────
 let ST = { pdc:{}, bt:{}, pdcAmt:{}, btAmt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
-let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[],Charges:[],Disbursements:[],PastDue:[]};
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[],Charges:[],Disbursements:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
@@ -1430,7 +1430,7 @@ async function seedPayables(){
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PastDue','MONTHLY INCOME','MONTHLY COLLECTION'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PAST DUE','MONTHLY INCOME','MONTHLY COLLECTION'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -2896,7 +2896,7 @@ function soaRows(bill, noSheetPD){
   if (pdSheetOn() && !noSheetPD) {   // the sheet's PastDue rows replace the computed past due lines
     for (let i = rows.length - 1; i >= 0; i--) if (/^PAST DUE/i.test(rows[i][0])) rows.splice(i, 1);
     scope.delete('PAST DUE');
-    const sp = pdSheetRows(t.id).map(r => [`PAST DUE: ${String(r.description || '').trim()}`, num(r.amount)]);
+    const sp = pdSheetRows(t.id).map(r => [String(r.description || '').trim() ? `PAST DUE: ${String(r.description).trim()}` : 'PAST DUE', num(r.amount)]);
     if (sp.length) { rows.unshift(...sp); const rest = [...scope]; scope.clear(); ['PAST DUE', ...rest].forEach(x => scope.add(x)); }
   }
   const total = r2(rows.reduce((x, r) => x + r[1], 0));
@@ -2906,14 +2906,16 @@ function soaRows(bill, noSheetPD){
 }
 // Past due exactly as the tenant's SOA for batch month m shows it (rent, CUSA, other, Meralco, Primewater, waste)
 // Past due comes from the PastDue tab of the sheet once it has rows (edit there; Paid rows drop off the SOA)
-const pdSheetOn = () => (DB.PastDue || []).length > 0;
+// Your PAST DUE tab (Business name | Due | REMARKS): one line per tenant, blank Due = no past due
+const pdTab = () => (DB['PAST DUE'] || []).map(r => pdNorm(r)).filter(r => { const n = String(r.business_name || r.tenant || '').trim(); return n && !/^total$/i.test(n); });
+const pdSheetOn = () => pdTab().length > 0;
 const pdNorm = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [String(k).trim().toLowerCase().replace(/\s+/g, '_'), v]));
 const pdMatch = (r, t) => {   // match by tenant_id, or by the tenant / business name typed in the sheet
   if (r.tenant_id && r.tenant_id === t.id) return true;
   const n = String(r.tenant || r.business_name || r.tenant_name || '').trim().toLowerCase(); if (!n) return false;
   return [t.tenant_name, t.trade_name].some(x => x && String(x).trim().toLowerCase() === n);
 };
-const pdSheetRows = tid => { const t = tn(tid) || { id: tid }; return (DB.PastDue || []).map(pdNorm).filter(r => pdMatch(r, t) && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount)); };
+const pdSheetRows = tid => { const t = tn(tid) || { id: tid }; return pdTab().map(r => ({ ...r, amount: r.amount ?? r.due, description: r.description || r.remarks || '' })).filter(r => pdMatch(r, t) && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount)); };
 const pdSheetTotal = tid => r2(pdSheetRows(tid).reduce((x, r) => x + num(r.amount), 0));
 function soaPastDue(t, m, raw){
   const P = due1(t) ? nextMonthOf(m) : m;
