@@ -309,8 +309,11 @@ table.condensed .muted{font-size:11px}
 
     <section class="pane" id="p-waste">
       <div class="hdr"><div><h1>Waste Hauler</h1></div>
-        <div class="tools"><button class="btn" onclick="whPay()">+ Add payment</button></div></div>
+        <div class="tools"><input type="month" id="f-wh-month"><button class="btn" onclick="whPay()">+ Add bill payment</button></div></div>
       <div class="kpis" id="wh-kpis"></div>
+      <div class="card tbl" id="wh-ten"></div>
+      <h3 style="margin:22px 0 8px">Waste hauler bills paid</h3>
+      <div class="kpis" id="wh-kpis2"></div>
       <div class="card tbl" id="wh-wrap"></div>
     </section>
 
@@ -896,6 +899,16 @@ async function seedWasteHistory2(){
     S.mig_wh_hist_2026_10 = '1';
   } catch(e){ console.error('waste history 2 failed', e); }
 }
+async function wasteFees(){
+  if (DEMO || S.mig_wh_fees_2026_10) return;
+  try {
+    const fees = [[/\bv52\b/i, 1000], [/squeeze/i, 1000], [/toothluscent/i, 200], [/akmas/i, 500]];
+    for (const [re, fee] of fees) { const t = DB.Tenants.find(x => re.test([x.tenant_name, x.trade_name].join(' '))); if (t && num(t.waste_fee) !== fee) await save('Tenants', { ...t, waste_fee: fee }); }
+    await save('Settings', { id:'wh_start', value:'2026-10' }); S.wh_start = '2026-10';
+    await save('Settings', { id:'mig_wh_fees_2026_10', value: new Date().toISOString() });
+    S.mig_wh_fees_2026_10 = '1';
+  } catch(e){ console.error('waste fees failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1020,6 +1033,7 @@ async function reload(){
     await seedWasteHistory();
     await seedWasteHistory2();
     await seedWasteAprMay();
+    await wasteFees();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1573,7 +1587,8 @@ function rWaste(){
   const rows = whRows(), paid = rows.filter(r => r.status === 'Paid' && amt(r) > 0);
   const tot = paid.reduce((x, r) => x + amt(r), 0);
   const last = paid[0];
-  $('wh-kpis').innerHTML = `<div class="card kpi"><div class="l">Total paid</div><div class="v">${peso(tot)}</div><div class="s">${paid.length} month${paid.length === 1 ? '' : 's'}${rows.length > paid.length ? ` · ${rows.length - paid.length} unknown` : ''}</div></div>
+  whTenants(rows);
+  $('wh-kpis2').innerHTML = `<div class="card kpi"><div class="l">Total paid</div><div class="v">${peso(tot)}</div><div class="s">${paid.length} month${paid.length === 1 ? '' : 's'}${rows.length > paid.length ? ` · ${rows.length - paid.length} unknown` : ''}</div></div>
     <div class="card kpi"><div class="l">Average / month</div><div class="v">${peso(paid.length ? tot / paid.length : 0)}</div></div>
     <div class="card kpi"><div class="l">Last payment</div><div class="v">${last ? peso(amt(last)) : '—'}</div><div class="s">${last ? fmtMonth(last.m) : ''}</div></div>`;
   if (!rows.length) { $('wh-wrap').innerHTML = '<div class="empty">No waste hauler payments yet.<br><br><button class="btn" onclick="whPay()">+ Add payment</button></div>'; return; }
@@ -1583,6 +1598,59 @@ function rWaste(){
     ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td colspan="3"></td></tr>`).join('')}
     ${rows.map(r => `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${r.status === 'Paid' && !amt(r) ? '<span class="muted">unknown</span>' : r.status === 'Paid' ? peso(amt(r)).slice(1) : `<span class="muted">${peso(num(r.amount)).slice(1)} unpaid</span>`}</td><td>${r.paid_date ? fmtDate(r.paid_date) : ''}</td><td>${esc(r.paid_from || '')}</td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="3"></td></tr></table>`;
+}
+// tenants charged for hauling (Tenants.waste_fee), from the month in Settings wh_start
+const WH_PAY = m => DB.Payments.filter(p => String(p.notes || '').includes('Waste hauling ' + m));
+function whTenants(rows){
+  const pe = $('f-wh-month'); if (!pe.value) pe.value = (rows.find(r => num(r.paid_amount || r.amount)) || {}).m || thisMonth();
+  const m = pe.value, start = S.wh_start || '2026-10';
+  const ts = m >= start ? activeTenants().filter(t => num(t.waste_fee) > 0).sort(byUnit) : [];
+  const bill = DB.Payables.find(x => x.id === 'PB-WH-' + m), billAmt = bill ? num(bill.paid_amount || bill.amount) : 0;
+  const pays = WH_PAY(m);
+  const coll = ts.reduce((x, t) => x + num(t.waste_fee), 0), got = pays.reduce((x, p) => x + num(p.amount), 0);
+  const k = (l, v, sub, c) => `<div class="card kpi ${c || ''}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${sub || ''}</div></div>`;
+  $('wh-kpis').innerHTML = k('Hauler bill', billAmt ? peso(billAmt) : '—', fmtMonth(m) + (bill ? '' : ' · no bill yet'))
+    + k('Collectible', peso(coll), 'from tenants') + k('Collected', peso(got), coll ? Math.round(got / coll * 100) + '% collected' : '', got && got >= coll ? 'good' : '')
+    + k('Unpaid', peso(Math.max(0, coll - got)), '', coll - got > 0 ? 'bad' : '') + k('BVI', billAmt ? peso(billAmt - coll) : '—', billAmt ? (billAmt - coll) / billAmt * 100 > 0 ? ((billAmt - coll) / billAmt * 100).toFixed(2) + '% of the bill' : '' : '');
+  if (!ts.length) { $('wh-ten').innerHTML = `<div class="empty">No tenant hauling charges for ${fmtMonth(m)}.</div>`; return; }
+  $('wh-ten').innerHTML = `<table class="condensed el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>
+    ${ts.map(t => { const p = pays.find(x => x.tenant_id === t.id);
+      return `<tr><td><b>${esc(t.trade_name || t.tenant_name)}</b></td><td class="num"><b>${peso(num(t.waste_fee)).slice(1)}</b></td>
+        <td>${p ? `<a href="#" class="paid" style="text-decoration:none" onclick="whTPay('${t.id}');return false">Paid</a>` : `<button class="btn sm" onclick="whTPay('${t.id}')">Mark paid</button>`}</td>
+        <td>${p ? fmtDate(p.date) : ''}</td><td>${esc(p ? p.bank || '' : '')}</td><td>${p ? proofThumb(p.proof_url, `whTPay('${t.id}')`) : ''}</td></tr>`; }).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b>${peso(coll).slice(1)}</b></td><td colspan="4"></td></tr></table>`;
+}
+function whTPay(tid){
+  const m = $('f-wh-month').value, t = tn(tid), p = WH_PAY(m).find(x => x.tenant_id === tid) || {};
+  editing = { wht: tid, m, pid: p.id || '' };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Waste hauling · ${t.trade_name || t.tenant_name} · ${fmtMonth(m)}`;
+  $('m-body').innerHTML = `<div class="fld"><label>Amount (₱)</label><input id="wt-a" type="number" step="any" value="${esc(p.amount || t.waste_fee)}"></div>
+    <div class="fld"><label>Payment date</label><input id="wt-d" type="date" value="${esc(p.date || today())}"></div>
+    <div class="fld"><label>Paid to</label><select id="wt-to">${opts(PAID_TO, p.bank || PAID_TO[0])}</select></div>
+    <div class="fld"><label>Reference</label><input id="wt-ref" value="${esc(p.reference || '')}"></div>
+    <div class="fld wide"><label>Proof of payment</label>${proofZone(p.proof_url)}</div>`;
+  wireProofZone();
+  $('m-foot').innerHTML = `<div class="left">${p.id ? `<button class="btn danger" onclick="whTUnpay()">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="whTSave()">Mark paid (with proof)</button>`;
+  $('ovl').classList.add('on');
+}
+async function whTSave(){
+  const { wht, m, pid } = editing, p = DB.Payments.find(x => x.id === pid) || {}, a = num($('wt-a').value), btn = $('m-save');
+  if (!a) return toast('Enter the amount');
+  if (!proofPicked && !p.proof_url) return toast('Attach the proof of payment first');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    let proof_url = p.proof_url || '';
+    if (proofPicked) { btn.textContent = 'Uploading proof…'; proof_url = await uploadProof(proofPicked); }
+    const to = $('wt-to').value;
+    await save('Payments', { ...p, tenant_id: wht, date: $('wt-d').value, amount: a, method: /gcash/i.test(to) ? 'GCash' : 'Bank transfer', bank: to,
+      reference: $('wt-ref').value.trim(), applies_to: 'Utilities', proof_url, notes: 'Waste hauling ' + m });
+    closeForm(); render(); toast('Payment saved');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
+}
+async function whTUnpay(){
+  if (!confirm('Remove this payment?')) return;
+  try { await remove('Payments', editing.pid); closeForm(); render(); toast('Marked unpaid'); } catch(e){ toast('Failed: ' + e.message); }
 }
 function whPay(id, month){
   const r = id ? DB.Payables.find(x => x.id === id) || {} : {};
@@ -2248,6 +2316,7 @@ document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.datas
 ['f-pay-tenant','f-pay-month','f-pdc-tenant','f-pdc-status','f-tn-status'].forEach(id => $(id).addEventListener('change', render));
 ['f-pb-month','f-pb-cat'].forEach(id => $(id).addEventListener('change', render));
 $('f-el-period').addEventListener('change', () => { $('f-el-period').dataset.p = ''; render(); });
+$('f-wh-month').addEventListener('change', render);
 $('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
 ['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
 $('f-tn-q').addEventListener('input', render);
