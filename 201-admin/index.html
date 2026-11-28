@@ -2629,8 +2629,16 @@ const cusaCover = (t, period) => {
   const dd = num(t.due_day);
   if (!/^y/i.test(t.cusa_range || '') || !dd || dd === 1) return MON(p);
   const [y, m] = p.split('-').map(Number), ab = d => d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
-  const a = new Date(y, m - 2, dd), b = new Date(y, m - 1, dd - 1);
-  return `${ab(a)} ${a.getDate()} TO ${ab(b)} ${b.getDate()}`;
+  const a = new Date(y, m - 2, dd), b = new Date(y, m - 1, dd - 1), sh = d => d.toLocaleString('en-US', { month: 'short' });
+  return `${sh(a)} ${a.getDate()} - ${sh(b)} ${b.getDate()}, ${b.getFullYear()}`;
+};
+// CUSA line text: due-day-cycle tenants get "CUSA 120SQM x 80 (Nov 24 - Dec 23, 2026)"
+const cusaLine = (t, period) => {
+  if (!/^y/i.test(t.cusa_range || '')) return `CUSA (${cusaCover(t, period)})`;
+  const area = num(t.area_sqm), v = num(t.cusa_value) || num(set('cusa_rate'));
+  const rate = /fixed/i.test(t.cusa_mode || '') ? (area ? v / area : 0) : v;
+  const sq = area ? (rate && Math.abs(rate - Math.round(rate * 100) / 100) < 1e-9 && Number.isInteger(Math.round(rate * 100) / 100) ? ` ${area}SQM x ${rate}` : ` ${area}SQM`) : '';
+  return `CUSA${sq} (${cusaCover(t, period)})`;
 };
 const dmy = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
 function soaRows(bill){
@@ -2650,7 +2658,8 @@ function soaRows(bill){
       let what;
       if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} (${m[2].replace(/\s*[–-]\s*/g, '-')})` : b.other_label.split(',')[0]; }
       else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` (${!num(b.rent) ? cusaCover(t, b.period) : MON(b.period)})`;
-      items.push([`PAST DUE: ${String(what).toUpperCase().trim()}${pay ? ', BALANCE' : ''}`, rem]);
+      if (/^y/i.test(t.cusa_range || '') && num(b.cusa) && !num(b.rent) && !num(b.other_amt)) what = cusaLine(t, b.period); else what = String(what).toUpperCase();
+      items.push([`PAST DUE: ${what.trim()}${pay ? ', BALANCE' : ''}`, rem]);
     });
     const listed = r2(items.reduce((x, r) => x + r[1], 0));
     if (Math.abs(listed - num(s.opening)) > 0.01) items.splice(0, items.length, ['PAST DUE', num(s.opening)]);   // fall back to one line if the books don't split cleanly
@@ -2659,7 +2668,7 @@ function soaRows(bill){
   if (num(bill.rent)) led.push([rm === 1 ? `RENT (${mo})` : `RENT – ${String(t.rent_frequency).toUpperCase()} (${rm} MONTHS FROM ${mo})`, num(bill.rent), 'RENT', 'cur']);
   if (num(bill.rent_vat)) led.push([`VAT ${num(set('vat_pct'))}% ON RENT`, num(bill.rent_vat), 'RENT', 'cur']);
   const cusaMo = cusaCover(t, bill.period);
-  if (num(bill.cusa)) led.push([`CUSA (${cusaMo})`, num(bill.cusa), 'CUSA', 'cur']);
+  if (num(bill.cusa)) led.push([cusaLine(t, bill.period), num(bill.cusa), 'CUSA', 'cur']);
   if (num(bill.other_amt)) led.push([(bill.other_label || 'OTHER CHARGES').toUpperCase(), num(bill.other_amt), 'OTHER', 'cur']);
   if (num(bill.penalty)) led.push(['PENALTY', num(bill.penalty), 'PENALTY', 'cur']);
   if (num(bill.ewt)) led.push([`LESS: ${num(t.ewt_pct)}% EWT ON RENT (BIR 2307)`, -num(bill.ewt), '', 'cur']);
