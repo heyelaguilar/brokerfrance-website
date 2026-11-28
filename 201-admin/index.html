@@ -1301,8 +1301,8 @@ const soaList = () => activeTenants();   // every tenant; rent or CUSA covered b
 const SOA_UTIL_FROM = () => S.soa_util_from || '2026-10';
 // unpaid utilities for tenant t up to month m, split into this month and earlier
 const monthsBack = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 - k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
-// utilities are billed two months behind rent (Dec SOA: Dec rent & CUSA + Oct utilities)
-const utilThruDefault = P => monthsBack(P, 2);
+// every unpaid utility up to the month before the SOA month (Dec SOA: Dec rent & CUSA + all unpaid Meralco, Primewater and waste through Nov)
+const utilThruDefault = P => monthsBack(P, 1);
 const soaMeralcoIds = () => { try { return JSON.parse(S.soa_meralco_ids || '[]'); } catch(e){ return []; } };
 async function toggleSoaMeralco(tid, on){ const ids = new Set(soaMeralcoIds()); on ? ids.add(tid) : ids.delete(tid); S.soa_meralco_ids = JSON.stringify([...ids]); try { await save('Settings', { id: 'soa_meralco_ids', value: S.soa_meralco_ids }); } catch(e){ toast(e.message); } rBilling(); }
 function soaUtil(t, m, thru, withMeralco){
@@ -2425,8 +2425,8 @@ function rBilling(){
   let tot = 0;
   const rows = ts.map(t => {
     const g = grid[t.id] || (grid[t.id] = {});
-    const merOn = soaMeralcoIds().includes(t.id), c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value, merOn);
-    const uAll = soaUtil(t, P, $('r-util-thru').value, true), merAll = r2([...uAll.cur, ...uAll.past].filter(r => r[2] === 'Meralco').reduce((x, r) => x + r[1], 0));
+    const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value);
+    const kind = k => r2([...u.cur, ...u.past].filter(r => r[2] === k).reduce((x, r) => x + r[1], 0));
     const sm = soaSummary(t.id, P, $('r-bill-date').value);
     // payments go to this month's rent, then CUSA, then the past due — paid lines show as Paid
     const bucket = { rent: r2(c.rent + c.rent_vat), cusa: c.cusa, open: Math.max(0, sm.opening) };
@@ -2435,7 +2435,7 @@ function rBilling(){
     sm.since.forEach(p => { left = r2(left + pay(num(p.amount), String(p.date).slice(0, 7) >= P ? ['rent', 'cusa', 'open'] : ['open', 'rent', 'cusa'])); });
     left = r2(left + pay(c.ewt, ['rent', 'cusa', 'open']));
     const rentLeft = bucket.rent, cusaLeft = bucket.cusa, openLeft = bucket.open;
-    const pd = r2(openLeft + u.pastTotal), due = r2(pd + rentLeft + cusaLeft + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;
+    const pd = r2(openLeft), due = r2(pd + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;   // utility columns already hold their older unpaid months
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
     const b = existing.find(x => x.tenant_id === t.id);
     const dirty = b && Math.abs(num(b.total) - c.total) > 0.004;
@@ -2444,9 +2444,9 @@ function rBilling(){
       <td class="num">${pd ? `<b style="color:var(--red)">${peso(pd).slice(1)}</b>` : '<span class="muted">—</span>'}</td>
       <td class="num">${!c.rent && t.rent_payment === 'PDC' ? '<span class="muted">PDC</span>' : pv(c.rent + c.rent_vat, rentLeft)}</td>
       <td class="num">${!c.cusa && (t.cusa_payment === 'PDC' || t.cusa_payment === 'Combined with rent') ? '<span class="muted">PDC</span>' : pv(c.cusa, cusaLeft)}</td>
-      <td class="num">${merAll ? `<label style="display:inline-flex;gap:6px;align-items:center;cursor:pointer;white-space:nowrap" title="Include unpaid Meralco on this SOA"><input type="checkbox" ${merOn ? 'checked' : ''} onchange="toggleSoaMeralco('${t.id}', this.checked)"><span${merOn ? '' : ' class="muted"'}>${peso(merAll).slice(1)}</span></label>` : '<span class="muted">—</span>'}</td>
-      <td class="num">${f(u.by('Primewater'))}</td>
-      <td class="num">${f(u.by('Waste'))}</td>
+      <td class="num">${f(kind('Meralco'))}</td>
+      <td class="num">${f(kind('Primewater'))}</td>
+      <td class="num">${f(kind('Waste'))}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
       <td>${soaHold(t) ? '<span class="pill p-amber">On hold</span><br>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="muted">not saved</span>'}</td>
       <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button>${b && b.status === 'Sent' ? '' : ''}</div></td></tr>`;
@@ -2457,7 +2457,7 @@ function rBilling(){
 }
 function updateBillRow(tid){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value;
-  const due = t => { const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value, soaMeralcoIds().includes(t.id)); return r2(soaSummary(t.id, P, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
+  const due = t => { const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value); return r2(soaSummary(t.id, P, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
   { const d = due(tn(tid)); $('tot-' + tid).textContent = d > 0 ? peso(d) : d < 0 ? peso(-d) + ' credit' : 'Paid'; }
   $('bill-sum').textContent = peso(soaList().reduce((x, t) => x + due(t), 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P), c = computeBill(tn(tid), P, inputsFor(tid));
@@ -2487,7 +2487,7 @@ async function saveBills(silent, only){
       rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
       water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
       elec_prev:g.elec_prev??'', elec_curr:g.elec_curr??'', elec_rate:c.elec_rate, elec_amt:c.elec_amt,
-      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total, util_thru: $('r-util-thru').value, util_meralco: soaMeralcoIds().includes(t.id) ? 'Yes' : '',
+      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total, util_thru: $('r-util-thru').value,
       status: b && b.status === 'Sent' && Math.abs(num(b.total) - c.total) < 0.005 ? 'Sent' : 'Draft' };
     return row;
   });
@@ -2513,7 +2513,7 @@ function soaData(bill){
   if (num(bill.other_amt)) lines.push([bill.other_label || 'Other charges', bill.other_amt]);
   if (num(bill.penalty)) lines.push([`Penalty ${num(set('penalty_pct'))}% on unpaid balance`, bill.penalty]);
   if (num(bill.ewt)) lines.push([`Less: ${num(t.ewt_pct)}% EWT on rent (submit BIR Form 2307)`, -num(bill.ewt)]);
-  const u = t.id ? soaUtil(t, bill.period, bill.util_thru, bill.util_meralco === 'Yes') : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
+  const u = t.id ? soaUtil(t, bill.period, bill.util_thru) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
   u.cur.forEach(([l, v]) => lines.push([l, v]));
   const curTotal = r2(num(bill.total) - legacyUtil + u.curTotal);
   const amountDue = r2(s.unpaid + curTotal + u.pastTotal);
