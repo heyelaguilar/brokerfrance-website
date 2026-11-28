@@ -2318,12 +2318,38 @@ function openSOA(billId){
   $('m-title').textContent = b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
   $('m-body').className = 'body one';
   $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
-  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ Download PDF</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
+  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ PDF</button><button class="btn ghost" onclick="soaJPG('${b.id}', this)">⬇ JPG</button><button class="btn ghost" onclick="soaCopy('${b.id}', this)">Copy image</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
   $('ovl').classList.add('on');
 }
 function printSOA(id){
   const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
   w.document.write(`<html><head><title>SOA</title><style>@page{size:A4;margin:16mm}body{margin:0}</style></head><body>${soaHTML(billish(id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
+}
+// SOA as an image (JPG download or copy to clipboard), drawn from the same layout
+let h2cP;
+function loadH2C(){ return h2cP ||= new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = () => res(window.html2canvas); sc.onerror = () => { h2cP = null; rej(new Error('Image tool failed to load')); }; document.head.appendChild(sc); }); }
+async function soaCanvas(id){
+  const h2c = await loadH2C(), b = billish(id);
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-10000px;top:0;width:820px;padding:28px;background:#fff';
+  box.innerHTML = soaHTML(b); document.body.appendChild(box);
+  await Promise.all([...box.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  try { return await h2c(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }); } finally { box.remove(); }
+}
+const soaFileName = id => { const b = billish(id), t = tn(b.tenant_id) || {}; return `SOA ${(t.trade_name || t.tenant_name || '').replace(/[^\w ]/g, '')} ${b.kind === 'charge' ? b.description.replace(/[^\w ()]/g, '') : fmtMonth(b.period)}`.trim(); };
+async function soaJPG(id, btn){
+  const l = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
+  try { const c = await soaCanvas(id); const a = document.createElement('a'); a.href = c.toDataURL('image/jpeg', 0.95); a.download = soaFileName(id) + '.jpg'; a.click(); }
+  catch(e){ toast(e.message); } finally { btn.disabled = false; btn.textContent = l; }
+}
+async function soaCopy(id, btn){
+  const l = btn.textContent; btn.disabled = true; btn.textContent = 'Copying…';
+  try {
+    const c = await soaCanvas(id);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast('SOA image copied — paste it in Messenger, Viber or email');
+  } catch(e){ toast('Copy not allowed here — use ⬇ JPG instead'); } finally { btn.disabled = false; btn.textContent = l; }
 }
 let jsPDFp;
 function loadJsPDF(){
