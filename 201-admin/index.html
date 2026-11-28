@@ -264,6 +264,11 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 #app #pd-tbl .pd-wrap{display:flex!important;justify-content:space-between;align-items:center;gap:12px}
 #app #pd-tbl .pd-act{display:flex!important;gap:6px;flex-shrink:0}
 #app #pd-tbl .pd-act .btn{display:inline-flex!important}
+.pay-items{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.pay-it{display:flex;align-items:center;gap:10px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:13px;cursor:pointer}
+.pay-it:last-child{border-bottom:none}
+.pay-it span{flex:1}
+.pay-it input{width:16px;height:16px}
 /* ── Uniform: one font family, one size, one line per row (SOA document excluded) ── */
 #app table:not(.soa-doc *),#app table :not(.soa-doc):not(.soa-doc *){font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;line-height:1.4!important;letter-spacing:0!important}
 #app table :is(th,b,strong):not(.soa-doc *){font-weight:700!important}
@@ -1538,6 +1543,8 @@ async function reload(){
 const billsOf = id => DB.Bills.filter(b => b.tenant_id === id).sort((a,b) => a.period.localeCompare(b.period));
 // Only rent & CUSA payments count toward monthly collections (utilities / other charges are tracked but excluded)
 const forRent = p => !p.applies_to || p.applies_to === 'Rent & CUSA';
+const pdPaid = tid => DB.Payments.filter(p => p.tenant_id === tid && String(p.applies_to || '').startsWith('PD:'));   // past-due lines settled from the SOA
+const pdPaidDesc = (tid, d) => pdPaid(tid).some(p => String(p.applies_to).slice(3).trim().toLowerCase() === String(d).trim().toLowerCase());
 // unpaid SOA balance from bills before month m (non-PDC payments up to now applied oldest first)
 function pastDueBefore(id, m){
   const before = billsOf(id).filter(b => b.period < m).reduce((x,b) => x + num(b.total), 0);
@@ -1616,7 +1623,7 @@ function soaUtil(t, m, thru, withMeralco){
       const dd = PP.due_date ? new Date(String(PP.due_date).slice(0, 10) + 'T00:00:00') : null;
       const due = dd && !isNaN(dd) ? `${dd.toLocaleString('en-US', { month: 'short' }).toUpperCase()} ${dd.getDate()}, ${dd.getFullYear()}` : mon;
       const short = `${name.toUpperCase()}${meterLabel(mt) ? ' ' + meterLabel(mt).toUpperCase() : ''} (${due}${reading})`;
-      (b.period === upto ? cur : past).push([lbl, a, name, short, b.period]);
+      (b.period === upto ? cur : past).push([lbl, a, name, short, b.period, { type: 'elec', id: b.id }]);
       if (num(b.paid_amount) && b.status !== 'Paid') {   // part already paid → show it as a less line
         const pd = num(b.paid_amount), on = b.paid_date ? dmy(b.paid_date).toUpperCase() : '';
         (b.period === upto ? cur : past).push([`Less: paid ${name} — ${fmtMonth(b.period)}${on ? ' on ' + on : ''}`, -pd, name, `LESS: PAID ${name.toUpperCase()} (${mon})${on ? ' ON ' + on : ''}`, b.period]);
@@ -1628,7 +1635,7 @@ function soaUtil(t, m, thru, withMeralco){
   for (const mm of whMonths) {
     const a = whCharge(t, mm); if (!a || WH_PAY(mm).some(p => p.tenant_id === t.id)) continue;
     const l = whLog(t.id, mm), lbl = `Waste hauling — ${fmtMonth(mm)}${l && num(l.bags) ? ` (${num(l.bags)} bags × ${peso(num(l.rate) || WH_RATE())})` : ''}`;
-    (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? `, ${num(l.bags)} BAGS X ${peso(num(l.rate) || WH_RATE())}` : ''}`, mm]);
+    (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? `, ${num(l.bags)} BAGS X ${peso(num(l.rate) || WH_RATE())}` : ''}`, mm, { type: 'waste', month: mm }]);
   }
   const sum = a => r2(a.reduce((x, r) => x + r[1], 0));
   return { cur, past, curTotal: sum(cur), pastTotal: sum(past), by: k => sum(cur.filter(r => r[2] === k)) };
@@ -2889,9 +2896,9 @@ const cusaLine = (t, period) => {
 const dmy = d => { if (!d) return ''; if (!/^\d{4}-\d{2}-\d{2}/.test(d)) return String(d); const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
 function soaRows(bill, noSheetPD){
   if (bill.kind === 'past') { const t = tn(bill.tenant_id), total = r2(bill.lines.reduce((x, r) => x + r[1], 0));
-    return { t, rows: bill.lines, scope: bill.scope || 'PAST DUE', total, soaNo: `SOA-${bill.bill_date.replace(/-/g, '').slice(0, 6)}-PAST` }; }
+    return { t, rows: bill.lines.map(r => { const x = [r[0], r[1]]; x.pay = { type: 'pd', desc: r[0] }; return x; }), scope: bill.scope || 'PAST DUE', total, soaNo: `SOA-${bill.bill_date.replace(/-/g, '').slice(0, 6)}-PAST` }; }
   if (bill.kind === 'charge') { const t = tn(bill.tenant_id) || {}; const d = String(bill.description || 'CHARGE').toUpperCase();
-    return { t, rows: [[d, num(bill.amount)]], scope: d.replace(/\s*\(.*\)\s*$/, ''), total: num(bill.amount), soaNo: `SOA-${String(bill.bill_date).replace(/-/g, '').slice(0, 6)}-${String(bill.id).replace(/[^a-z0-9]/gi, '').slice(-5).toUpperCase()}` }; }
+    return { t, rows: [Object.assign([d, num(bill.amount)], { pay: { type: 'charge', id: bill.id } })], scope: d.replace(/\s*\(.*\)\s*$/, ''), total: num(bill.amount), soaNo: `SOA-${String(bill.bill_date).replace(/-/g, '').slice(0, 6)}-${String(bill.id).replace(/[^a-z0-9]/gi, '').slice(-5).toUpperCase()}` }; }
   // only what's still unpaid: payments received are applied to this month's rent/CUSA first, then to the past due
   const D = soaData(bill), { t, s, u } = D, mo = MON(bill.period), rm = rentMonths(t);
   const led = [];   // [description, amount, scope, kind]
@@ -2928,21 +2935,21 @@ function soaRows(bill, noSheetPD){
     left = r2(left + apply(num(p.amount), pm >= bill.period ? [...curFirst, ...pastFirst] : [...mine, ...pastFirst.filter(r => r.per !== pm), ...curFirst])); });
   left = r2(left + apply(led.filter(r => r[1] < 0).reduce((x, r) => x - r[1], 0), curFirst));   // EWT credit goes to this month's rent
   const rows = [], scope = new Set();
-  led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add('PAST DUE'); } });
+  led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push(Object.assign([r.paid ? r[0] + ' – BALANCE' : r[0], rem], { pay: { type: 'rent' } })); scope.add('PAST DUE'); } });
   const prevM = (() => { const [y, mo] = bill.period.split('-').map(Number); const d = new Date(y, mo - 2, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); })();
   const pastCut = pastCutOf(bill.period, t);   // Dec SOA: Sep and older are past due; Oct and Nov are this billing
-  u.past.forEach(r => { const recent = (r[4] || '') >= pastCut; rows.push([recent || r[1] < 0 ? r[3] : `PAST DUE: ${r[3]}`, r[1]]); scope.add(recent ? (r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()) : 'PAST DUE'); });
-  led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); if (r[2]) scope.add(r[2]); } });
-  u.cur.forEach(r => { rows.push([r[3], r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
+  u.past.forEach(r => { const recent = (r[4] || '') >= pastCut; rows.push(Object.assign([recent || r[1] < 0 ? r[3] : `PAST DUE: ${r[3]}`, r[1]], { pay: r[5] })); scope.add(recent ? (r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()) : 'PAST DUE'); });
+  led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push(Object.assign([r.paid ? r[0] + ' – BALANCE' : r[0], rem], { pay: { type: 'rent' } })); if (r[2]) scope.add(r[2]); } });
+  u.cur.forEach(r => { rows.push(Object.assign([r[3], r[1]], { pay: r[5] })); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
   if (left > 0.004) rows.push(['LESS: ADVANCE PAYMENT / CREDIT', -left]);
   if (pdSheetOn() && !noSheetPD) {   // the sheet's PastDue rows replace the computed past due lines
     for (let i = rows.length - 1; i >= 0; i--) if (/^PAST DUE/i.test(rows[i][0])) rows.splice(i, 1);
     scope.delete('PAST DUE');
-    const sp = pdSheetRows(t.id).map(r => [String(r.description || '').trim() ? `PAST DUE: ${String(r.description).trim()}` : 'PAST DUE', num(r.amount)]);
+    const sp = pdSheetRows(t.id).map(r => Object.assign([String(r.description || '').trim() ? `PAST DUE: ${String(r.description).trim()}` : 'PAST DUE', num(r.amount)], { pay: { type: 'pd', desc: String(r.description || '').trim() || 'PAST DUE' } }));
     if (sp.length) { rows.unshift(...sp); const rest = [...scope]; scope.clear(); ['PAST DUE', ...rest].forEach(x => scope.add(x)); }
   }
   const total = r2(rows.reduce((x, r) => x + r[1], 0));
-  rows.forEach(r => { r[0] = String(r[0]).replace(/\s*[–—]\s*/g, ' ').replace(/\s*·\s*/g, ', ').replace(/\s+/g, ' ').trim(); });
+  rows.forEach(r => { if (r.pay && r[1] > 0) r.pay.amount = r[1]; r[0] = String(r[0]).replace(/\s*[–—]\s*/g, ' ').replace(/\s*·\s*/g, ', ').replace(/\s+/g, ' ').trim(); });
   const sc = [...scope], scopeTxt = sc.length > 1 ? sc.slice(0, -1).join(', ') + ' & ' + sc[sc.length - 1] : sc.join('');
   return { ...D, rows, scope: scopeTxt, total };
 }
@@ -2954,15 +2961,17 @@ const pdSheetOn = () => pdTab().length > 0;
 const pdSheetList = () => pdTab().filter(r => num(r.due ?? r.amount) > 0).map(r => {
   const name = String(r.business_name || r.tenant).trim();
   const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].some(y => y && String(y).trim().toLowerCase() === name.toLowerCase()));
-  return { name, t, pd: num(r.due ?? r.amount), rem: String(r.remarks || r.description || '').trim() };
-});
+  const pid = t ? t.id : 'PAST:' + name, rem = String(r.remarks || r.description || '').trim();
+  const paid = t ? (pdPaidDesc(pid, rem || 'PAST DUE') ? num(r.due ?? r.amount) : 0) : r2(pdPaid(pid).reduce((x, p) => x + num(p.amount), 0));
+  return { name, t, pd: Math.max(0, r2(num(r.due ?? r.amount) - paid)), rem };
+}).filter(r => r.pd > 0.004);
 const pdNorm = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [String(k).trim().toLowerCase().replace(/\s+/g, '_'), v]));
 const pdMatch = (r, t) => {   // match by tenant_id, or by the tenant / business name typed in the sheet
   if (r.tenant_id && r.tenant_id === t.id) return true;
   const n = String(r.tenant || r.business_name || r.tenant_name || '').trim().toLowerCase(); if (!n) return false;
   return [t.tenant_name, t.trade_name].some(x => x && String(x).trim().toLowerCase() === n);
 };
-const pdSheetRows = tid => { const t = tn(tid) || { id: tid }; return pdTab().map(r => ({ ...r, amount: r.amount ?? r.due, description: r.description || r.remarks || '' })).filter(r => pdMatch(r, t) && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount)); };
+const pdSheetRows = tid => { const t = tn(tid) || { id: tid }; return pdTab().map(r => ({ ...r, amount: r.amount ?? r.due, description: r.description || r.remarks || '' })).filter(r => pdMatch(r, t) && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount) && !pdPaidDesc(tid, String(r.description || '').trim() || 'PAST DUE')); };
 const pdSheetTotal = tid => r2(pdSheetRows(tid).reduce((x, r) => x + num(r.amount), 0));
 function soaPastDue(t, m, raw){
   const P = due1(t) ? nextMonthOf(m) : m;
@@ -3009,7 +3018,7 @@ function pastBill(id){
   const bd = String(first('billing_date')).trim(), dd = String(first('due_date')).trim();
   const iso = v => { const d = new Date(v); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : isNaN(d) ? '' : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const bdi = iso(bd) || today();
-  return { kind: 'past', id, tenant_id: id, name, bill_date: bdi, due_date: iso(dd) || dd || 'PAY IMMEDIATELY', period: bdi.slice(0, 7), scope: String(first('scope')).trim(), lines: L.map(r => [String(r.description).trim(), num(r.amount)]) };
+  return { kind: 'past', id, tenant_id: id, name, bill_date: bdi, due_date: iso(dd) || dd || 'PAY IMMEDIATELY', period: bdi.slice(0, 7), scope: String(first('scope')).trim(), lines: L.map(r => [String(r.description).trim(), num(r.amount)]).filter(r => !(r[1] > 0 && pdPaidDesc(id, r[0]))) };
 }
 const billish = id => byId('Bills', id) || chargeBill(id) || pastBill(id);
 function openSOA(billId){
@@ -3019,8 +3028,50 @@ function openSOA(billId){
   $('m-title').textContent = b.kind === 'past' ? `SOA · ${b.name}` : b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
   $('m-body').className = 'body one';
   $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
-  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ PDF</button><button class="btn ghost" onclick="soaJPG('${b.id}', this)">⬇ JPG</button><button class="btn ghost" onclick="soaCopy('${b.id}', this)">Copy image</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
+  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ PDF</button><button class="btn ghost" onclick="soaJPG('${b.id}', this)">⬇ JPG</button><button class="btn ghost" onclick="soaCopy('${b.id}', this)">Copy image</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn ghost" onclick="soaPayForm('${b.id}')">✓ Mark paid</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
   $('ovl').classList.add('on');
+}
+
+// Mark paid from the SOA: tick what was paid, attach proof, and each item is recorded where it belongs
+let soaPayCtx = null;
+function soaPayForm(id){
+  const b = billish(id), R = soaRows(b), items = R.rows.map((r, i) => { let a = r[1];
+    if (r.pay?.type === 'elec') { const e = DB.ElecBills.find(y => y.id === r.pay.id); a = r2(a - num(e?.paid_amount)); }   // Meralco already part-paid: only the balance is left
+    return { i, d: r[0], a, pay: r.pay }; }).filter(x => x.a > 0 && x.pay);
+  if (!items.length) return toast('Nothing left to mark paid on this SOA');
+  soaPayCtx = { id, items, tid: b.tenant_id };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Mark paid · ${R.t?.tenant_name || ''}`;
+  $('m-body').innerHTML = `<div class="fld wide"><label>Which items were paid?</label><div class="pay-items">${items.map(x => `<label class="pay-it"><input type="checkbox" class="sp-ck" data-i="${x.i}" checked onchange="soaPaySum()"><span>${esc(x.d)}</span><b>${peso(x.a)}</b></label>`).join('')}</div></div>
+    <div class="fld"><label>Total paid</label><input id="sp-total" readonly></div>
+    <div class="fld"><label>Payment date</label><input id="sp-d" type="date" value="${today()}"></div>
+    <div class="fld"><label>Method</label><select id="sp-m">${opts(['Bank transfer','Check','GCash','Cash'], 'Bank transfer')}</select></div>
+    <div class="fld"><label>Paid to</label><select id="sp-to">${opts(PAID_TO, PAID_TO[0])}</select></div>
+    <div class="fld wide"><label>Reference / check no.</label><input id="sp-ref"></div>
+    <div class="fld wide"><label>Proof of payment</label>${proofZone('')}</div>`;
+  wireProofZone(); soaPaySum();
+  $('m-foot').innerHTML = `<div class="left"></div><button class="btn ghost" onclick="openSOA('${id.replace(/'/g, "\\'")}')">Back</button><button class="btn" id="m-save" onclick="soaPaySave()">Mark paid (with proof)</button>`;
+  $('ovl').classList.add('on');
+}
+function soaPaySum(){ const sel = [...document.querySelectorAll('.sp-ck:checked')].map(c => soaPayCtx.items.find(x => x.i === +c.dataset.i)); $('sp-total').value = peso(r2(sel.reduce((x, y) => x + y.a, 0))); return sel; }
+async function soaPaySave(){
+  const sel = soaPaySum(), btn = $('m-save'), { id, tid } = soaPayCtx, b = billish(id);
+  if (!sel.length) return toast('Tick at least one item');
+  if (!proofPicked) return toast('Attach the proof of payment first');
+  btn.disabled = true; btn.textContent = 'Uploading proof…';
+  try {
+    const proof_url = await uploadProof(proofPicked), date = $('sp-d').value || today(), method = $('sp-m').value, to = $('sp-to').value, reference = $('sp-ref').value.trim();
+    btn.textContent = 'Saving…';
+    const base = { tenant_id: tid, date, method, bank: to, reference, proof_url };
+    const rent = sel.filter(x => x.pay.type === 'rent');
+    if (rent.length) await save('Payments', { ...base, amount: r2(rent.reduce((x, y) => x + y.a, 0)), applies_to: 'Rent & CUSA', notes: `${fmtMonth(b.period)} SOA: ${rent.map(x => x.d).join('; ')}` });
+    for (const x of sel.filter(x => x.pay.type === 'elec')) { const e = DB.ElecBills.find(y => y.id === x.pay.id); if (e) await save('ElecBills', { ...e, status: 'Paid', paid_date: date, paid_amount: num(e.amount_override || e.amount), method, reference, proof_url, paid_to: to }); }
+    for (const x of sel.filter(x => x.pay.type === 'waste')) await save('Payments', { ...base, amount: x.a, applies_to: 'Utilities', notes: 'Waste hauling ' + x.pay.month });
+    for (const x of sel.filter(x => x.pay.type === 'pd')) await save('Payments', { ...base, amount: x.a, applies_to: 'PD:' + x.pay.desc, notes: 'Past due: ' + x.pay.desc });
+    for (const x of sel.filter(x => x.pay.type === 'charge')) { const c = DB.Charges.find(y => y.id === x.pay.id); if (c) await save('Charges', { ...c, status: 'Paid', paid_date: date, paid_amount: x.a, method, paid_to: to, reference, proof_url }); }
+    toast(`Marked paid: ${sel.length} item${sel.length > 1 ? 's' : ''}`); render();
+    if (billish(id) && soaRows(billish(id)).rows.some(r => r[1] > 0)) openSOA(id); else closeForm();
+  } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
 }
 function printSOA(id){
   const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
