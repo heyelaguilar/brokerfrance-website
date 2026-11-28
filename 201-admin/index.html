@@ -1186,6 +1186,14 @@ async function neueraNovNoCusa(){
     await save('Settings', { id:'mig_neuera_nov_nocusa', value: new Date().toISOString() }); S.mig_neuera_nov_nocusa = '1';
   } catch(e){ console.error('neuera nov cusa failed', e); }
 }
+async function andreiUtilSameMonth(){
+  if (DEMO || S.mig_andrei_util_same) return;
+  try {
+    const t = DB.Tenants.find(x => /andrei/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) await save('Tenants', { ...t, util_same_month: 'Yes' });
+    await save('Settings', { id:'mig_andrei_util_same', value: new Date().toISOString() }); S.mig_andrei_util_same = '1';
+  } catch(e){ console.error('andrei util same month failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1314,6 +1322,7 @@ async function reload(){
     await neueraCusaRange();
     await neueraCusa4800();
     await neueraNovNoCusa();
+    await andreiUtilSameMonth();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
@@ -1415,8 +1424,9 @@ const utilThruDefault = P => monthsBack(P, 1);
 const soaMeralcoIds = () => { try { return JSON.parse(S.soa_meralco_ids || '[]'); } catch(e){ return []; } };
 async function toggleSoaMeralco(tid, on){ const ids = new Set(soaMeralcoIds()); on ? ids.add(tid) : ids.delete(tid); S.soa_meralco_ids = JSON.stringify([...ids]); try { await save('Settings', { id: 'soa_meralco_ids', value: S.soa_meralco_ids }); } catch(e){ toast(e.message); } rBilling(); }
 function soaUtil(t, m, thru, withMeralco){
-  const M = thru || utilThruDefault(m), ME = withMeralco ? monthsBack(m, 1) : M;   // Meralco can run a month later when asked
-  const cur = [], past = [], from = SOA_UTIL_FROM();
+  const same = /^y/i.test(t.util_same_month || '');   // e.g. Andrei's: Nov Meralco goes on the Nov SOA only
+  const M = same ? m : (thru || utilThruDefault(m)), ME = same ? m : withMeralco ? monthsBack(m, 1) : M;   // Meralco can run a month later when asked
+  const cur = [], past = [], from = same ? m : SOA_UTIL_FROM();
   const kwh = v => num(v).toLocaleString('en-PH', { maximumFractionDigits: 2 });
   DB.Meters.filter(mt => mt.tenant_id === t.id && mt.type !== 'Building').forEach(mt => {
     const u = utilOf(mt), unit = u === 'Primewater' ? 'cu.m' : 'kWh', name = u === 'Primewater' ? 'Primewater' : 'Meralco';
