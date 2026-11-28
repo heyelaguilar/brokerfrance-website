@@ -1358,6 +1358,18 @@ async function seedPastGeri(){
     await save('Settings', { id:'mig_past_geri', value: new Date().toISOString() }); S.mig_past_geri = '1';
   } catch(e){ console.error('geri seed failed', e); }
 }
+async function v52Ar0001(){   // V52 Mark paid on Nov 28 was saved before AR numbers existed: join its 3 items under AR-2026-0001
+  if (DEMO || S.mig_v52_ar0001) return;
+  try {
+    const pd = DB.Payments.find(p => p.id === 'PA-mx0d61pcc4b0'), w = DB.Payments.find(p => p.id === 'PA-mx0d61712bb1'), e = DB.ElecBills.find(b => b.id === 'EL-mwyknhbn477e');
+    if (pd && w && e && e.status === 'Paid') {
+      if (!pd.or_no) await save('Payments', { ...pd, or_no: w.or_no || 'AR-2026-0001' });
+      if (!DB.Payments.some(p => p.tenant_id === pd.tenant_id && p.applies_to === 'Utilities' && /^MERALCO/i.test(p.notes || '') && p.date === '2026-11-28'))
+        await save('Payments', { tenant_id: pd.tenant_id, date: '2026-11-28', amount: r2(num(e.amount) - 8000), method: w.method || 'Bank transfer', bank: w.bank || '', reference: w.reference || '', proof_url: w.proof_url || e.proof_url, or_no: w.or_no || 'AR-2026-0001', applies_to: 'Utilities', notes: 'MERALCO (NOV 24, 2026, READING OCT 11 TO NOV 24)' });
+    }
+    await save('Settings', { id:'mig_v52_ar0001', value: new Date().toISOString() }); S.mig_v52_ar0001 = '1';
+  } catch(e){ console.error('v52 AR fix failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1530,6 +1542,7 @@ async function reload(){
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     await seedPastDetails();
     await seedPastGeri();
+    await v52Ar0001();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
