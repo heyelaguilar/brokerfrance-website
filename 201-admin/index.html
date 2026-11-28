@@ -2069,7 +2069,7 @@ function rBilling(){
     $('r-bill-date').value = any?.bill_date || (P === thisMonth() ? today() : dayOf(P, set('bill_day')));
     $('r-due-date').value = any?.due_date || (() => { const d = dayOf(P, set('due_day')); return d < $('r-bill-date').value ? addDays($('r-bill-date').value, 3) : d; })();
     grid = {};
-    ts.forEach(t => { const b = existing.find(x => x.tenant_id === t.id); grid[t.id] = { other_label: b?.other_label || '', other_amt: b?.other_amt || '' }; });
+    ts.forEach(t => { grid[t.id] = {}; });
   }
   if (!ts.length) { $('bill-wrap').innerHTML = `<div class="empty"><b>No bank-transfer tenants</b>Tenants on PDC are not billed here.</div>`; return; }
   const f = v => num(v) ? peso(v).slice(1) : '<span class="muted">—</span>';
@@ -2088,14 +2088,13 @@ function rBilling(){
       <td class="num">${f(u.by('Meralco'))}</td>
       <td class="num">${f(u.by('Water'))}</td>
       <td class="num">${f(u.by('Waste'))}</td>
-      <td><div class="meter" style="flex-direction:column;align-items:stretch"><input class="grid-in" style="width:96px;text-align:left" placeholder="label" data-t="${t.id}" data-k="other_label" value="${esc(g.other_label || '')}"><input class="grid-in" data-t="${t.id}" data-k="other_amt" value="${esc(g.other_amt ?? '')}" style="width:96px" inputmode="decimal"></div></td>
       <td class="num">${paid ? `<span style="color:var(--green-d)">−${peso(paid).slice(1)}</span><small>${sm.since.map(p => fmtDate(p.date)).join(', ')}</small>` : '<span class="muted">—</span>'}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
       <td>${soaHold(t) ? '<span class="pill p-amber">On hold</span><br>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="muted">not saved</span>'}</td>
       <td><div class="row-actions">${b ? `<button class="btn ghost sm" onclick="openSOA('${b.id}')">View</button><button class="btn sm" onclick="sendSOA('${b.id}',this)" ${dirty ? 'disabled title="Save first"' : ''}>✉ Send</button>` : ''}</div></td></tr>`;
   }).join('');
-  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Water</th><th class="num">Waste</th><th>Other</th><th class="num">Paid</th><th class="num">Total due</th><th>Status</th><th></th></tr>${rows}
-    <tr><td colspan="9" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
+  $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Water</th><th class="num">Waste</th><th class="num">Paid</th><th class="num">Total due</th><th>Status</th><th></th></tr>${rows}
+    <tr><td colspan="8" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
   $('bill-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { grid[e.target.dataset.t][e.target.dataset.k] = e.target.value.trim(); updateBillRow(e.target.dataset.t); }));
 }
 function updateBillRow(tid){
@@ -2105,7 +2104,7 @@ function updateBillRow(tid){
   $('bill-sum').textContent = peso(soaList().reduce((x, t) => x + due(t), 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P), c = computeBill(tn(tid), P, inputsFor(tid));
   const row = $('tot-' + tid).closest('tr');
-  if (b && Math.abs(num(b.total) - c.total) > 0.004) { row.cells[10].innerHTML = pill('Unsaved changes'); row.querySelector('.row-actions .btn:not(.ghost)')?.setAttribute('disabled', ''); }
+  if (b && Math.abs(num(b.total) - c.total) > 0.004) { row.cells[9].innerHTML = pill('Unsaved changes'); row.querySelector('.row-actions .btn:not(.ghost)')?.setAttribute('disabled', ''); }
 }
 function inputsFor(tid){
   const g = grid[tid] || {};
@@ -2142,15 +2141,16 @@ function soaData(bill){
   if (num(bill.rent)) lines.push([rm === 1 ? `Rent — ${fmtMonth(bill.period)}` : `Rent — ${t.rent_frequency} (${rm} months from ${fmtMonth(bill.period)})`, bill.rent]);
   if (num(bill.rent_vat)) lines.push([`VAT ${num(set('vat_pct'))}% on rent`, bill.rent_vat]);
   if (num(bill.cusa)) lines.push([`CUSA${t.cusa_mode==='Fixed'?'':` (${num(t.area_sqm)} sqm × ${peso(num(t.cusa_value)||num(set('cusa_rate')))})`}`, bill.cusa]);
-  if (num(bill.water_amt) || bill.water_curr !== '') lines.push([`Water${bill.water_curr!==''?` (${bill.water_prev} → ${bill.water_curr} = ${r2(num(bill.water_curr)-num(bill.water_prev))} cu.m × ${peso(bill.water_rate)})`:''}`, bill.water_amt]);
-  if (num(bill.elec_amt) || bill.elec_curr !== '') lines.push([`Electricity / Meralco${bill.elec_curr!==''?` (${bill.elec_prev} → ${bill.elec_curr} = ${r2(num(bill.elec_curr)-num(bill.elec_prev))} kWh × ${peso(bill.elec_rate)})`:''}`, bill.elec_amt]);
-  if (num(bill.waste)) lines.push(['Waste hauling', bill.waste]);
+  const legacyUtil = r2(num(bill.water_amt) + num(bill.elec_amt) + num(bill.waste));
+  if (false) lines.push([`Water${bill.water_curr!==''?` (${bill.water_prev} → ${bill.water_curr} = ${r2(num(bill.water_curr)-num(bill.water_prev))} cu.m × ${peso(bill.water_rate)})`:''}`, bill.water_amt]);
+  if (false) lines.push([`Electricity / Meralco${bill.elec_curr!==''?` (${bill.elec_prev} → ${bill.elec_curr} = ${r2(num(bill.elec_curr)-num(bill.elec_prev))} kWh × ${peso(bill.elec_rate)})`:''}`, bill.elec_amt]);
+
   if (num(bill.other_amt)) lines.push([bill.other_label || 'Other charges', bill.other_amt]);
   if (num(bill.penalty)) lines.push([`Penalty ${num(set('penalty_pct'))}% on unpaid balance`, bill.penalty]);
   if (num(bill.ewt)) lines.push([`Less: ${num(t.ewt_pct)}% EWT on rent (submit BIR Form 2307)`, -num(bill.ewt)]);
   const u = t.id ? soaUtil(t, bill.period) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
   u.cur.forEach(([l, v]) => lines.push([l, v]));
-  const curTotal = r2(num(bill.total) + u.curTotal);
+  const curTotal = r2(num(bill.total) - legacyUtil + u.curTotal);
   const amountDue = r2(s.unpaid + curTotal + u.pastTotal);
   const pdcs = DB.PDCs.filter(p => p.tenant_id === t.id && (p.status||'On hand') === 'On hand').sort((a,b)=>a.check_date.localeCompare(b.check_date)).slice(0,6);
   const soaNo = `SOA-${bill.period.replace('-','')}-${(t.unit||t.tenant_name||'').replace(/[^\w]/g,'').slice(0,8).toUpperCase()}`;
