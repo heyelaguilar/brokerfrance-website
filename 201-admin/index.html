@@ -1385,11 +1385,14 @@ function soaUtil(t, m, thru, withMeralco){
       const use = b.curr !== '' && b.curr != null && b.prev !== '' && b.prev != null && !num(b.amount_override) ? ` (${kwh(b.prev)} → ${kwh(b.curr)} = ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))})` : '';
       const lbl = `${name}${meterLabel(mt) ? ' · ' + meterLabel(mt) : ''} — ${fmtMonth(b.period)}${use}`;
       const mon = fmtMonth(b.period).replace(/^(\w{3})\w*/, '$1').toUpperCase();
-      const short = `${name.toUpperCase()}${meterLabel(mt) ? ' – ' + meterLabel(mt).toUpperCase() : ''} (${mon})${use ? ` · ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))}` : ''}`;
+      const PP = DB.ElecPeriods.find(p => p.id === (u === 'Primewater' ? 'PW-' : '') + b.period) || {};
+      const rp = String(PP.reading_period || '').match(/(\d{1,2})\s+(\w{3})\w*\s+\d{4}\s+to\s+(\d{1,2})\s+(\w{3})\w*/i);
+      const reading = rp ? `, READING ${rp[2].toUpperCase()} ${rp[1]} TO ${rp[4].toUpperCase()} ${rp[3]}` : '';
+      const short = `${name.toUpperCase()}${meterLabel(mt) ? ' ' + meterLabel(mt).toUpperCase() : ''} (${mon}${reading})${use ? `, ${kwh(num(b.curr) - num(b.prev))} ${unit.toUpperCase()} X ${peso(num(b.rate))}` : ''}`;
       (b.period === upto ? cur : past).push([lbl, a, name, short, b.period]);
       if (num(b.paid_amount) && b.status !== 'Paid') {   // part already paid → show it as a less line
         const pd = num(b.paid_amount), on = b.paid_date ? dmy(b.paid_date).toUpperCase() : '';
-        (b.period === upto ? cur : past).push([`Less: paid ${name} — ${fmtMonth(b.period)}${on ? ' on ' + on : ''}`, -pd, name, `LESS: PAID ${name.toUpperCase()} (${mon})${on ? ' · ' + on : ''}`, b.period]);
+        (b.period === upto ? cur : past).push([`Less: paid ${name} — ${fmtMonth(b.period)}${on ? ' on ' + on : ''}`, -pd, name, `LESS: PAID ${name.toUpperCase()} (${mon})${on ? ' ON ' + on : ''}`, b.period]);
       }
     });
   });
@@ -1398,7 +1401,7 @@ function soaUtil(t, m, thru, withMeralco){
   for (const mm of whMonths) {
     const a = whCharge(t, mm); if (!a || WH_PAY(mm).some(p => p.tenant_id === t.id)) continue;
     const l = whLog(t.id, mm), lbl = `Waste hauling — ${fmtMonth(mm)}${l && num(l.bags) ? ` (${num(l.bags)} bags × ${peso(num(l.rate) || WH_RATE())})` : ''}`;
-    (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? ` · ${num(l.bags)} BAGS × ${peso(num(l.rate) || WH_RATE())}` : ''}`, mm]);
+    (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? `, ${num(l.bags)} BAGS X ${peso(num(l.rate) || WH_RATE())}` : ''}`, mm]);
   }
   const sum = a => r2(a.reduce((x, r) => x + r[1], 0));
   return { cur, past, curTotal: sum(cur), pastTotal: sum(past), by: k => sum(cur.filter(r => r[2] === k)) };
@@ -2640,11 +2643,12 @@ function soaRows(bill){
   led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add('PAST DUE'); } });
   const prevM = (() => { const [y, mo] = bill.period.split('-').map(Number); const d = new Date(y, mo - 2, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); })();
   const pastCut = monthsBack(bill.period, 2);   // Dec SOA: Sep and older are past due; Oct and Nov are this billing
-  u.past.forEach(r => { const recent = (r[4] || '') >= pastCut; rows.push([recent || r[1] < 0 ? r[3] : `PAST DUE – ${r[3]}`, r[1]]); scope.add(recent ? (r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()) : 'PAST DUE'); });
+  u.past.forEach(r => { const recent = (r[4] || '') >= pastCut; rows.push([recent || r[1] < 0 ? r[3] : `PAST DUE ${r[3]}`, r[1]]); scope.add(recent ? (r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()) : 'PAST DUE'); });
   led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); if (r[2]) scope.add(r[2]); } });
   u.cur.forEach(r => { rows.push([r[3], r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
   if (left > 0.004) rows.push(['LESS: ADVANCE PAYMENT / CREDIT', -left]);
   const total = r2(rows.reduce((x, r) => x + r[1], 0));
+  rows.forEach(r => { r[0] = String(r[0]).replace(/\s*[–—]\s*/g, ' ').replace(/\s*·\s*/g, ', ').replace(/\s+/g, ' ').trim(); });
   const sc = [...scope], scopeTxt = sc.length > 1 ? sc.slice(0, -1).join(', ') + ' & ' + sc[sc.length - 1] : sc.join('');
   return { ...D, rows, scope: scopeTxt, total };
 }
@@ -2652,7 +2656,7 @@ const SOA_ASSET = f => `${location.origin}/201-admin/assets/${f}`;
 function soaHTML(bill){
   const { t, rows, scope, total } = soaRows(bill);
   const bd = '1px solid #282828', c = `border:${bd};padding:6px 9px`, sh = 'background:#e6e6e6';
-  const money = v => (v < 0 ? '−' : '') + peso(Math.abs(v));
+  const money = v => (v < 0 ? '-' : '') + peso(Math.abs(v));
   const D = d => dmy(d).toUpperCase(), filler = Math.max(0, 8 - rows.length);
   return `<div class="soa-doc" style="font-family:Helvetica,Arial,sans-serif;color:#111;font-size:13px;line-height:1.4;max-width:760px;margin:0 auto;padding:40px 56px;background:#fff">
   <img src="${SOA_ASSET('brookland-logo.png')}" alt="Brookland Ventures Incorporated" style="height:56px;margin:0 0 22px 6px">
