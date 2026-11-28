@@ -157,6 +157,7 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .rates{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:14px 18px;margin-bottom:14px}
 .rates .fld{min-width:170px}
 .bill-tbl td{vertical-align:middle}
+.bill-tbl tr.due1-div td{background:#F4F6F8;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:8px}
 .soa-tools{display:flex;gap:10px;align-items:center;flex-wrap:nowrap}
 .soa-tools .inl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
 .bill-tbl .meter{display:flex;gap:4px;align-items:center}
@@ -1450,7 +1451,8 @@ const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
 const soaHold = t => t.soa_status === 'Hold';
 // SOA list: tenants paying by bank transfer only (anyone on PDC is left out)
 // tenants due on the 1st (Squeeze, Andrei's, Coffee Story…) go out with next month's batch, so this month's list skips them
-const soaList = () => { const P = ($('f-bill-period') || {}).value || thisMonth(); return activeTenants().filter(t => !(P === thisMonth() && num(t.due_day) === 1)); };   // every tenant; rent or CUSA covered by PDC is not billed on the SOA
+const soaList = () => { const a = activeTenants(); return [...a.filter(t => num(t.due_day) !== 1), ...a.filter(t => num(t.due_day) === 1)]; };
+const perOf = (t, P) => num(t.due_day) === 1 ? nextMonthOf(P) : P;   // in the Nov batch, tenants due on the 1st get their Dec SOA (due Dec 1)   // every tenant; rent or CUSA covered by PDC is not billed on the SOA
 const SOA_UTIL_FROM = () => S.soa_util_from || '2026-10';
 // unpaid utilities for tenant t up to month m, split into this month and earlier
 const monthsBack = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 - k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
@@ -2565,8 +2567,8 @@ async function ensurePrevBills(P){
   const pm = monthsBack(P, 1);
   if (pm < '2026-11' || prevBillsDone.has(P)) return false;
   prevBillsDone.add(P);
-  const rows = soaList().filter(t => !DB.Bills.some(b => b.tenant_id === t.id && b.period === pm)).map(t => {
-    const c = computeBill(t, pm, {});
+  const rows = soaList().filter(t => !DB.Bills.some(b => b.tenant_id === t.id && b.period === monthsBack(perOf(t, P), 1))).map(t => {
+    const pm = monthsBack(perOf(t, P), 1), c = computeBill(t, pm, {});
     return { tenant_id: t.id, period: pm, bill_date: dayOf(pm, 1), due_date: num(t.due_day) ? dayOf(pm, t.due_day) : dayOf(pm, set('due_day')),
       rent: c.rent, rent_vat: c.rent_vat, cusa: c.cusa, water_amt: 0, elec_amt: 0, waste: 0, other_amt: 0, penalty: c.penalty, ewt: c.ewt, total: c.total,
       util_thru: utilThruDefault(pm, t), status: 'Draft', notes: 'Added automatically so payments land on the right month' };
@@ -2593,8 +2595,11 @@ function rBilling(){
   if (!ts.length) { $('bill-wrap').innerHTML = `<div class="empty"><b>No tenants</b></div>`; return; }
   const f = v => num(v) ? peso(v).slice(1) : '<span class="muted">—</span>';
   let tot = 0;
+  let divided = false;
   const rows = ts.map(t => {
-    const g = grid[t.id] || (grid[t.id] = {});
+    const g = grid[t.id] || (grid[t.id] = {}), P0 = P, Pt = perOf(t, P0);
+    const divider = num(t.due_day) === 1 && !divided ? (divided = true, `<tr class="due1-div"><td colspan="10">Due on the 1st · ${fmtMonth(Pt)} SOA, due ${fmtDate(dayOf(Pt, 1))}</td></tr>`) : '';
+    { const P = Pt;
     const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, utilThruDefault(P, t));
     const cut = pastCutOf(P, t), allU = [...u.cur, ...u.past];   // same rule as the SOA: older than two months back is past due
     const kind = k => r2(allU.filter(r => r[2] === k && (r[4] || '') >= cut).reduce((x, r) => x + r[1], 0));
@@ -2609,9 +2614,8 @@ function rBilling(){
     const rentLeft = bucket.rent, cusaLeft = bucket.cusa, openLeft = bucket.open;
     const pd = r2(openLeft + pastU), due = r2(openLeft + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
-    const b = existing.find(x => x.tenant_id === t.id);
-    const dirty = b && Math.abs(num(b.total) - c.total) > 0.004;
-    return `<tr>
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
+    return divider + `<tr>
       <td title="${esc(t.tenant_name || t.trade_name)}"><b>${esc(t.tenant_name || t.trade_name)}</b><div class="muted">${esc([t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.floor, t.unit].filter(Boolean).join(' · '))}</div></td>
       <td class="num">${pd ? `<b style="color:var(--red)">${peso(pd).slice(1)}</b>` : '<span class="muted">—</span>'}</td>
       <td class="num">${!c.rent && t.rent_payment === 'PDC' ? '<span class="muted">PDC</span>' : pv(c.rent + c.rent_vat, rentLeft)}</td>
@@ -2621,15 +2625,15 @@ function rBilling(){
       <td class="num">${f(kind('Waste'))}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
       <td class="st">${b && b.sent_at ? `<button class="btn sm sent-btn on" title="Click to undo" onclick="soaToggleSent('${t.id}', this)">✓ Sent ${fmtDate(b.sent_at)}</button>` : `<button class="btn sm ghost sent-btn" onclick="soaToggleSent('${t.id}', this)">Not sent</button>`}</td>
-      <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button>${b && b.status === 'Sent' ? '' : ''}</div></td></tr>`;
+      <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button></div></td></tr>`; }
   }).join('');
   $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste</th><th class="num">Total due</th><th>Sent out?</th><th></th></tr>${rows}
-    <tr><td colspan="7" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
+    <tr><td colspan="7" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)} batch</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
   $('bill-wrap').querySelectorAll('.grid-in').forEach(el => el.addEventListener('input', e => { grid[e.target.dataset.t][e.target.dataset.k] = e.target.value.trim(); updateBillRow(e.target.dataset.t); }));
 }
 function updateBillRow(tid){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value;
-  const due = t => { const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, utilThruDefault(P, t)); return r2(soaSummary(t.id, P, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
+  const due = t => { const Pt = perOf(t, P), c = computeBill(t, Pt, inputsFor(t.id)), u = soaUtil(t, Pt, utilThruDefault(Pt, t)); return r2(soaSummary(t.id, Pt, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
   { const d = due(tn(tid)); $('tot-' + tid).textContent = d > 0 ? peso(d) : d < 0 ? peso(-d) + ' credit' : 'Paid'; }
   $('bill-sum').textContent = peso(soaList().reduce((x, t) => x + due(t), 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P), c = computeBill(tn(tid), P, inputsFor(tid));
@@ -2641,7 +2645,7 @@ function inputsFor(tid){
   return { ...g, bill_date: $('r-bill-date').value, elec_rate_month: $('r-elec').value, water_rate_month: $('r-water').value };
 }
 async function soaToggleSent(tid, btn){
-  const P = $('f-bill-period').value;
+  const P = perOf(tn(tid), $('f-bill-period').value);
   let b = DB.Bills.find(x => x.tenant_id === tid && x.period === P);
   if (b && b.sent_at && !confirm('Mark this SOA as NOT sent?')) return;
   btn.disabled = true;
@@ -2657,21 +2661,21 @@ async function generateSOA(tid, btn){
   const ok = await saveBills(true, tid);
   if (btn) { btn.disabled = false; btn.textContent = 'Generate SOA'; }
   if (!ok) return;
-  const b = DB.Bills.find(x => x.tenant_id === tid && x.period === $('f-bill-period').value);
+  const b = DB.Bills.find(x => x.tenant_id === tid && x.period === perOf(tn(tid), $('f-bill-period').value));
   if (b) openSOA(b.id);
 }
 async function saveBills(silent, only){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value, dd = $('r-due-date').value;
   if (!bd || !dd) return toast('Set the bill date and due date');
   const rows = soaList().filter(t => !only || t.id === only).map(t => {
-    const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
-    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
-    const tDue = dd;   // the due date set on the SOA page, for every tenant
-    const row = { ...(b||{}), tenant_id:t.id, period:P, bill_date:bd, due_date:tDue,
+    const Pt = perOf(t, P), c = computeBill(t, Pt, inputsFor(t.id)), g = grid[t.id] || {};
+    const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === Pt);
+    const tDue = Pt !== P ? dayOf(Pt, 1) : dd;   // the due date set on the SOA page; tenants due on the 1st are due on the 1st
+    const row = { ...(b||{}), tenant_id:t.id, period:Pt, bill_date:bd, due_date:tDue,
       rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
       water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
       elec_prev:g.elec_prev??'', elec_curr:g.elec_curr??'', elec_rate:c.elec_rate, elec_amt:c.elec_amt,
-      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total, util_thru: utilThruDefault(P, t),
+      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total, util_thru: utilThruDefault(Pt, t),
       status: b && b.status === 'Sent' && Math.abs(num(b.total) - c.total) < 0.005 ? 'Sent' : 'Draft' };
     return row;
   });
