@@ -1131,6 +1131,23 @@ async function v52MeralcoFixPaid(){
     await save('Settings', { id:'mig_v52_mer_fix_paid', value: new Date().toISOString() }); S.mig_v52_mer_fix_paid = '1';
   } catch(e){ console.error('v52 meralco fix failed', e); }
 }
+// AKMAS: unpaid Aug, Sep, Oct 2026 — CUSA ₱7,500 each (past due ₱22,500) and waste ₱500 each
+async function akmasArrears(){
+  if (DEMO || S.mig_akmas_aug_oct) return;
+  try {
+    const t = DB.Tenants.find(x => /akmas/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) {
+      const ob = DB.Bills.find(b => b.tenant_id === t.id && /opening balance/i.test(b.notes || ''));
+      const row = { ...(ob || { tenant_id: t.id, period: '2026-10', bill_date: '2026-10-31', due_date: '2026-10-31', rent: 0, rent_vat: 0, cusa: 0, penalty: 0, ewt: 0, status: 'Sent' }),
+        other_label: 'CUSA 150 sqm (Aug – Oct 2026), ₱7,500 × 3', other_amt: 22500, total: 22500, notes: 'Opening balance — CUSA arrears, Aug – Oct 2026' };
+      await save('Bills', row);
+      const a = (() => { try { return JSON.parse(S.wh_extra_unpaid || '[]'); } catch(e){ return []; } })();
+      ['2026-08', '2026-09'].forEach(m => { if (!a.includes(t.id + ':' + m)) a.push(t.id + ':' + m); });
+      S.wh_extra_unpaid = JSON.stringify(a); await save('Settings', { id: 'wh_extra_unpaid', value: S.wh_extra_unpaid });
+    }
+    await save('Settings', { id:'mig_akmas_aug_oct', value: new Date().toISOString() }); S.mig_akmas_aug_oct = '1';
+  } catch(e){ console.error('akmas arrears failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1264,6 +1281,7 @@ async function reload(){
     await v52WasteSep();
     await v52MeralcoPart();
     await v52MeralcoFixPaid();
+    await akmasArrears();
     await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
@@ -2573,11 +2591,22 @@ function soaRows(bill){
   // only what's still unpaid: payments received are applied to this month's rent/CUSA first, then to the past due
   const D = soaData(bill), { t, s, u } = D, mo = MON(bill.period), rm = rentMonths(t);
   const led = [];   // [description, amount, scope, kind]
-  if (num(s.opening)) {
-    const lab = s.last && /opening balance/i.test(s.last.notes || '') && s.last.other_label ? s.last.other_label : '';
-    const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(lab);
-    const what = m ? `${m[1].trim()} ${m[2].replace(/\s*[–-]\s*/g, '-')}` : lab.split(',')[0];
-    led.push([`PAST DUE${what ? ` (${what.toUpperCase()})` : ''}`, num(s.opening), (m ? m[1].trim() : 'PAST DUE').toUpperCase(), 'past']);
+  if (num(s.opening) > 0) {
+    // itemise the past due by month: what was paid before goes to the oldest bills first
+    const prior = billsOf(t.id).filter(x => x.id !== bill.id && x.period < bill.period && num(x.total) > 0);
+    let paidBefore = r2(prior.reduce((x, b) => x + num(b.total), 0) - num(s.opening));
+    const items = [];
+    prior.forEach(b => {
+      const pay = Math.max(0, Math.min(paidBefore, num(b.total))); paidBefore = r2(paidBefore - pay);
+      const rem = r2(num(b.total) - pay); if (rem <= 0.004) return;
+      let what;
+      if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} ${m[2].replace(/\s*[–-]\s*/g, '-')}` : b.other_label.split(',')[0]; }
+      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` ${MON(b.period)}`;
+      items.push([`PAST DUE (${String(what).toUpperCase().trim()})${pay ? ' – BALANCE' : ''}`, rem]);
+    });
+    const listed = r2(items.reduce((x, r) => x + r[1], 0));
+    if (Math.abs(listed - num(s.opening)) > 0.01) items.splice(0, items.length, ['PAST DUE', num(s.opening)]);   // fall back to one line if the books don't split cleanly
+    items.forEach(([d, v]) => led.push([d, v, 'PAST DUE', 'past']));
   }
   if (num(bill.rent)) led.push([rm === 1 ? `RENT (${mo})` : `RENT – ${String(t.rent_frequency).toUpperCase()} (${rm} MONTHS FROM ${mo})`, num(bill.rent), 'RENT', 'cur']);
   if (num(bill.rent_vat)) led.push([`VAT ${num(set('vat_pct'))}% ON RENT`, num(bill.rent_vat), 'RENT', 'cur']);
