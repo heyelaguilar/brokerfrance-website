@@ -946,11 +946,11 @@ async function seedMeralcoHistory(){
   } catch(e){ console.error('meralco history failed', e); }
 }
 async function meralcoNov26Bvi(){
-  if (DEMO || S.mig_el_nov26_bvi) return;
+  if (DEMO || S.mig_el_nov26_bvi_v2) return;
   try {
     const ex = DB.ElecPeriods.find(p => p.id === '2026-11') || { id:'2026-11' };
-    await save('ElecPeriods', { ...ex, meralco_total: ex.meralco_total || 69952.18, bvi_share: -6206.50 });
-    await save('Settings', { id:'mig_el_nov26_bvi', value: new Date().toISOString() }); S.mig_el_nov26_bvi = '1';
+    await save('ElecPeriods', { ...ex, meralco_total: ex.meralco_total || 69952.18, bvi_share: -6206.50, due_date: ex.due_date || '2026-11-24' });
+    await save('Settings', { id:'mig_el_nov26_bvi_v2', value: new Date().toISOString() }); S.mig_el_nov26_bvi_v2 = '1';
   } catch(e){ console.error('meralco nov 2026 bvi failed', e); }
 }
 async function seedWasteAprMay(){
