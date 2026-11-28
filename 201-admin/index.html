@@ -1598,11 +1598,8 @@ function rWaste(){
   const known = rows.filter(r => amt(r) > 0), tch = known.reduce((x, r) => x + chg(r.m), 0), bvi = tot - tch;
   const pc = (v, of) => of ? (v / of * 100).toFixed(2) + '%' : '';
   if (!rows.length) { $('wh-wrap').innerHTML = '<div class="empty">No waste hauler payments yet.<br><br><button class="btn" onclick="whPay()">+ Add payment</button></div>'; return; }
-  // months after the latest record up to this month: no bill yet
-  const pend = []; for (let m = nextMonthOf(rows[0].m); m <= thisMonth(); m = nextMonthOf(m)) pend.unshift(m);
   const f = v => peso(v).slice(1);
   $('wh-wrap').innerHTML = `<table class="condensed el-view"><tr><th>Month</th><th class="num">Hauler bill</th><th class="num">Charged to tenants</th><th class="num">Building (BVI)</th><th>Proof</th></tr>
-    ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td colspan="3"></td></tr>`).join('')}
     ${rows.map(r => { const a = amt(r), c = chg(r.m);
       return `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${!a ? '<span class="muted">unknown</span>' : f(a)}</td><td class="num">${c ? f(c) : '—'}</td><td class="num"><b>${!a ? '—' : a - c < 0 ? `<span style="color:var(--green-d)">+${f(c - a)} surplus</span>` : f(a - c)}</b></td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`; }).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${paid.length} months</span></td><td class="num"><b>${f(tot)}</b></td><td class="num"><b>${f(tch)}</b></td><td class="num"><b>${f(bvi)}</b> <span class="muted">${pc(bvi, tot)}</span></td><td></td></tr></table>`;
