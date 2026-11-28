@@ -516,7 +516,7 @@ const FORMS = {
 // ───────────────── STATE / UTILS ─────────────────
 let ST = { pdc:{}, bt:{}, pdcAmt:{}, btAmt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
-let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[],Charges:[],Disbursements:[]};
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[],Charges:[],Disbursements:[],PastDue:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
@@ -1311,6 +1311,15 @@ async function bedooCusa(){
     await save('Settings', { id:'mig_bedoo_cusa', value: new Date().toISOString() }); S.mig_bedoo_cusa = '1';
   } catch(e){ console.error('bedoo cusa failed', e); }
 }
+async function seedPastDueTab(){
+  if (DEMO || S.mig_pastdue_seed || pdSheetOn()) return;
+  try {
+    const M = thisMonth(), rows = [];
+    activeTenants().forEach(t => soaPastDue(t, M, true).items.forEach(r => rows.push({ tenant_id: t.id, tenant: t.tenant_name || t.trade_name, description: String(r[0]).replace(/^PAST DUE:?\s*/i, ''), amount: r2(r[1]), status: 'Unpaid', notes: 'From the dashboard, ' + fmtMonth(M) })));
+    if (rows.length) await saveMany('PastDue', rows);
+    await save('Settings', { id:'mig_pastdue_seed', value: new Date().toISOString() }); S.mig_pastdue_seed = '1';
+  } catch(e){ console.error('past due seed failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1421,7 +1430,7 @@ async function seedPayables(){
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PastDue'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -1481,6 +1490,7 @@ async function reload(){
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
+    await seedPastDueTab();   // last: needs every fix above in place
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -2702,7 +2712,9 @@ function rBilling(){
     sm.since.forEach(p => { left = r2(left + pay(num(p.amount), String(p.date).slice(0, 7) >= P ? ['rent', 'cusa', 'open'] : ['open', 'rent', 'cusa'])); });
     left = r2(left + pay(c.ewt, ['rent', 'cusa', 'open']));
     const rentLeft = bucket.rent, cusaLeft = bucket.cusa, openLeft = bucket.open;
-    const pd = r2(openLeft + pastU), due = r2(openLeft + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;
+    let pd = r2(openLeft + pastU), due = r2(openLeft + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left);
+    if (pdSheetOn()) { const sp = pdSheetTotal(t.id); due = r2(due - pd + sp); pd = sp; }   // past due from the sheet
+    tot += due;
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
     return divider + `<tr>
@@ -2820,7 +2832,7 @@ const cusaLine = (t, period) => {
   return `CUSA${sq} (${cusaCover(t, period)})`;
 };
 const dmy = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
-function soaRows(bill){
+function soaRows(bill, noSheetPD){
   if (bill.kind === 'charge') { const t = tn(bill.tenant_id) || {}; const d = String(bill.description || 'CHARGE').toUpperCase();
     return { t, rows: [[d, num(bill.amount)]], scope: d.replace(/\s*\(.*\)\s*$/, ''), total: num(bill.amount), soaNo: `SOA-${String(bill.bill_date).replace(/-/g, '').slice(0, 6)}-${String(bill.id).replace(/[^a-z0-9]/gi, '').slice(-5).toUpperCase()}` }; }
   // only what's still unpaid: payments received are applied to this month's rent/CUSA first, then to the past due
@@ -2866,17 +2878,27 @@ function soaRows(bill){
   led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); if (r[2]) scope.add(r[2]); } });
   u.cur.forEach(r => { rows.push([r[3], r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
   if (left > 0.004) rows.push(['LESS: ADVANCE PAYMENT / CREDIT', -left]);
+  if (pdSheetOn() && !noSheetPD) {   // the sheet's PastDue rows replace the computed past due lines
+    for (let i = rows.length - 1; i >= 0; i--) if (/^PAST DUE/i.test(rows[i][0])) rows.splice(i, 1);
+    scope.delete('PAST DUE');
+    const sp = pdSheetRows(t.id).map(r => [`PAST DUE: ${String(r.description || '').trim()}`, num(r.amount)]);
+    if (sp.length) { rows.unshift(...sp); const rest = [...scope]; scope.clear(); ['PAST DUE', ...rest].forEach(x => scope.add(x)); }
+  }
   const total = r2(rows.reduce((x, r) => x + r[1], 0));
   rows.forEach(r => { r[0] = String(r[0]).replace(/\s*[–—]\s*/g, ' ').replace(/\s*·\s*/g, ', ').replace(/\s+/g, ' ').trim(); });
   const sc = [...scope], scopeTxt = sc.length > 1 ? sc.slice(0, -1).join(', ') + ' & ' + sc[sc.length - 1] : sc.join('');
   return { ...D, rows, scope: scopeTxt, total };
 }
 // Past due exactly as the tenant's SOA for batch month m shows it (rent, CUSA, other, Meralco, Primewater, waste)
-function soaPastDue(t, m){
+// Past due comes from the PastDue tab of the sheet once it has rows (edit there; Paid rows drop off the SOA)
+const pdSheetOn = () => (DB.PastDue || []).length > 0;
+const pdSheetRows = tid => (DB.PastDue || []).filter(r => r.tenant_id === tid && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount));
+const pdSheetTotal = tid => r2(pdSheetRows(tid).reduce((x, r) => x + num(r.amount), 0));
+function soaPastDue(t, m, raw){
   const P = due1(t) ? nextMonthOf(m) : m;
   const bill = DB.Bills.find(x => x.tenant_id === t.id && x.period === P) || { ...computeBill(t, P, {}), id: '', tenant_id: t.id, period: P, bill_date: today(), due_date: today() };
   try {
-    const items = soaRows(bill).rows.filter(r => /^PAST DUE/i.test(r[0]));
+    const items = soaRows(bill, raw).rows.filter(r => /^PAST DUE/i.test(r[0]));
     return { total: r2(items.reduce((x, r) => x + r[1], 0)), items };
   } catch(e){ console.error('past due', t.tenant_name, e); return { total: 0, items: [] }; }
 }
