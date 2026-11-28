@@ -1048,6 +1048,19 @@ async function pwFixedJed4F(){
     await save('Settings', { id:'mig_pw_fixed_jed_4f', value: new Date().toISOString() }); S.mig_pw_fixed_jed_4f = '1';
   } catch(e){ console.error('jed/4F fixed failed', e); }
 }
+// 4th Floor ₱600 shows each month from Nov 2026 like JED's ₱500 — the back charge now covers Sep 2025 – Oct 2026 only (₱600 × 14)
+async function pw4FNov(){
+  if (DEMO || S.mig_pw_4f_nov_v1) return;
+  try {
+    const fm = DB.Meters.find(m => m.utility === 'Primewater' && /^4th/i.test(m.payer || ''));
+    if (fm) {
+      const lump = DB.ElecBills.find(b => b.meter_id === fm.id && b.period === '2026-10');
+      if (lump && lump.status !== 'Paid' && num(lump.amount) === 9000) await save('ElecBills', { ...lump, amount_override: 8400, amount: 8400, notes: 'Sep 2025 – Oct 2026 · ₱600 × 14 months' });
+      await save('Meters', { ...fm, notes: 'Fixed ₱600 per month · Starts Nov 2026' });
+    }
+    await save('Settings', { id:'mig_pw_4f_nov_v1', value: new Date().toISOString() }); S.mig_pw_4f_nov_v1 = '1';
+  } catch(e){ console.error('4F nov failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1174,6 +1187,7 @@ async function reload(){
     await seedWasteAprMay();
     await squeezeFridge2();
     await pwFixedJed4F();
+    await pw4FNov();
     await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
