@@ -1154,7 +1154,8 @@ function pastDueBefore(id, m){
   const before = billsOf(id).filter(b => b.period < m).reduce((x,b) => x + num(b.total), 0);
   return Math.max(0, r2(before - paysOf(id).filter(p => String(p.date).slice(0,7) < m).reduce((x,p) => x + num(p.amount), 0)));   // this month's payments count toward this month
 }
-const paysOf = id => DB.Payments.filter(p => p.tenant_id === id && p.method !== 'PDC' && p.applies_to !== 'Utilities').sort(   // utilities are settled in their own tabs
+const paysOf = id => DB.Payments.filter(p => p.tenant_id === id && p.method !== 'PDC' && forRent(p)).sort(   // rent & CUSA only: utilities and other items (e.g. a refrigerator) are not SOA credits
+   // utilities are settled in their own tabs
    // SOA ledger: PDCs are tracked separately
   (a,b) => String(a.date).localeCompare(b.date));
 const balanceOf = id => r2(billsOf(id).reduce((s,b)=>s+num(b.total),0) - paysOf(id).reduce((s,p)=>s+num(p.amount),0));
