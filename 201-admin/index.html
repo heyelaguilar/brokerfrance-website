@@ -275,6 +275,8 @@ table.condensed .muted{font-size:11px}
         <div class="hint" style="flex:1;min-width:200px">Meralco, Primewater and waste come from their own tabs — only what's still unpaid shows here. Earlier unpaid months go under past due.</div>
       </div>
       <div class="card tbl" id="bill-wrap"></div>
+      <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 8px"><h3 style="margin:0">Separate SOAs</h3><button class="btn ghost" onclick="chargeForm()">+ Separate SOA</button></div>
+      <div class="card tbl" id="chg-wrap"></div>
     </section>
 
     <section class="pane" id="p-payments">
@@ -435,7 +437,7 @@ const FORMS = {
 // ───────────────── STATE / UTILS ─────────────────
 let ST = { pdc:{}, bt:{}, pdcAmt:{}, btAmt:{}, pdcPaid:0, btPaid:0 };
 let SUM = { tr:0, tc:0, tp:0, tb:0, n:0, nP:0, nB:0 };
-let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[]};
+let DB = {Tenants:[],Bills:[],Payments:[],PDCs:[],EmailLog:[],Settings:[],Meters:[],ElecBills:[],ElecPeriods:[],Payables:[],WasteLog:[],Charges:[]};
 let S = {};      // settings key → value
 let tab = 'overview', idn, editing = null, ME = '';
 const $ = id => document.getElementById(id);
@@ -1000,6 +1002,15 @@ async function seedMeralcoBreakdown(){
     await save('Settings', { id:'mig_el_breakdown_v1', value: new Date().toISOString() }); S.mig_el_breakdown_v1 = '1';
   } catch(e){ console.error('meralco breakdown failed', e); }
 }
+async function squeezeFridge2(){
+  if (DEMO || S.mig_sq_fridge2) return;
+  try {
+    const t = DB.Tenants.find(x => /squeeze/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t && !DB.Charges.some(c => c.tenant_id === t.id && /refrigerator/i.test(c.description)))
+      await save('Charges', { tenant_id: t.id, description: 'Refrigerator (2/2)', amount: 5000, bill_date: '2026-11-28', due_date: '2026-12-01', status: 'Unpaid', notes: '1/2 paid Nov 9, 2026 (GCash 4047 057 925246)' });
+    await save('Settings', { id:'mig_sq_fridge2', value: new Date().toISOString() }); S.mig_sq_fridge2 = '1';
+  } catch(e){ console.error('fridge 2/2 failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1098,7 +1109,7 @@ async function seedPayables(){
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -1124,6 +1135,7 @@ async function reload(){
     await seedWasteHistory();
     await seedWasteHistory2();
     await seedWasteAprMay();
+    await squeezeFridge2();
     await wasteFees();
     await whStartOct2025();
     await whNovIsOct();
@@ -2062,6 +2074,67 @@ async function pwBillSave(){
 
 // ── Billing grid ──
 let grid = {};  // tenant_id → inputs
+// ── Separate SOAs: one-off charges (e.g. refrigerator 2/2) on their own statement ──
+function chargeBill(id){ const c = DB.Charges.find(x => x.id === id); return c ? { ...c, kind: 'charge', period: String(c.bill_date || '').slice(0, 7) } : null; }
+function rCharges(){
+  const P = $('f-bill-period').value, list = DB.Charges.filter(c => String(c.bill_date).slice(0, 7) === P || c.status !== 'Paid').sort((a, b) => String(b.bill_date).localeCompare(a.bill_date));
+  $('chg-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Tenant</th><th>Description</th><th class="num">Amount</th><th>Bill date</th><th>Due</th><th>Payment</th><th>Proof</th><th></th></tr>
+    ${list.map(c => `<tr><td>${esc(tLabel(tn(c.tenant_id) || {}))}</td><td>${esc(c.description)}</td><td class="num">${peso(num(c.amount)).slice(1)}</td><td>${fmtDate(c.bill_date)}</td><td>${fmtDate(c.due_date)}</td>
+      <td>${c.status === 'Paid' ? `<a href="#" class="paid" style="text-decoration:none" onclick="chargePay('${c.id}');return false">Paid ${fmtDate(c.paid_date)}</a>` : `<button class="btn sm" onclick="chargePay('${c.id}')">Mark paid</button>${c.sent_at ? `<div class="muted" style="font-size:11px">sent ${fmtDate(c.sent_at)}</div>` : ''}`}</td>
+      <td>${proofThumb(c.proof_url)}</td>
+      <td><div class="row-actions"><button class="btn sm" onclick="openSOA('${c.id}')">Generate SOA</button><button class="btn ghost sm" onclick="chargeForm('${c.id}')">Edit</button></div></td></tr>`).join('')}</table>`
+    : '<div class="empty">No separate SOAs. Use “+ Separate SOA” for one-off charges like an appliance or repair.</div>';
+}
+function chargeForm(id){
+  const c = id ? DB.Charges.find(x => x.id === id) : { bill_date: today(), due_date: addDays(today(), 3) };
+  editing = { chg: id || '' };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = id ? 'Edit separate SOA' : 'Separate SOA';
+  $('m-body').innerHTML = `<div class="fld wide"><label>Tenant</label><select id="cg-t">${tenantOpts(c.tenant_id || '', 'Choose tenant')}</select></div>
+    <div class="fld wide"><label>Description</label><input id="cg-d" value="${esc(c.description || '')}" placeholder="e.g. Refrigerator (2/2)"></div>
+    <div class="fld"><label>Amount (₱)</label><input id="cg-a" type="number" step="any" value="${esc(c.amount || '')}"></div>
+    <div class="fld"><label>Billing date</label><input id="cg-b" type="date" value="${esc(c.bill_date || '')}"></div>
+    <div class="fld"><label>Due date</label><input id="cg-u" type="date" value="${esc(c.due_date || '')}"></div>`;
+  $('m-foot').innerHTML = `<div class="left">${id ? `<button class="btn danger" onclick="chargeDel('${id}')">Delete</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="chargeSave()">Save & generate SOA</button>`;
+  $('ovl').classList.add('on');
+}
+async function chargeSave(){
+  const id = editing.chg, c = id ? DB.Charges.find(x => x.id === id) : {};
+  const row = { ...c, tenant_id: $('cg-t').value, description: $('cg-d').value.trim(), amount: num($('cg-a').value), bill_date: $('cg-b').value, due_date: $('cg-u').value, status: c.status || 'Unpaid' };
+  if (!row.tenant_id) return toast('Choose the tenant');
+  if (!row.description) return toast('Enter the description');
+  if (!row.amount) return toast('Enter the amount');
+  if (!row.bill_date || !row.due_date) return toast('Set the billing and due date');
+  const btn = $('m-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  try { const r = await save('Charges', row); closeForm(); render(); openSOA(r.id || row.id); } catch(e){ btn.disabled = false; btn.textContent = 'Save & generate SOA'; toast('Save failed: ' + e.message); }
+}
+async function chargeDel(id){ if (!confirm('Delete this separate SOA?')) return; try { await remove('Charges', id); closeForm(); render(); } catch(e){ toast(e.message); } }
+function chargePay(id){
+  const c = DB.Charges.find(x => x.id === id); editing = { chgpay: id };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Payment · ${c.description}`;
+  $('m-body').innerHTML = `<div class="fld"><label>Amount (₱)</label><input id="cp-a" type="number" step="any" value="${esc(c.paid_amount || c.amount)}"></div>
+    <div class="fld"><label>Payment date</label><input id="cp-d" type="date" value="${esc(c.paid_date || today())}"></div>
+    <div class="fld"><label>Paid to</label><select id="cp-to">${opts(PAID_TO, c.paid_to || PAID_TO[0])}</select></div>
+    <div class="fld"><label>Reference</label><input id="cp-r" value="${esc(c.reference || '')}"></div>
+    <div class="fld wide"><label>Proof of payment</label>${proofZone(c.proof_url)}</div>`;
+  wireProofZone();
+  $('m-foot').innerHTML = `<div class="left">${c.status === 'Paid' ? `<button class="btn danger" onclick="chargeUnpay('${id}')">Mark unpaid</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="chargePaySave()">Mark paid (with proof)</button>`;
+  $('ovl').classList.add('on');
+}
+async function chargePaySave(){
+  const id = editing.chgpay, c = DB.Charges.find(x => x.id === id), btn = $('m-save');
+  if (!proofPicked && !c.proof_url) return toast('Attach the proof of payment first');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    let proof_url = c.proof_url || '';
+    if (proofPicked) { btn.textContent = 'Uploading proof…'; proof_url = await uploadProof(proofPicked); }
+    const to = $('cp-to').value;
+    await save('Charges', { ...c, status: 'Paid', paid_amount: num($('cp-a').value), paid_date: $('cp-d').value, paid_to: to, method: /gcash/i.test(to) ? 'GCash' : 'Bank transfer', reference: $('cp-r').value.trim(), proof_url });
+    closeForm(); render(); toast('Marked paid');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
+}
+async function chargeUnpay(id){ const c = DB.Charges.find(x => x.id === id); try { await save('Charges', { ...c, status: c.sent_at ? 'Sent' : 'Unpaid', paid_date: '', paid_amount: '' }); closeForm(); render(); } catch(e){ toast(e.message); } }
 function rBilling(){
   const per = $('f-bill-period'); if (!per.value) per.value = thisMonth();
   const P = per.value, ts = soaList();
@@ -2074,7 +2147,8 @@ function rBilling(){
     grid = {};
     ts.forEach(t => { grid[t.id] = {}; });
   }
-  if (!ts.length) { $('bill-wrap').innerHTML = `<div class="empty"><b>No bank-transfer tenants</b>Tenants on PDC are not billed here.</div>`; return; }
+  rCharges();
+  if (!ts.length) { $('bill-wrap').innerHTML = `<div class="empty"><b>No tenants</b></div>`; return; }
   const f = v => num(v) ? peso(v).slice(1) : '<span class="muted">—</span>';
   let tot = 0;
   const rows = ts.map(t => {
@@ -2176,6 +2250,8 @@ const prevLabel = s => s.last && s.last.notes && /opening balance/i.test(s.last.
 const MON = m => fmtMonth(m).replace(/^(\w{3})\w*/, '$1').toUpperCase();
 const dmy = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
 function soaRows(bill){
+  if (bill.kind === 'charge') { const t = tn(bill.tenant_id) || {}; const d = String(bill.description || 'CHARGE').toUpperCase();
+    return { t, rows: [[d, num(bill.amount)]], scope: d.replace(/\s*\(.*\)\s*$/, ''), total: num(bill.amount), soaNo: `SOA-${String(bill.bill_date).replace(/-/g, '').slice(0, 6)}-${String(bill.id).slice(-5).toUpperCase()}` }; }
   // only what's still unpaid: payments received are applied to this month's rent/CUSA first, then to the past due
   const D = soaData(bill), { t, s, u } = D, mo = MON(bill.period), rm = rentMonths(t);
   const led = [];   // [description, amount, scope, kind]
@@ -2234,11 +2310,12 @@ function soaHTML(bill){
       <tr><td style="padding:2px 40px 2px 0">Current Account No.:</td><td style="font-weight:700">0000054207660</td></tr></table></td></tr>
   </table></div>`;
 }
+const billish = id => byId('Bills', id) || chargeBill(id);
 function openSOA(billId){
-  const b = byId('Bills', billId), t = tn(b.tenant_id);
+  const b = billish(billId), t = tn(b.tenant_id);
   editing = null;
   $('modal').classList.add('wide');
-  $('m-title').textContent = `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
+  $('m-title').textContent = b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
   $('m-body').className = 'body one';
   $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
   $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ Download PDF</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
@@ -2246,7 +2323,7 @@ function openSOA(billId){
 }
 function printSOA(id){
   const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
-  w.document.write(`<html><head><title>SOA</title><style>@page{size:A4;margin:16mm}body{margin:0}</style></head><body>${soaHTML(byId('Bills',id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
+  w.document.write(`<html><head><title>SOA</title><style>@page{size:A4;margin:16mm}body{margin:0}</style></head><body>${soaHTML(billish(id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
 }
 let jsPDFp;
 function loadJsPDF(){
@@ -2300,12 +2377,12 @@ async function soaPDF(bill){
   [['Bank Name:', 'Security Bank'], ['Account Name:', 'BROOKLAND VENTURES, INC.'], ['Current Account No.:', '0000054207660']].forEach(([k, v], i) => { T(k, L + 2, y + 29 + i * 5.5); T(v, L + 55, y + 29 + i * 5.5, { b: 1 }); });
   return { doc, filename: `${soaNo}.pdf`, amountDue: total };
 }
-async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(byId('Bills', id)); doc.save(filename); } catch(e){ toast(e.message); } }
+async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(billish(id)); doc.save(filename); } catch(e){ toast(e.message); } }
 const fill = (tpl, b, amt) => String(tpl).replace(/\{month\}/g, fmtMonth(b.period)).replace(/\{tenant\}/g, tName(b.tenant_id)).replace(/\{amount\}/g, peso(amt)).replace(/\{due\}/g, fmtDate(b.due_date));
 async function sendSOA(id, btn, quiet){
-  const b = byId('Bills', id), t = tn(b.tenant_id);
+  const b = billish(id), t = tn(b.tenant_id);
   if (!t?.email) { toast(`${t?.tenant_name || 'Tenant'} has no email on file`); return false; }
-  if (!quiet && !confirm(`Email the ${fmtMonth(b.period)} SOA to ${t.tenant_name} (${t.email})?`)) return false;
+  if (!quiet && !confirm(`Email the ${b.kind === 'charge' ? b.description : fmtMonth(b.period)} SOA to ${t.tenant_name} (${t.email})?`)) return false;
   const label = btn?.textContent; if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   try {
     const { doc, filename, amountDue } = await soaPDF(b);
@@ -2313,6 +2390,7 @@ async function sendSOA(id, btn, quiet){
     const html = `<div style="max-width:680px;margin:0 auto"><p style="font-family:Arial,sans-serif;font-size:14px;color:#111">${msg}</p><div style="border:1px solid #e5e5e5;padding:24px;border-radius:8px">${soaHTML(b)}</div></div>`;
     const r = await call({ action:'sendSOA', tenant_id:t.id, bill_id:b.id, period:b.period, subject: fill(set('soa_subject'), b, amountDue), html, filename, pdf_base64: doc.output('datauristring').split(',')[1] });
     merge('EmailLog', [r.log]); b.status = 'Sent'; b.sent_at = r.log.date;
+    if (b.kind === 'charge') { const c = DB.Charges.find(x => x.id === b.id); if (c) await save('Charges', { ...c, status: c.status === 'Paid' ? 'Paid' : 'Sent', sent_at: r.log.date }); }
     if (!quiet) { toast(`SOA sent to ${t.email}`); if ($('ovl').classList.contains('on')) closeForm(); render(); }
     return true;
   } catch(e){ toast('Send failed: ' + e.message); if (btn) { btn.disabled = false; btn.textContent = label; } return false; }
