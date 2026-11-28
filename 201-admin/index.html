@@ -1611,34 +1611,41 @@ function rBvi(){
 }
 function pwSplit(ps){
   if (UTIL !== 'Primewater') return '';
-  const sel = $('f-el-period').value || utilPeriods().map(p => p.m).sort().pop(); ps = ps.filter(p => p.m === sel);
-  if (!ps.length) return '';
+  const sel = $('f-el-period').value || utilPeriods().map(p => p.m).sort().pop();
+  const P = utilPeriods().find(p => p.m === sel) || { m: sel };
   const MO = 'janfebmaraprmayjunjulaugsepoctnovdec';
   const ym = (mon, y) => y + '-' + String(MO.indexOf(mon.slice(0,3).toLowerCase()) / 3 + 1).padStart(2, '0');
-  const months = ps.map(p => p.m).sort(), first = months[0], last = months[months.length - 1], n = months.length;
-  const total = ps.reduce((x,p) => x + num(p.meralco_total), 0), cum = ps.reduce((x,p) => x + num(p.meralco_kwh), 0);
-  const who = {};
+  const total = num(P.meralco_total), cum = num(P.meralco_kwh);
+  const who = {};   // meter id → { name, v, bills }
   const meters = DB.Meters.filter(m => m.utility === 'Primewater');
   DB.ElecBills.filter(b => meters.some(m => m.id === b.meter_id)).forEach(b => {
     const mt = meters.find(m => m.id === b.meter_id), amt = num(b.amount_override || b.amount); if (!amt) return;
     const r = /(\w{3})\w*\s+(\d{4})\s*[–-]\s*(\w{3})\w*\s+(\d{4})/.exec(b.notes || '');
     let cov = [b.period];
     if (r) { cov = []; let [y, mo] = ym(r[1], r[2]).split('-').map(Number); const end = ym(r[3], r[4]); for (let k = 0; k < 240; k++) { const c = y + '-' + String(mo).padStart(2,'0'); cov.push(c); if (c >= end) break; if (++mo > 12) { mo = 1; y++; } } }
-    const inWin = cov.filter(c => c >= first && c <= last && months.includes(c)).length;
-    if (!inWin) return;
-    const k = meterName(mt); who[k] = (who[k] || 0) + amt * inWin / cov.length;
+    if (!cov.includes(sel)) return;
+    const w = who[mt.id] ||= { name: meterName(mt), v: 0, bills: [] };
+    w.v += amt / cov.length; w.bills.push(b);
   });
-  const rows = Object.entries(who).map(([k, v]) => [k, r2(v)]);
-  const bvi = r2(total - rows.reduce((x, r) => x + r[1], 0));
-  rows.push(['Building (BVI)', bvi]);
+  const ten = Object.values(who).map(w => ({ ...w, v: r2(w.v) })).sort((a, b) => b.v - a.v);
+  if (!ten.length && !total) return '';
+  const tenTot = r2(ten.reduce((x, w) => x + w.v, 0)), bvi = total ? r2(total - tenTot) : null;
   const f = v => peso(v).slice(1), pc = v => total ? (v / total * 100).toFixed(2) + '%' : '';
   const cols = ['#4E8A68', '#C9A04A', '#1C3F2F', '#A9CDB5', '#8A6F7A'];
-  const bar = rows.map(([k, v], i) => `<span title="${esc(k)} ${pc(v)}" style="width:${Math.max(0, v / total * 100)}%;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>`).join('');
-  return `<h3 style="margin:22px 0 8px">Who pays the water · ${fmtMonth(first)}</h3>
-    <div class="card tbl"><div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:12px 14px">${bar}</div>
-    <table class="condensed"><tr><th>Paid by</th><th class="num">Amount</th><th class="num">Share</th></tr>
-    ${rows.map(([k, v], i) => `<tr${i === rows.length - 1 ? ' style="background:#FBF3E4"' : ''}><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>${i === rows.length - 1 ? '<b>' + esc(k) + '</b>' : esc(k)}</td><td class="num">${i === rows.length - 1 ? '<b>' + f(v) + '</b>' : f(v)}</td><td class="num">${i === rows.length - 1 ? '<b>' + pc(v) + '</b>' : pc(v)}</td></tr>`).join('')}
-    <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${cum.toFixed(1)} cu.m · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
+  const bar = total ? [...ten.map((w, i) => [w.name, w.v, cols[i % cols.length]]), ['Building (BVI)', bvi, '#B5533C']].map(([k, v, c]) => `<span title="${esc(k)} ${pc(v)}" style="width:${Math.max(0, v / total * 100)}%;background:${c}"></span>`).join('') : '';
+  const pay = w => {
+    const unpaid = w.bills.find(b => b.status !== 'Paid'), pb = w.bills.find(b => b.status === 'Paid');
+    const cell = unpaid ? `<button class="btn sm" onclick="elPay('${unpaid.id}')">Mark paid</button>` : `<a href="#" class="paid" style="text-decoration:none" onclick="elPay('${pb.id}');return false">Paid${pb.paid_date ? ' ' + fmtDate(pb.paid_date) : ''}</a>`;
+    return `<td style="white-space:nowrap">${cell}</td><td>${esc((pb || unpaid || {}).paid_to || '')}</td><td>${pb ? proofThumb(pb.proof_url, `elPay('${pb.id}')`) : ''}</td>`;
+  };
+  const note = w => { const n = w.bills.map(b => b.notes).filter(Boolean).join(' · '); const full = w.bills.reduce((x, b) => x + num(b.amount_override || b.amount), 0);
+    return n || Math.abs(full - w.v) > 0.01 ? `<div class="muted" style="font-size:12px">${esc(n)}${Math.abs(full - w.v) > 0.01 ? ` · full charge ${peso(full)}` : ''}</div>` : ''; };
+  return `<h3 style="margin:22px 0 8px">Who pays the water · ${fmtMonth(sel)}</h3>
+    <div class="card tbl">${bar ? `<div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:12px 14px">${bar}</div>` : ''}
+    <table class="condensed el-view"><tr><th>Paid by</th><th class="num">Amount</th><th class="num">Share</th><th>Payment</th><th>Paid to</th><th>Proof</th></tr>
+    ${ten.map((w, i) => `<tr><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${cols[i % cols.length]}"></span><b>${esc(w.name)}</b>${note(w)}</td><td class="num">${f(w.v)}</td><td class="num">${pc(w.v)}</td>${pay(w)}</tr>`).join('')}
+    <tr style="background:#FBF3E4"><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:#B5533C"></span><b>Building (BVI)</b></td><td class="num"><b>${bvi == null ? '—' : f(bvi)}</b></td><td class="num"><b>${bvi == null ? '' : pc(bvi)}</b></td><td colspan="3" class="muted">${bvi == null ? 'no bill yet' : ''}</td></tr>
+    <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${cum ? cum.toFixed(1) + ' cu.m · ₱' + (total / cum).toFixed(2) + '/cu.m' : ''}</span></td><td class="num"><b>${total ? f(total) : '—'}</b></td><td class="num"><b>${total ? '100%' : ''}</b></td><td colspan="3"></td></tr></table></div>`;
 }
 // Meralco: bill, what tenants pay, what the building (BVI) shoulders
 const elOpen = new Set();
@@ -1686,7 +1693,7 @@ function elHistoryMeralco(){
 function elHistory(){
   if (UTIL === 'Meralco') return elHistoryMeralco();
   const ps = utilPeriods().filter(p => num(p.meralco_total)).sort((a,b) => b.m.localeCompare(a.m));
-  if (!ps.length) { $('el-hist').innerHTML = ''; return; }
+  if (!ps.length) { $('el-hist').innerHTML = pwSplit(ps); return; }
   const tq = ps.reduce((x,p) => x + num(p.meralco_kwh), 0), tp = ps.reduce((x,p) => x + num(p.meralco_total), 0);
   const q = v => num(v).toLocaleString('en-PH',{minimumFractionDigits:2});
   $('el-hist').innerHTML = pwSplit(ps) + `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th>${UTIL === 'Primewater' ? '<th>Bill</th>' : ''}</tr>
@@ -1717,7 +1724,7 @@ function rMeralco(){
   const kwh = num(P.meralco_kwh), tot = num(P.meralco_total);
   $('el-sum').innerHTML = `<span>Billing period <b>${esc(P.billing_period || '—')}</b></span><span>Billed <b>${P.billing_date ? fmtDate(P.billing_date) : '—'}</b></span><span>Due <b>${P.due_date ? fmtDate(P.due_date) : '—'}</b></span><span>Rate <b>${rate ? '₱' + num(rate).toFixed(2) + '/' + UNIT() : '—'}</b></span><span>${UTIL} bill <b>${tot ? peso(tot) : '—'}</b>${kwh ? ` (${kwh.toLocaleString()} ${UNIT()})` : ''}</span>`;
   $('el-head').style.display = elEdit ? '' : 'none'; $('btn-el-save').style.display = elEdit ? '' : 'none'; $('btn-el-mode').textContent = elEdit ? 'Done' : 'Enter readings';
-  if (!elEdit) { elView(per, rate, tenantM, bldgM); elUpdateAll(); return; }
+  if (!elEdit) { elView(per, rate, tenantM, bldgM); elUpdateAll(); $('el-wrap').style.display = UTIL === 'Primewater' ? 'none' : ''; if (UTIL === 'Primewater') elHistory(); return; }
   const row = mt => {
     const c = elCalc(mt, per, rate), paid = c.b && c.b.status === 'Paid';
     const st = mt.type === 'Building' ? '<span class="muted">building</span>'
