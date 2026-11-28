@@ -1177,6 +1177,15 @@ async function neueraCusa4800(){
     await save('Settings', { id:'mig_neuera_cusa_4800', value: new Date().toISOString() }); S.mig_neuera_cusa_4800 = '1';
   } catch(e){ console.error('neuera cusa 4800 failed', e); }
 }
+async function neueraNovNoCusa(){
+  if (DEMO || S.mig_neuera_nov_nocusa) return;
+  try {
+    const t = DB.Tenants.find(x => /neuera/i.test([x.tenant_name, x.trade_name].join(' ')));
+    const b = t && DB.Bills.find(x => x.tenant_id === t.id && x.period === '2026-11' && /added automatically/i.test(x.notes || ''));
+    if (b && num(b.cusa)) await save('Bills', { ...b, cusa: 0, total: r2(num(b.total) - num(b.cusa)), notes: 'Added automatically so payments land on the right month. No CUSA due: first open CUSA is Nov 24 - Dec 23, 2026 (Dec SOA)' });
+    await save('Settings', { id:'mig_neuera_nov_nocusa', value: new Date().toISOString() }); S.mig_neuera_nov_nocusa = '1';
+  } catch(e){ console.error('neuera nov cusa failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1304,6 +1313,7 @@ async function reload(){
     await akmasLag();
     await neueraCusaRange();
     await neueraCusa4800();
+    await neueraNovNoCusa();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
