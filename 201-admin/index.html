@@ -1098,6 +1098,14 @@ async function soaMeralcoAndrei(){
     await save('Settings', { id:'mig_soa_mer_andrei', value: new Date().toISOString() }); S.mig_soa_mer_andrei = '1';
   } catch(e){ console.error('andrei meralco failed', e); }
 }
+async function v52WasteSep(){
+  if (DEMO || S.mig_v52_waste_sep) return;
+  try {
+    const t = DB.Tenants.find(x => /\bv52\b|vault 52/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) { const a = (() => { try { return JSON.parse(S.wh_extra_unpaid || '[]'); } catch(e){ return []; } })(); if (!a.includes(t.id + ':2026-09')) a.push(t.id + ':2026-09'); S.wh_extra_unpaid = JSON.stringify(a); await save('Settings', { id: 'wh_extra_unpaid', value: S.wh_extra_unpaid }); }
+    await save('Settings', { id:'mig_v52_waste_sep', value: new Date().toISOString() }); S.mig_v52_waste_sep = '1';
+  } catch(e){ console.error('v52 waste sep failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1228,6 +1236,7 @@ async function reload(){
     await v52NovReading();
     await pw4FIsSqueeze();
     await soaMeralcoAndrei();
+    await v52WasteSep();
     await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
@@ -1321,7 +1330,9 @@ function soaUtil(t, m, thru, withMeralco){
       (b.period === upto ? cur : past).push([lbl, a, name, short]);
     });
   });
-  for (let mm = from; mm <= M; mm = nextMonthOf(mm)) {
+  const extra = (() => { try { return JSON.parse(S.wh_extra_unpaid || '[]'); } catch(e){ return []; } })().filter(k => k.startsWith(t.id + ':')).map(k => k.split(':')[1]).filter(mm => mm < from);
+  const whMonths = [...extra]; for (let mm = from; mm <= M; mm = nextMonthOf(mm)) whMonths.push(mm);
+  for (const mm of whMonths) {
     const a = whCharge(t, mm); if (!a || WH_PAY(mm).some(p => p.tenant_id === t.id)) continue;
     const l = whLog(t.id, mm), lbl = `Waste hauling — ${fmtMonth(mm)}${l && num(l.bags) ? ` (${num(l.bags)} bags × ${peso(num(l.rate) || WH_RATE())})` : ''}`;
     (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? ` · ${num(l.bags)} BAGS × ${peso(num(l.rate) || WH_RATE())}` : ''}`]);
