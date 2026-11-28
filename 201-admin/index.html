@@ -266,7 +266,7 @@ table.condensed .muted{font-size:11px}
     </section>
 
     <section class="pane" id="p-billing">
-      <div class="hdr"><div><h1>SOA</h1><p>One statement per tenant: past due, rent, CUSA, Meralco, water and waste hauling. Tenants on PDC are not listed.</p></div>
+      <div class="hdr"><div><h1>SOA</h1><p>One statement per tenant: past due, rent, CUSA, Meralco, water and waste hauling. Rent or CUSA covered by PDC shows as PDC.</p></div>
         <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Generate all SOAs</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
       <div class="card rates">
         <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
@@ -1191,7 +1191,7 @@ function nextRentMonth(t, from){
 const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
 const soaHold = t => t.soa_status === 'Hold';
 // SOA list: tenants paying by bank transfer only (anyone on PDC is left out)
-const soaList = () => soaTenants().filter(t => t.rent_payment !== 'PDC' && t.cusa_payment !== 'PDC');
+const soaList = () => activeTenants();   // every tenant; rent or CUSA covered by PDC is not billed on the SOA
 const SOA_UTIL_FROM = () => S.soa_util_from || '2026-10';
 // unpaid utilities for tenant t up to month m, split into this month and earlier
 function soaUtil(t, m){
@@ -2090,8 +2090,8 @@ function rBilling(){
     return `<tr>
       <td><b>${esc(t.trade_name || t.tenant_name)}</b><div class="muted">${esc([t.floor, t.unit].filter(Boolean).join(' · '))}</div></td>
       <td class="num">${pd ? `<b style="color:var(--red)">${peso(pd).slice(1)}</b>` : '<span class="muted">—</span>'}</td>
-      <td class="num">${pv(c.rent + c.rent_vat, rentLeft)}</td>
-      <td class="num">${pv(c.cusa, cusaLeft)}</td>
+      <td class="num">${!c.rent && t.rent_payment === 'PDC' ? '<span class="muted">PDC</span>' : pv(c.rent + c.rent_vat, rentLeft)}</td>
+      <td class="num">${!c.cusa && (t.cusa_payment === 'PDC' || t.cusa_payment === 'Combined with rent') ? '<span class="muted">PDC</span>' : pv(c.cusa, cusaLeft)}</td>
       <td class="num">${f(u.by('Meralco'))}</td>
       <td class="num">${f(u.by('Water'))}</td>
       <td class="num">${f(u.by('Waste'))}</td>
