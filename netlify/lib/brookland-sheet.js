@@ -8,7 +8,7 @@ const SCHEMA = {
   Bills:    ['id','tenant_id','period','bill_date','due_date',
              'rent','rent_vat','cusa','water_prev','water_curr','water_rate','water_amt',
              'elec_prev','elec_curr','elec_rate','elec_amt','waste','other_label','other_amt','penalty','ewt',
-             'total','status','sent_at','notes','updated'],
+             'total','util_thru','status','sent_at','notes','updated'],
   Payments: ['id','tenant_id','date','amount','method','bank','reference','pdc_id','or_no','applies_to','proof_url','notes','by','updated'],
   PDCs:     ['id','tenant_id','check_no','bank','amount','check_date','for_period','status','deposited_date','cleared_date','payment_id','notes','updated'],
   EmailLog: ['id','date','tenant_id','type','to','cc','subject','status','by','updated'],

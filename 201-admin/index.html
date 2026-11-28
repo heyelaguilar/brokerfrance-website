@@ -272,6 +272,7 @@ table.condensed .muted{font-size:11px}
       <div class="card rates">
         <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
         <div class="fld"><label>Due date</label><input type="date" id="r-due-date"></div>
+        <div class="fld"><label>Utilities through</label><input type="month" id="r-util-thru"></div>
         <input type="hidden" id="r-elec"><input type="hidden" id="r-water">
         <div class="hint" style="flex:1;min-width:200px">Meralco, Primewater and waste come from their own tabs — only what's still unpaid shows here. Earlier unpaid months go under past due.</div>
       </div>
@@ -1289,24 +1290,28 @@ const soaHold = t => t.soa_status === 'Hold';
 const soaList = () => activeTenants();   // every tenant; rent or CUSA covered by PDC is not billed on the SOA
 const SOA_UTIL_FROM = () => S.soa_util_from || '2026-10';
 // unpaid utilities for tenant t up to month m, split into this month and earlier
-function soaUtil(t, m){
+const monthsBack = (m, k) => { const [y, mo] = m.split('-').map(Number); const d = new Date(y, mo - 1 - k, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+// utilities are billed two months behind rent (Dec SOA: Dec rent & CUSA + Oct utilities)
+const utilThruDefault = P => monthsBack(P, 2);
+function soaUtil(t, m, thru){
+  const M = thru || utilThruDefault(m);
   const cur = [], past = [], from = SOA_UTIL_FROM();
   const kwh = v => num(v).toLocaleString('en-PH', { maximumFractionDigits: 2 });
   DB.Meters.filter(mt => mt.tenant_id === t.id && mt.type !== 'Building').forEach(mt => {
     const u = utilOf(mt), unit = u === 'Primewater' ? 'cu.m' : 'kWh', name = u === 'Primewater' ? 'Primewater' : 'Meralco';
-    DB.ElecBills.filter(b => b.meter_id === mt.id && b.status !== 'Paid' && b.period <= m && b.period >= from).forEach(b => {
+    DB.ElecBills.filter(b => b.meter_id === mt.id && b.status !== 'Paid' && b.period <= M && b.period >= from).forEach(b => {
       const a = num(b.amount_override || b.amount); if (!a) return;
       const use = b.curr !== '' && b.curr != null && b.prev !== '' && b.prev != null && !num(b.amount_override) ? ` (${kwh(b.prev)} → ${kwh(b.curr)} = ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))})` : '';
       const lbl = `${name}${meterLabel(mt) ? ' · ' + meterLabel(mt) : ''} — ${fmtMonth(b.period)}${use}`;
       const mon = fmtMonth(b.period).replace(/^(\w{3})\w*/, '$1').toUpperCase();
       const short = `${name.toUpperCase()}${meterLabel(mt) ? ' – ' + meterLabel(mt).toUpperCase() : ''} (${mon})${use ? ` · ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))}` : ''}`;
-      (b.period === m ? cur : past).push([lbl, a, name, short]);
+      (b.period === M ? cur : past).push([lbl, a, name, short]);
     });
   });
-  for (let mm = from; mm <= m; mm = nextMonthOf(mm)) {
+  for (let mm = from; mm <= M; mm = nextMonthOf(mm)) {
     const a = whCharge(t, mm); if (!a || WH_PAY(mm).some(p => p.tenant_id === t.id)) continue;
     const l = whLog(t.id, mm), lbl = `Waste hauling — ${fmtMonth(mm)}${l && num(l.bags) ? ` (${num(l.bags)} bags × ${peso(num(l.rate) || WH_RATE())})` : ''}`;
-    (mm === m ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? ` · ${num(l.bags)} BAGS × ${peso(num(l.rate) || WH_RATE())}` : ''}`]);
+    (mm === M ? cur : past).push([lbl, a, 'Waste', `WASTE HAULING (${fmtMonth(mm).replace(/^(\w{3})\w*/, '$1').toUpperCase()})${l && num(l.bags) ? ` · ${num(l.bags)} BAGS × ${peso(num(l.rate) || WH_RATE())}` : ''}`]);
   }
   const sum = a => r2(a.reduce((x, r) => x + r[1], 0));
   return { cur, past, curTotal: sum(cur), pastTotal: sum(past), by: k => sum(cur.filter(r => r[2] === k)) };
@@ -2371,15 +2376,33 @@ async function chargePaySave(){
   } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
 }
 async function chargeUnpay(id){ const c = DB.Charges.find(x => x.id === id); try { await save('Charges', { ...c, status: c.sent_at ? 'Sent' : 'Unpaid', paid_date: '', paid_amount: '' }); closeForm(); render(); } catch(e){ toast(e.message); } }
+// a month's rent & CUSA must be on the books before the next SOA, so a payment for November isn't counted toward December
+const prevBillsDone = new Set();
+async function ensurePrevBills(P){
+  const pm = monthsBack(P, 1);
+  if (pm < '2026-11' || prevBillsDone.has(P)) return false;
+  prevBillsDone.add(P);
+  const rows = soaList().filter(t => !DB.Bills.some(b => b.tenant_id === t.id && b.period === pm)).map(t => {
+    const c = computeBill(t, pm, {});
+    return { tenant_id: t.id, period: pm, bill_date: dayOf(pm, 1), due_date: num(t.due_day) ? dayOf(pm, t.due_day) : dayOf(pm, set('due_day')),
+      rent: c.rent, rent_vat: c.rent_vat, cusa: c.cusa, water_amt: 0, elec_amt: 0, waste: 0, other_amt: 0, penalty: c.penalty, ewt: c.ewt, total: c.total,
+      util_thru: utilThruDefault(pm), status: 'Draft', notes: 'Added automatically so payments land on the right month' };
+  }).filter(r => num(r.total));
+  if (!rows.length) return false;
+  try { await saveMany('Bills', rows); return true; } catch(e){ console.error('prev bills failed', e); return false; }
+}
 function rBilling(){
-  const per = $('f-bill-period'); if (!per.value) per.value = thisMonth();
+  // from the 25th on, the SOA is for next month's rent & CUSA (due on the 1st)
+  const per = $('f-bill-period'); if (!per.value) per.value = +today().slice(8) >= 25 ? nextMonthOf(thisMonth()) : thisMonth();
   const P = per.value, ts = soaList();
+  if (!prevBillsDone.has(P)) { ensurePrevBills(P).then(ch => { if (ch && tab === 'billing') rBilling(); }); }
   const existing = DB.Bills.filter(b => b.period === P);
   if ($('r-bill-date').dataset.p !== P) {
     $('r-bill-date').dataset.p = P;
     const any = existing[0];
-    $('r-bill-date').value = any?.bill_date || (P === thisMonth() ? today() : dayOf(P, set('bill_day')));
+    $('r-bill-date').value = any?.bill_date || (P >= thisMonth() ? today() : dayOf(P, set('bill_day')));
     $('r-due-date').value = any?.due_date || (() => { const d = dayOf(P, set('due_day')); return d < $('r-bill-date').value ? addDays($('r-bill-date').value, 3) : d; })();
+    $('r-util-thru').value = any?.util_thru || utilThruDefault(P);
     grid = {};
     ts.forEach(t => { grid[t.id] = {}; });
   }
@@ -2389,11 +2412,15 @@ function rBilling(){
   let tot = 0;
   const rows = ts.map(t => {
     const g = grid[t.id] || (grid[t.id] = {});
-    const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P);
+    const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value);
     const sm = soaSummary(t.id, P, $('r-bill-date').value);
     // payments go to this month's rent, then CUSA, then the past due — paid lines show as Paid
-    let left = r2(num(sm.received) + c.ewt); const take = v => { const p = Math.min(left, v); left = r2(left - p); return r2(v - p); };
-    const rentLeft = take(r2(c.rent + c.rent_vat)), cusaLeft = take(c.cusa), openLeft = take(Math.max(0, sm.opening));
+    const bucket = { rent: r2(c.rent + c.rent_vat), cusa: c.cusa, open: Math.max(0, sm.opening) };
+    const pay = (amt, keys) => { keys.forEach(k => { const p = Math.min(amt, bucket[k]); bucket[k] = r2(bucket[k] - p); amt = r2(amt - p); }); return amt; };
+    let left = 0;
+    sm.since.forEach(p => { left = r2(left + pay(num(p.amount), String(p.date).slice(0, 7) >= P ? ['rent', 'cusa', 'open'] : ['open', 'rent', 'cusa'])); });
+    left = r2(left + pay(c.ewt, ['rent', 'cusa', 'open']));
+    const rentLeft = bucket.rent, cusaLeft = bucket.cusa, openLeft = bucket.open;
     const pd = r2(openLeft + u.pastTotal), due = r2(pd + rentLeft + cusaLeft + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
     const b = existing.find(x => x.tenant_id === t.id);
@@ -2416,7 +2443,7 @@ function rBilling(){
 }
 function updateBillRow(tid){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value;
-  const due = t => { const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P); return r2(soaSummary(t.id, P, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
+  const due = t => { const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value); return r2(soaSummary(t.id, P, bd).unpaid + u.pastTotal + c.total + u.curTotal); };   // same total as the SOA
   { const d = due(tn(tid)); $('tot-' + tid).textContent = d > 0 ? peso(d) : d < 0 ? peso(-d) + ' credit' : 'Paid'; }
   $('bill-sum').textContent = peso(soaList().reduce((x, t) => x + due(t), 0));
   const b = DB.Bills.find(x => x.tenant_id === tid && x.period === P), c = computeBill(tn(tid), P, inputsFor(tid));
@@ -2447,7 +2474,7 @@ async function saveBills(silent, only){
       rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
       water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
       elec_prev:g.elec_prev??'', elec_curr:g.elec_curr??'', elec_rate:c.elec_rate, elec_amt:c.elec_amt,
-      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total,
+      waste:c.waste, other_label:g.other_label||'', other_amt:c.other_amt, penalty:c.penalty, ewt:c.ewt, total:c.total, util_thru: $('r-util-thru').value,
       status: b && b.status === 'Sent' && Math.abs(num(b.total) - c.total) < 0.005 ? 'Sent' : 'Draft' };
     return row;
   });
@@ -2473,7 +2500,7 @@ function soaData(bill){
   if (num(bill.other_amt)) lines.push([bill.other_label || 'Other charges', bill.other_amt]);
   if (num(bill.penalty)) lines.push([`Penalty ${num(set('penalty_pct'))}% on unpaid balance`, bill.penalty]);
   if (num(bill.ewt)) lines.push([`Less: ${num(t.ewt_pct)}% EWT on rent (submit BIR Form 2307)`, -num(bill.ewt)]);
-  const u = t.id ? soaUtil(t, bill.period) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
+  const u = t.id ? soaUtil(t, bill.period, bill.util_thru) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
   u.cur.forEach(([l, v]) => lines.push([l, v]));
   const curTotal = r2(num(bill.total) - legacyUtil + u.curTotal);
   const amountDue = r2(s.unpaid + curTotal + u.pastTotal);
@@ -2503,12 +2530,15 @@ function soaRows(bill){
   if (num(bill.other_amt)) led.push([(bill.other_label || 'OTHER CHARGES').toUpperCase(), num(bill.other_amt), 'OTHER', 'cur']);
   if (num(bill.penalty)) led.push(['PENALTY', num(bill.penalty), 'PENALTY', 'cur']);
   if (num(bill.ewt)) led.push([`LESS: ${num(t.ewt_pct)}% EWT ON RENT (BIR 2307)`, -num(bill.ewt), '', 'cur']);
-  let left = r2(num(s.received) + led.filter(r => r[1] < 0).reduce((x, r) => x - r[1], 0));   // EWT credit works like a payment
-  const order = [...led.filter(r => r[3] === 'cur' && r[1] > 0), ...led.filter(r => r[3] === 'past')];
-  order.forEach(r => { const pay = Math.min(left, r[1]); r.paid = pay; left = r2(left - pay); });
+  const curFirst = led.filter(r => r[3] === 'cur' && r[1] > 0), pastFirst = led.filter(r => r[3] === 'past');
+  const apply = (amt, order) => { order.forEach(r => { const pay = Math.min(amt, r[1] - (r.paid || 0)); if (pay > 0) { r.paid = r2((r.paid || 0) + pay); amt = r2(amt - pay); } }); return amt; };
+  let left = 0;
+  s.since.forEach(p => { left = r2(left + apply(num(p.amount), String(p.date).slice(0, 7) >= bill.period ? [...curFirst, ...pastFirst] : [...pastFirst, ...curFirst])); });
+  left = r2(left + apply(led.filter(r => r[1] < 0).reduce((x, r) => x - r[1], 0), curFirst));   // EWT credit goes to this month's rent
   const rows = [], scope = new Set();
   led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add('PAST DUE'); } });
-  u.past.forEach(r => { rows.push([`PAST DUE – ${r[3]}`, r[1]]); scope.add('PAST DUE'); });
+  const prevM = (() => { const [y, mo] = bill.period.split('-').map(Number); const d = new Date(y, mo - 2, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); })();
+  u.past.forEach(r => { const recent = false; rows.push([recent ? r[3] : `PAST DUE – ${r[3]}`, r[1]]); scope.add(recent ? (r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()) : 'PAST DUE'); });
   led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); if (r[2]) scope.add(r[2]); } });
   u.cur.forEach(r => { rows.push([r[3], r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
   if (left > 0.004) rows.push(['LESS: ADVANCE PAYMENT / CREDIT', -left]);
@@ -2974,6 +3004,7 @@ document.querySelectorAll('.nav').forEach(b => b.onclick = () => showTab(b.datas
 ['f-pb-month','f-pb-cat'].forEach(id => $(id).addEventListener('change', render));
 $('f-el-period').addEventListener('change', () => { $('f-el-period').dataset.p = ''; render(); });
 $('f-wh-month').addEventListener('change', render);
+$('r-util-thru').addEventListener('change', render); $('r-bill-date').addEventListener('change', render);
 $('f-ds-month').addEventListener('change', render); $('f-ds-show').addEventListener('change', render);
 $('f-bill-period').addEventListener('change', () => { $('r-bill-date').dataset.p = ''; render(); });
 ['r-elec','r-water','r-bill-date'].forEach(id => $(id).addEventListener('change', rBilling));
