@@ -931,6 +931,20 @@ async function whNovIsOct(){
     S.mig_wh_nov_is_oct_2026 = '1';
   } catch(e){ console.error('wh nov→oct failed', e); }
 }
+// Meralco history Oct 2025 – Oct 2026: bill and building (BVI) share; Bedoo included in BVI until Jul 2026
+async function seedMeralcoHistory(){
+  if (DEMO || S.mig_el_hist_2026_10) return;
+  try {
+    const H = [['2026-10',70830.34,10038.14,0],['2026-09',60508.50,4615.27,0],['2026-08',54564.85,5791.49,0],['2026-07',58570.95,9202.73,2609.50],['2026-06',62044.93,13740.35,2330.30],
+      ['2026-05',56313.27,9989.35,2844.86],['2026-04',46174.73,5542.08,2778.77],['2026-03',45330.72,7555.53,2361.20],['2026-02',40832.32,14452.10,2482.75],['2026-01',33302.04,5156.40,2255.28],
+      ['2025-12',41325.35,3769.25,2824.32],['2025-11','',10495.41,2283.11],['2025-10',35261.92,11974.05,2481.84]];
+    const rows = H.map(([m, bill, bvi, bedoo]) => { const ex = DB.ElecPeriods.find(p => p.id === m) || {};
+      return { ...ex, id: m, meralco_total: ex.meralco_total || bill, bvi_share: bvi, bvi_incl: bedoo || '', bvi_incl_label: bedoo ? 'Bedoo' : '', notes: ex.notes || (bill === '' ? 'Meralco history · bill amount to check' : 'Meralco history') }; });
+    await saveMany('ElecPeriods', rows);
+    await save('Settings', { id:'mig_el_hist_2026_10', value: new Date().toISOString() });
+    S.mig_el_hist_2026_10 = '1';
+  } catch(e){ console.error('meralco history failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1058,6 +1072,7 @@ async function reload(){
     await wasteFees();
     await whStartOct2025();
     await whNovIsOct();
+    await seedMeralcoHistory();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1430,7 +1445,21 @@ function pwSplit(ps){
     ${rows.map(([k, v], i) => `<tr${i === rows.length - 1 ? ' style="background:#FBF3E4"' : ''}><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>${i === rows.length - 1 ? '<b>' + esc(k) + '</b>' : esc(k)}</td><td class="num">${i === rows.length - 1 ? '<b>' + f(v) + '</b>' : f(v)}</td><td class="num">${i === rows.length - 1 ? '<b>' + pc(v) + '</b>' : pc(v)}</td></tr>`).join('')}
     <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${cum.toFixed(1)} cu.m · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
 }
+// Meralco: bill, what tenants pay, what the building (BVI) shoulders
+function elHistoryMeralco(){
+  const ps = utilPeriods().filter(p => num(p.meralco_total) || num(p.bvi_share)).sort((a,b) => b.m.localeCompare(a.m));
+  if (!ps.length) { $('el-hist').innerHTML = ''; return; }
+  const f = v => peso(v).slice(1), ok = ps.filter(p => num(p.meralco_total) && p.bvi_share !== '' && p.bvi_share != null);
+  const tb = ok.reduce((x,p) => x + num(p.meralco_total), 0), tv = ok.reduce((x,p) => x + num(p.bvi_share), 0), ti = ok.reduce((x,p) => x + num(p.bvi_incl), 0);
+  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">Meralco history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Meralco bill</th><th class="num">Tenants pay</th><th class="num">Building (BVI)</th><th class="num">BVI share</th></tr>
+    ${ps.map(p => { const b = num(p.meralco_total), hasV = p.bvi_share !== '' && p.bvi_share != null, v = num(p.bvi_share);
+      return `<tr><td>${fmtMonth(p.m)}</td><td class="num">${b ? f(b) : '<span style="color:var(--red)">⚠ check amount</span>'}</td><td class="num">${b && hasV ? f(b - v) : '—'}</td>
+        <td class="num"><b>${hasV ? f(v) : '—'}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${ok.length} months</span></td><td class="num"><b>${f(tb)}</b></td><td class="num"><b>${f(tb - tv)}</b></td><td class="num"><b>${f(tv)}</b>${ti ? `<div class="muted" style="font-size:11px">incl. Bedoo ${f(ti)}</div>` : ''}</td><td class="num"><b>${tb ? (tv / tb * 100).toFixed(2) + '%' : ''}</b></td></tr>
+    <tr><td class="muted">Average / month</td><td class="num">${ok.length ? f(tb / ok.length) : ''}</td><td class="num">${ok.length ? f((tb - tv) / ok.length) : ''}</td><td class="num"><b>${ok.length ? f(tv / ok.length) : ''}</b></td><td></td></tr></table></div>`;
+}
 function elHistory(){
+  if (UTIL === 'Meralco') return elHistoryMeralco();
   const ps = utilPeriods().filter(p => num(p.meralco_total)).sort((a,b) => b.m.localeCompare(a.m));
   if (!ps.length) { $('el-hist').innerHTML = ''; return; }
   const tq = ps.reduce((x,p) => x + num(p.meralco_kwh), 0), tp = ps.reduce((x,p) => x + num(p.meralco_total), 0);

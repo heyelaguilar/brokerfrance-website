@@ -16,7 +16,7 @@ const SCHEMA = {
   Meters:      ['id','utility','unit','label','tenant_id','payer','type','sort','active','notes','updated'],
   ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','needs_reading','paid_date','paid_amount','method','paid_to','reference','proof_url','notes','updated'],
   WasteLog: ['id','month','tenant_id','bags','rate','amount','notes','updated'],
-  ElecPeriods: ['id','billing_period','reading_period','billing_date','due_date','meralco_kwh','rate','meralco_total','common_amount','bill_url','notes','updated'],
+  ElecPeriods: ['id','billing_period','reading_period','billing_date','due_date','meralco_kwh','rate','meralco_total','common_amount','bvi_share','bvi_incl','bvi_incl_label','bill_url','notes','updated'],
   Settings: ['id','value','updated'],
 };
 const TABS = Object.keys(SCHEMA);
