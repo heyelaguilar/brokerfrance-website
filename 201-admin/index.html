@@ -2079,7 +2079,7 @@ function chargeBill(id){ const c = DB.Charges.find(x => x.id === id); return c ?
 function rCharges(){
   const P = $('f-bill-period').value, list = DB.Charges.filter(c => String(c.bill_date).slice(0, 7) === P || c.status !== 'Paid').sort((a, b) => String(b.bill_date).localeCompare(a.bill_date));
   $('chg-wrap').innerHTML = list.length ? `<table class="condensed el-view"><tr><th>Tenant</th><th>Description</th><th class="num">Amount</th><th>Bill date</th><th>Due</th><th>Payment</th><th>Proof</th><th></th></tr>
-    ${list.map(c => `<tr><td>${esc(tLabel(tn(c.tenant_id) || {}))}</td><td>${esc(c.description)}</td><td class="num">${peso(num(c.amount)).slice(1)}</td><td>${fmtDate(c.bill_date)}</td><td>${fmtDate(c.due_date)}</td>
+    ${list.map(c => `<tr><td><b>${esc((tn(c.tenant_id) || {}).trade_name || (tn(c.tenant_id) || {}).tenant_name || '')}</b></td><td>${esc(c.description)}</td><td class="num">${peso(num(c.amount)).slice(1)}</td><td>${fmtDate(c.bill_date)}</td><td>${fmtDate(c.due_date)}</td>
       <td>${c.status === 'Paid' ? `<a href="#" class="paid" style="text-decoration:none" onclick="chargePay('${c.id}');return false">Paid ${fmtDate(c.paid_date)}</a>` : `<button class="btn sm" onclick="chargePay('${c.id}')">Mark paid</button>${c.sent_at ? `<div class="muted" style="font-size:11px">sent ${fmtDate(c.sent_at)}</div>` : ''}`}</td>
       <td>${proofThumb(c.proof_url)}</td>
       <td><div class="row-actions"><button class="btn sm" onclick="openSOA('${c.id}')">Generate SOA</button><button class="btn ghost sm" onclick="chargeForm('${c.id}')">Edit</button></div></td></tr>`).join('')}</table>`
@@ -2090,7 +2090,7 @@ function chargeForm(id){
   editing = { chg: id || '' };
   $('modal').classList.remove('wide'); $('m-body').className = 'body';
   $('m-title').textContent = id ? 'Edit separate SOA' : 'Separate SOA';
-  $('m-body').innerHTML = `<div class="fld wide"><label>Tenant</label><select id="cg-t">${tenantOpts(c.tenant_id || '', 'Choose tenant')}</select></div>
+  $('m-body').innerHTML = `<div class="fld wide"><label>Tenant</label><select id="cg-t"><option value="">Choose tenant</option>${activeTenants().map(t => `<option value="${t.id}" ${t.id === c.tenant_id ? 'selected' : ''}>${esc(t.trade_name || t.tenant_name)}${t.unit ? ' · ' + esc(t.unit) : ''}</option>`).join('')}</select></div>
     <div class="fld wide"><label>Description</label><input id="cg-d" value="${esc(c.description || '')}" placeholder="e.g. Refrigerator (2/2)"></div>
     <div class="fld"><label>Amount (₱)</label><input id="cg-a" type="number" step="any" value="${esc(c.amount || '')}"></div>
     <div class="fld"><label>Billing date</label><input id="cg-b" type="date" value="${esc(c.bill_date || '')}"></div>
