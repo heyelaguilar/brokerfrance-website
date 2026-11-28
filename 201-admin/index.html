@@ -2482,8 +2482,7 @@ async function saveBills(silent, only){
   const rows = soaList().filter(t => !only || t.id === only).map(t => {
     const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
-    let tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
-    if (tDue < bd) tDue = dd >= bd ? dd : addDays(bd, 6);   // tenant's usual day already passed → use the grid's due date, else bill date + 6 days
+    const tDue = dd;   // the due date set on the SOA page, for every tenant
     const row = { ...(b||{}), tenant_id:t.id, period:P, bill_date:bd, due_date:tDue,
       rent:c.rent, rent_vat:c.rent_vat, cusa:c.cusa,
       water_prev:g.water_prev??'', water_curr:g.water_curr??'', water_rate:c.water_rate, water_amt:c.water_amt,
