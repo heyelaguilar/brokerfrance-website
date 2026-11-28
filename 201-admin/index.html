@@ -1148,6 +1148,19 @@ async function akmasArrears(){
     await save('Settings', { id:'mig_akmas_aug_oct', value: new Date().toISOString() }); S.mig_akmas_aug_oct = '1';
   } catch(e){ console.error('akmas arrears failed', e); }
 }
+// AKMAS: CUSA is billed two months behind (Dec SOA → Oct CUSA). Past due = Aug (opening) and Sep (Nov bill); current = Oct
+async function akmasLag(){
+  if (DEMO || S.mig_akmas_lag) return;
+  try {
+    const t = DB.Tenants.find(x => /akmas/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) {
+      await save('Tenants', { ...t, cusa_lag: 2 });
+      const ob = DB.Bills.find(b => b.tenant_id === t.id && /opening balance/i.test(b.notes || ''));
+      if (ob) await save('Bills', { ...ob, other_label: 'CUSA 150 sqm (Aug 2026)', other_amt: 7500, total: 7500, notes: 'Opening balance — CUSA arrears, Aug 2026' });
+    }
+    await save('Settings', { id:'mig_akmas_lag', value: new Date().toISOString() }); S.mig_akmas_lag = '1';
+  } catch(e){ console.error('akmas lag failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1260,6 +1273,7 @@ async function reload(){
     await beautifulLifeArrears();
     await coffeeStoryArrears();
     await akmasArrears();
+    await akmasLag();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
@@ -2603,7 +2617,7 @@ function soaRows(bill){
       const rem = r2(num(b.total) - pay); if (rem <= 0.004) return;
       let what;
       if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} ${m[2].replace(/\s*[–-]\s*/g, '-')}` : b.other_label.split(',')[0]; }
-      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` ${MON(b.period)}`;
+      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` ${MON(num(t.cusa_lag) && !num(b.rent) ? monthsBack(b.period, num(t.cusa_lag)) : b.period)}`;
       items.push([`PAST DUE (${String(what).toUpperCase().trim()})${pay ? ' – BALANCE' : ''}`, rem]);
     });
     const listed = r2(items.reduce((x, r) => x + r[1], 0));
@@ -2612,7 +2626,8 @@ function soaRows(bill){
   }
   if (num(bill.rent)) led.push([rm === 1 ? `RENT (${mo})` : `RENT – ${String(t.rent_frequency).toUpperCase()} (${rm} MONTHS FROM ${mo})`, num(bill.rent), 'RENT', 'cur']);
   if (num(bill.rent_vat)) led.push([`VAT ${num(set('vat_pct'))}% ON RENT`, num(bill.rent_vat), 'RENT', 'cur']);
-  if (num(bill.cusa)) led.push([`CUSA (${mo})`, num(bill.cusa), 'CUSA', 'cur']);
+  const cusaMo = num(t.cusa_lag) ? MON(monthsBack(bill.period, num(t.cusa_lag))) : mo;
+  if (num(bill.cusa)) led.push([`CUSA (${cusaMo})`, num(bill.cusa), 'CUSA', 'cur']);
   if (num(bill.other_amt)) led.push([(bill.other_label || 'OTHER CHARGES').toUpperCase(), num(bill.other_amt), 'OTHER', 'cur']);
   if (num(bill.penalty)) led.push(['PENALTY', num(bill.penalty), 'PENALTY', 'cur']);
   if (num(bill.ewt)) led.push([`LESS: ${num(t.ewt_pct)}% EWT ON RENT (BIR 2307)`, -num(bill.ewt), '', 'cur']);
