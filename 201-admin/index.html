@@ -3070,17 +3070,93 @@ async function soaPaySave(){
   try {
     const proof_url = await uploadProof(proofPicked), date = $('sp-d').value || today(), method = $('sp-m').value, to = $('sp-to').value, reference = $('sp-ref').value.trim();
     btn.textContent = 'Saving…';
-    const base = { tenant_id: tid, date, method, bank: to, reference, proof_url };
+    const ar = arNext(date), base = { tenant_id: tid, date, method, bank: to, reference, proof_url, or_no: ar };
     const rent = sel.filter(x => x.pay.type === 'rent');
     if (rent.length) await save('Payments', { ...base, amount: r2(rent.reduce((x, y) => x + y.a, 0)), applies_to: 'Rent & CUSA', notes: `${fmtMonth(b.period)} SOA: ${rent.map(x => x.d).join('; ')}` });
-    for (const x of sel.filter(x => x.pay.type === 'elec')) { const e = DB.ElecBills.find(y => y.id === x.pay.id); if (e) await save('ElecBills', { ...e, status: 'Paid', paid_date: date, paid_amount: num(e.amount_override || e.amount), method, reference, proof_url, paid_to: to }); }
+    for (const x of sel.filter(x => x.pay.type === 'elec')) { const e = DB.ElecBills.find(y => y.id === x.pay.id); if (e) { await save('ElecBills', { ...e, status: 'Paid', paid_date: date, paid_amount: num(e.amount_override || e.amount), method, reference, proof_url, paid_to: to });
+      await save('Payments', { ...base, amount: x.a, applies_to: 'Utilities', notes: x.d }); } }
     for (const x of sel.filter(x => x.pay.type === 'waste')) await save('Payments', { ...base, amount: x.a, applies_to: 'Utilities', notes: 'Waste hauling ' + x.pay.month });
     for (const x of sel.filter(x => x.pay.type === 'pd')) await save('Payments', { ...base, amount: x.a, applies_to: 'PD:' + x.pay.desc, notes: 'Past due: ' + x.pay.desc });
-    for (const x of sel.filter(x => x.pay.type === 'charge')) { const c = DB.Charges.find(y => y.id === x.pay.id); if (c) await save('Charges', { ...c, status: 'Paid', paid_date: date, paid_amount: x.a, method, paid_to: to, reference, proof_url }); }
-    toast(`Marked paid: ${sel.length} item${sel.length > 1 ? 's' : ''}`); render();
-    if (!soaPayCtx.fromTable && billish(id) && soaRows(billish(id)).rows.some(r => r[1] > 0)) openSOA(id); else closeForm();
+    for (const x of sel.filter(x => x.pay.type === 'charge')) { const c = DB.Charges.find(y => y.id === x.pay.id); if (c) { await save('Charges', { ...c, status: 'Paid', paid_date: date, paid_amount: x.a, method, paid_to: to, reference, proof_url });
+      await save('Payments', { ...base, amount: x.a, applies_to: 'Other', notes: x.d }); } }
+    toast(`Marked paid: ${sel.length} item${sel.length > 1 ? 's' : ''} · ${ar}`); render();
+    openAR(ar);   // straight to the acknowledgement receipt
   } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
 }
+
+// ── Acknowledgement Receipt: one per Mark paid (all items share the AR no. in the payment's OR no. field) ──
+function arNext(date){
+  const pre = `AR-${String(date || today()).slice(0, 4)}-`;
+  const n = DB.Payments.map(p => String(p.or_no || '')).filter(x => x.startsWith(pre)).map(x => parseInt(x.slice(pre.length), 10) || 0);
+  return pre + String((n.length ? Math.max(...n) : 0) + 1).padStart(4, '0');
+}
+const arPays = key => DB.Payments.filter(p => key.startsWith('AR-') ? p.or_no === key : p.id === key);
+function pesoWords(v){
+  const ones = ['','ONE','TWO','THREE','FOUR','FIVE','SIX','SEVEN','EIGHT','NINE','TEN','ELEVEN','TWELVE','THIRTEEN','FOURTEEN','FIFTEEN','SIXTEEN','SEVENTEEN','EIGHTEEN','NINETEEN'];
+  const tens = ['','','TWENTY','THIRTY','FORTY','FIFTY','SIXTY','SEVENTY','EIGHTY','NINETY'];
+  const h = n => { let o = ''; if (n >= 100) { o += ones[Math.floor(n / 100)] + ' HUNDRED '; n %= 100; } if (n >= 20) { o += tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '') + ' '; } else if (n) o += ones[n] + ' '; return o; };
+  const w = n => { if (!n) return 'ZERO '; let o = ''; [[1e9,'BILLION'],[1e6,'MILLION'],[1e3,'THOUSAND']].forEach(([d, l]) => { if (n >= d) { o += h(Math.floor(n / d)) + l + ' '; n %= d; } }); return o + h(n); };
+  const p = Math.floor(r2(v)), c = Math.round((r2(v) - p) * 100);
+  return (w(p) + 'PESOS' + (c ? ' AND ' + String(c).padStart(2, '0') + '/100' : '') + ' ONLY').replace(/\s+/g, ' ').trim();
+}
+function arHTML(key){
+  const P = arPays(key); if (!P.length) return '';
+  const p0 = P[0], t = tn(p0.tenant_id) || {}, total = r2(P.reduce((x, p) => x + num(p.amount), 0));
+  const lines = []; P.forEach(p => { const items = String(p.notes || '').replace(/^.*?SOA:\s*/, '').split(/\s*;\s*/).filter(Boolean);
+    items.forEach((d, i) => { const m = /^Waste hauling (\d{4}-\d{2})$/i.exec(d); if (m) items[i] = `WASTE HAULING (${MON(m[1])})`; });
+    if (items.length > 1 && p.applies_to === 'Rent & CUSA') items.forEach((d, i) => lines.push([d, i ? null : num(p.amount), items.length])); else lines.push([items[0] || p.applies_to || 'PAYMENT', num(p.amount), 1]); });
+  const c = 'border:1px solid #111;padding:6px 9px', sh = 'background:#e8e8e8';
+  const mode = [p0.method, p0.bank, p0.reference ? 'Ref ' + p0.reference : ''].filter(Boolean).join(', ');
+  const rows = lines.map(([d, a, span]) => `<tr><td colspan="3" style="${c}">${esc(String(d).replace(/^PAST DUE:?\s*/i, 'PAST DUE: ').replace(/\s*[–—]\s*/g, ', ').replace(/\s*·\s*/g, ', '))}</td>${a === null ? '' : `<td style="${c};text-align:right;vertical-align:middle" rowspan="${span}">${peso(a)}</td>`}</tr>`).join('');
+  return `<div class="soa-doc" style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#111;max-width:640px;margin:0 auto;padding:28px 40px;background:#fff">
+  <img src="${SOA_ASSET('brookland-logo.png')}" alt="Brookland Ventures Incorporated" style="height:58px;margin:0 0 18px 6px">
+  <table style="width:100%;border-collapse:collapse">
+    <tr><td colspan="2" rowspan="2" style="${c};${sh};font-weight:700;font-size:13px;width:55%">ACKNOWLEDGEMENT RECEIPT</td><td colspan="2" style="${c}"><span>AR NO.</span><span style="float:right;font-weight:700">${esc(key.startsWith('AR-') ? key : '—')}</span></td></tr>
+    <tr><td colspan="2" style="${c}"><span>DATE</span><span style="float:right;font-weight:700">${dmy(p0.date)}</span></td></tr>
+    <tr><td colspan="4" style="${c};padding:8px 9px"><div style="color:#6e6e6e">RECEIVED FROM</div><b>${esc(t.tenant_name || t.trade_name || '')}</b></td></tr>
+    <tr><td colspan="4" style="${c};padding:8px 9px"><div style="color:#6e6e6e">THE SUM OF</div><b>${esc(pesoWords(total))}</b> (${peso(total)})</td></tr>
+    <tr><td colspan="4" style="${c};padding:8px 9px"><div style="color:#6e6e6e">MODE OF PAYMENT</div><b>${esc(mode)}</b></td></tr>
+    <tr><td colspan="4" style="${c};${sh};text-align:center;font-weight:700">PAYMENT FOR</td></tr>
+    <tr><td colspan="3" style="${c};text-align:center;font-weight:700">DESCRIPTION</td><td style="${c};text-align:center;font-weight:700;width:26%">AMOUNT</td></tr>
+    ${rows}
+    <tr><td colspan="3" style="${c};${sh};text-align:right;font-weight:700">TOTAL RECEIVED</td><td style="${c};${sh};text-align:right;font-weight:700">${peso(total)}</td></tr>
+    <tr><td colspan="2" style="${c};vertical-align:top;height:92px">RECEIVED BY:<br><img src="${SOA_ASSET('sig-prepared.png')}" alt="" style="height:44px;margin:6px 0 2px"><br><b>${esc(set('soa_prepared_by') || 'ELLA AGUILAR')}</b></td>
+      <td colspan="2" style="${c};vertical-align:top">CERTIFIED CORRECT:<br><img src="${SOA_ASSET('sig-certified.png')}" alt="" style="height:44px;margin:6px 0 2px"><br><b>${esc(set('soa_certified_by') || 'FRANCE GONZALES')}</b></td></tr>
+  </table>
+  <div style="margin-top:10px;color:#555;font-size:11px">This acknowledges receipt of payment. Not valid as an Official Receipt.</div></div>`;
+}
+const arName = key => { const P = arPays(key), t = tn(P[0]?.tenant_id) || {}, clean = x => String(x || '').replace(/[\\/:*?"<>|]/g, '-').trim();
+  return ['AR', clean(t.tenant_name || t.trade_name), key.startsWith('AR-') ? key : '', P[0] ? fmtMonth(String(P[0].date).slice(0, 7)) : ''].filter(Boolean).join(' - '); };
+async function openAR(key){
+  if (!arPays(key).length) return toast('No payment found for this receipt');
+  if (!key.startsWith('AR-')) { const p = arPays(key)[0];   // first AR for an older payment: give it the next number
+    if (!p.or_no) { const ar = arNext(p.date); try { await save('Payments', { ...p, or_no: ar }); key = ar; render(); } catch(e){ return toast('Save failed: ' + e.message); } }
+    else if (String(p.or_no).startsWith('AR-')) key = p.or_no; }
+  editing = null; $('modal').classList.add('wide'); $('m-body').className = 'body one';
+  $('m-title').textContent = `Acknowledgement Receipt · ${key}`;
+  $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${arHTML(key)}</div></div>`;
+  const k = key.replace(/'/g, "\\'");
+  $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="arPDF('${k}', this)">⬇ PDF</button><button class="btn ghost" onclick="arJPG('${k}', this)">⬇ JPG</button><button class="btn ghost" onclick="arCopy('${k}', this)">Copy image</button><button class="btn ghost" onclick="arPrint('${k}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button>`;
+  $('ovl').classList.add('on');
+}
+async function arCanvas(key){
+  const h2c = await loadH2C(), box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;min-height:1123px;padding:0;background:#fff';
+  box.innerHTML = arHTML(key); document.body.appendChild(box);
+  const d = box.querySelector('.soa-doc'); if (d) { d.style.maxWidth = 'none'; d.style.padding = '60px 94px'; }
+  await Promise.all([...box.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
+  try { return await h2c(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }); } finally { box.remove(); }
+}
+async function arJPG(key, btn){ const l = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
+  try { const c = await arCanvas(key), a = document.createElement('a'); a.href = c.toDataURL('image/jpeg', 0.95); a.download = arName(key) + '.jpg'; a.click(); } catch(e){ toast(e.message); } finally { btn.disabled = false; btn.textContent = l; } }
+async function arCopy(key, btn){ const l = btn.textContent; btn.disabled = true; btn.textContent = 'Copying…';
+  try { const c = await arCanvas(key), blob = await new Promise(r => c.toBlob(r, 'image/png')); await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast('AR image copied'); } catch(e){ toast('Copy not allowed here — use ⬇ JPG instead'); } finally { btn.disabled = false; btn.textContent = l; } }
+async function arPDF(key, btn){ const l = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
+  try { const jsPDF = await loadJsPDF(), c = await arCanvas(key), doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    doc.addImage(c.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 210 * c.height / c.width); doc.save(arName(key) + '.pdf'); }
+  catch(e){ toast(e.message); } finally { btn.disabled = false; btn.textContent = l; } }
+function arPrint(key){ const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
+  w.document.write(`<html><head><title>${arName(key)}</title><style>@page{size:A4;margin:0}body{margin:0}.soa-doc{max-width:none!important;padding:22mm 25mm!important}</style></head><body>${arHTML(key)}<script>onload=()=>print()<\/script></body></html>`); w.document.close(); }
 function printSOA(id){
   const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
   w.document.write(`<html><head><title>${soaFileName(id)}</title><style>@page{size:A4;margin:0}body{margin:0}.soa-doc{max-width:none!important;padding:22mm 25mm!important}</style></head><body>${soaHTML(billish(id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
@@ -3231,7 +3307,7 @@ function rPayments(){
   const total = list.reduce((s,p)=>s+num(p.amount),0);
   const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
   $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
-  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td>${esc(p.or_no)||'<span class="muted">—</span>'}</td><td>${p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '' : proofThumb('', `openForm('Payments','${p.id}')`))}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>AR / OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td onclick="event.stopPropagation()" style="white-space:nowrap"><button class="btn sm ghost" onclick="openAR('${p.or_no && String(p.or_no).startsWith('AR-') ? p.or_no : p.id}')">${p.or_no ? esc(p.or_no) : 'Generate AR'}</button></td><td>${p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '' : proofThumb('', `openForm('Payments','${p.id}')`))}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
     : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
 }
 function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
