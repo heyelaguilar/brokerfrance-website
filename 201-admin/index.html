@@ -260,6 +260,7 @@ table.condensed .muted{font-size:11px}
         <div class="card box"><h3 id="pd-title">Past due</h3><div class="tbl"><table id="pd-tbl" class="condensed"></table></div></div>
         <div class="card box"><h3 id="pr-title">Payments received</h3><div class="tbl"><table id="pr-tbl" class="condensed"></table></div></div>
       </div>
+      <div class="card box" style="margin-bottom:16px"><h3 id="bvi-title">Utilities shouldered by BVI</h3><div class="tbl"><table id="bvi-tbl" class="condensed"></table></div></div>
       <div class="card box"><h3>Needs attention</h3><div id="alerts"></div></div>
       <div hidden><span id="pdc-note"></span><table id="pdc-sum"></table><span id="bt-note"></span><table id="bt-sum"></table><span id="col-title"></span><span id="col-note"></span><table id="col-tbl"></table><table id="bal-tbl"></table></div>
     </section>
@@ -1235,6 +1236,7 @@ function showTab(t){
 }
 
 function rOverview(){
+  try { rBvi(); } catch(e){ console.error(e); }
   if (!$('f-ov-month').value) $('f-ov-month').value = thisMonth();
   const m = $('f-ov-month').value;
   rCollectibles(m);
@@ -1474,6 +1476,37 @@ function elCalc(mt, per, rate){
   return { b, prev, curr, usage, ov, amount };
 }
 // Who shoulders the water bill: tenant charges spread over the months they cover (notes "Sep 2025 – Nov 2026"), rest is the building's
+// what the building (BVI) shoulders per month, per utility
+function pwBviMonth(m){
+  const P = DB.ElecPeriods.find(p => p.id === 'PW-' + m); if (!P || !num(P.meralco_total)) return null;
+  const MO = 'janfebmaraprmayjunjulaugsepoctnovdec', ym = (mon, y) => y + '-' + String(MO.indexOf(mon.slice(0,3).toLowerCase()) / 3 + 1).padStart(2, '0');
+  const meters = DB.Meters.filter(x => x.utility === 'Primewater'); let ten = 0;
+  DB.ElecBills.filter(b => meters.some(x => x.id === b.meter_id)).forEach(b => {
+    const amt = num(b.amount_override || b.amount); if (!amt) return;
+    const r = /(\w{3})\w*\s+(\d{4})\s*[–-]\s*(\w{3})\w*\s+(\d{4})/.exec(b.notes || '');
+    let cov = [b.period];
+    if (r) { cov = []; let [y, mo] = ym(r[1], r[2]).split('-').map(Number); const end = ym(r[3], r[4]); for (let k = 0; k < 240; k++) { const c = y + '-' + String(mo).padStart(2,'0'); cov.push(c); if (c >= end) break; if (++mo > 12) { mo = 1; y++; } } }
+    if (cov.includes(m)) ten += amt / cov.length;
+  });
+  return r2(num(P.meralco_total) - ten);
+}
+function elBviMonth(m){ const P = DB.ElecPeriods.find(p => p.id === m); return P && P.bvi_share !== '' && P.bvi_share != null ? num(P.bvi_share) : null; }
+function whBviMonth(m){ const b = DB.Payables.find(x => x.id === 'PB-WH-' + m), a = b ? num(b.paid_amount || b.amount) : 0; return a ? r2(a - whChargedMonth(m)) : null; }
+function rBvi(){
+  const y = thisMonth().slice(0, 4), cur = thisMonth(), ms = [];
+  for (let m = y + '-01'; m <= cur; m = nextMonthOf(m)) ms.push(m);
+  const rows = ms.map(m => [m, elBviMonth(m), pwBviMonth(m), whBviMonth(m)]).filter(r => r.slice(1).some(v => v != null)).reverse();
+  $('bvi-title').innerHTML = `Utilities shouldered by BVI · ${y}`;
+  if (!rows.length) { $('bvi-tbl').innerHTML = '<tr><td class="muted">No utility history yet.</td></tr>'; return; }
+  const f = v => v == null ? '<span class="muted">—</span>' : v < 0 ? `<span style="color:var(--green-d)">−${peso(-v).slice(1)}</span>` : peso(v).slice(1);
+  const sum = i => rows.reduce((x, r) => x + (r[i] || 0), 0), tot = r => r.slice(1).reduce((x, v) => x + (v || 0), 0);
+  const T = sum(1) + sum(2) + sum(3);
+  $('bvi-tbl').innerHTML = `<tr><th>Month</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste hauler</th><th class="num">Total</th></tr>
+    ${rows.map(r => `<tr><td>${fmtMonth(r[0])}</td><td class="num">${f(r[1])}</td><td class="num">${f(r[2])}</td><td class="num">${f(r[3])}</td><td class="num"><b>${f(tot(r))}</b></td></tr>`).join('')}
+    <tr style="background:#FBF3E4"><td><b>Total</b> <span class="muted">${rows.length} months</span></td><td class="num"><b>${f(sum(1))}</b></td><td class="num"><b>${f(sum(2))}</b></td><td class="num"><b>${f(sum(3))}</b></td><td class="num"><b>${f(T)}</b></td></tr>
+    <tr><td class="muted">Average / month</td><td class="num">${f(sum(1) / rows.length)}</td><td class="num">${f(sum(2) / rows.length)}</td><td class="num">${f(sum(3) / rows.length)}</td><td class="num"><b>${f(T / rows.length)}</b></td></tr>
+    <tr><td colspan="5" class="muted" style="font-size:12px">— = no bill yet. Meralco includes Bedoo until Aug 2026. Waste hauler assumes tenants were charged from Oct 2025.</td></tr>`;
+}
 function pwSplit(ps){
   if (UTIL !== 'Primewater') return '';
   const sel = $('f-el-period').value || utilPeriods().map(p => p.m).sort().pop(); ps = ps.filter(p => p.m === sel);
