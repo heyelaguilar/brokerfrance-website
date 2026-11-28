@@ -1410,7 +1410,9 @@ function soaUtil(t, m, thru, withMeralco){
   const kwh = v => num(v).toLocaleString('en-PH', { maximumFractionDigits: 2 });
   DB.Meters.filter(mt => mt.tenant_id === t.id && mt.type !== 'Building').forEach(mt => {
     const u = utilOf(mt), unit = u === 'Primewater' ? 'cu.m' : 'kWh', name = u === 'Primewater' ? 'Primewater' : 'Meralco';
-    const upto = u === 'Primewater' ? M : ME;
+    const nowM = new Date().toISOString().slice(0, 7), fixed = /fixed/i.test(mt.notes || '');
+    // fixed monthly water (e.g. JED ₱500) is known ahead, so the SOA for that month already carries it
+    const upto = u === 'Primewater' ? (fixed ? [M, m < nowM ? m : nowM].sort().pop() : M) : ME;
     DB.ElecBills.filter(b => b.meter_id === mt.id && b.status !== 'Paid' && b.period <= upto && b.period >= from).forEach(b => {
       const a = num(b.amount_override || b.amount); if (!a) return;
       const use = b.curr !== '' && b.curr != null && b.prev !== '' && b.prev != null && !num(b.amount_override) ? ` (${kwh(b.prev)} → ${kwh(b.curr)} = ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))})` : '';
