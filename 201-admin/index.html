@@ -252,6 +252,9 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 .modal footer{padding:10px 16px}
 .fld label{font-size:12px;font-weight:600;color:#3C4043}
 
+/* box titles match the card labels */
+.box h3,#bvi-title{font-size:12px!important;font-weight:700!important;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;align-items:center}
+.box h3 .muted,#bvi-title .muted{font-size:12px;font-weight:700;color:var(--ink4);text-transform:uppercase;letter-spacing:.05em}
 /* ── Uniform: one font family, one size, one line per row (SOA document excluded) ── */
 #app table:not(.soa-doc *),#app table :not(.soa-doc):not(.soa-doc *){font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;line-height:1.4!important;letter-spacing:0!important}
 #app table :is(th,b,strong):not(.soa-doc *){font-weight:700!important}
@@ -1757,8 +1760,8 @@ function rCollectibles(m){
   SUM = { tr, tc, tp, tb, n: all.length,
     nP: all.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).length,
     nB: all.filter(t => { const c = cusaOf(t), p = soaParts(t, c); return (p.includes('Rent') && rentMonths(t) === 1) || p.includes('CUSA'); }).length };
-  $('rc-note').textContent = all.length ? `· ${all.length} tenants` : '';
-  $('mc-title').textContent = `Monthly collections · ${fmtMonth(m)}`;
+  $('rc-note').textContent = all.length ? `${all.length} tenants` : '';
+  $('mc-title').innerHTML = `Monthly collection <span class="muted">${fmtMonth(m)}</span>`;
   $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td class="num"><b>${amt(tr + tc)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
@@ -1771,7 +1774,7 @@ function rCollectibles(m){
       return { t, pd: x.total, open, now: ST.btLeft[t.id] || 0 };
     }).filter(Boolean);
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
-  $('pd-title').textContent = `Past due · as of ${fmtMonth(m)} SOA`;
+  $('pd-title').innerHTML = `Past due <span class="muted">as of ${fmtMonth(m)} SOA</span>`;
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th></tr>` + pdRows.map(r =>
       `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:640px" title="${esc(r.open)}">${esc(r.open)}</div>` : ''}</td><td class="num"><b>${amt(r.pd)}</b></td></tr>`).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b style="font-size:15px">${amt(pdTot)}</b></td></tr>`
@@ -1779,7 +1782,7 @@ function rCollectibles(m){
 
   // Payments received this month for rent & CUSA
   const pr = DB.Payments.filter(p => String(p.date).slice(0,7) === m && forRent(p)).sort((a,b) => String(a.date).localeCompare(b.date));
-  $('pr-title').textContent = `Payments received · ${fmtMonth(m)} · rent & CUSA`;
+  $('pr-title').innerHTML = `Payments received <span class="muted">${fmtMonth(m)}, rent & CUSA</span>`;
   $('pr-tbl').innerHTML = pr.length ? `<tr><th>Date</th><th>Business name</th><th>Mode</th><th class="num">Amount</th><th>Proof</th></tr>` + pr.map(p => {
       const t = tn(p.tenant_id) || {};
       const mode = p.method === 'PDC' ? `PDC${p.reference ? ' #' + esc(p.reference) : ''}` : esc(p.method) + (p.reference ? `<div class="muted">Ref ${esc(p.reference)}</div>` : '');
@@ -1896,7 +1899,7 @@ function rBvi(){
   else { const n = +rng, i = all.findIndex(r => r[0] === last); ms = all.slice(Math.max(0, i - n + 1), i + 1); }
   const rows = ms.slice().reverse();
   const label = rng === 'ytd' ? cur.slice(0, 4) : `${fmtMonth(ms[0][0])} – ${fmtMonth(last)}`;
-  $('bvi-title').innerHTML = `Utilities shouldered by BVI <span class="muted" style="font-weight:400;font-size:13px">· ${label}</span>`;
+  $('bvi-title').innerHTML = `Utilities shouldered by BVI <span class="muted" style="margin-left:10px">${label}</span>`;
   const f = v => v == null ? '<span class="muted">—</span>' : v < 0 ? `<span style="color:var(--green-d)">−${peso(-v).slice(1)}</span>` : peso(v).slice(1);
   const col = i => rows.map(r => r[i]).filter(v => v != null), sum = i => col(i).reduce((x, v) => x + v, 0), avg = i => col(i).length ? sum(i) / col(i).length : null;
   const tot = r => r.slice(1).some(v => v != null) ? r.slice(1).reduce((x, v) => x + (v || 0), 0) : null;
