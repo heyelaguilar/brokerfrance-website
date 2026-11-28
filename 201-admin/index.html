@@ -547,7 +547,7 @@ const SUMMARY_2026_11 = [
   ['seo vas','2nd Floor','Philippine SEO VAS OPC','Check','',120,33333.33,9600,'Bank transfer','Bi-annual','Send'],
   ['storage room','3rd Floor','Relly Fajardo','Bank transfer','',13,5000.00,0,'No CUSA','Monthly','Send'],
   ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
-  ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4400,'Bank transfer','Monthly','Send'],
+  ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4800,'Bank transfer','Monthly','Send'],
   ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,0,'No CUSA','Annual','Hold'],
   ["andrei",'4th Floor',"Andrei's Billiards",'Bank transfer','1',50,8000.00,2000,'Bank transfer','Monthly','Send'],
   ['squeeze','4th Floor','Squeeze Spot','Bank transfer','1',60,20200.00,4800,'Bank transfer','Monthly','Send'],
@@ -1165,6 +1165,18 @@ async function neueraCusaRange(){
     await save('Settings', { id:'mig_neuera_cusa_range', value: new Date().toISOString() }); S.mig_neuera_cusa_range = '1';
   } catch(e){ console.error('neuera cusa range failed', e); }
 }
+async function neueraCusa4800(){
+  if (DEMO || S.mig_neuera_cusa_4800) return;
+  try {
+    const t = DB.Tenants.find(x => /neuera/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) {
+      await save('Tenants', { ...t, area_sqm: 60, cusa_mode: 'Per sqm', cusa_value: 80, cusa_range: 'Yes' });
+      for (const b of DB.Bills.filter(b => b.tenant_id === t.id && b.period >= '2026-12' && num(b.cusa) === 4400 && b.status !== 'Paid'))
+        await save('Bills', { ...b, cusa: 4800, total: num(b.total) + 400 });
+    }
+    await save('Settings', { id:'mig_neuera_cusa_4800', value: new Date().toISOString() }); S.mig_neuera_cusa_4800 = '1';
+  } catch(e){ console.error('neuera cusa 4800 failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1291,6 +1303,7 @@ async function reload(){
     await akmasArrears();
     await akmasLag();
     await neueraCusaRange();
+    await neueraCusa4800();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
