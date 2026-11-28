@@ -1314,12 +1314,42 @@ function elCalc(mt, per, rate){
   const amount = ov !== '' && ov != null ? num(ov) : usage != null ? r2(usage * num(rate)) : 0;
   return { b, prev, curr, usage, ov, amount };
 }
+// Who shoulders the water bill: tenant charges spread over the months they cover (notes "Sep 2025 – Nov 2026"), rest is the building's
+function pwSplit(ps){
+  if (UTIL !== 'Primewater' || !ps.length) return '';
+  const MO = 'janfebmaraprmayjunjulaugsepoctnovdec';
+  const ym = (mon, y) => y + '-' + String(MO.indexOf(mon.slice(0,3).toLowerCase()) / 3 + 1).padStart(2, '0');
+  const months = ps.map(p => p.m).sort(), first = months[0], last = months[months.length - 1], n = months.length;
+  const total = ps.reduce((x,p) => x + num(p.meralco_total), 0), cum = ps.reduce((x,p) => x + num(p.meralco_kwh), 0);
+  const who = {};
+  const meters = DB.Meters.filter(m => m.utility === 'Primewater');
+  DB.ElecBills.filter(b => meters.some(m => m.id === b.meter_id)).forEach(b => {
+    const mt = meters.find(m => m.id === b.meter_id), amt = num(b.amount_override || b.amount); if (!amt) return;
+    const r = /(\w{3})\w*\s+(\d{4})\s*[–-]\s*(\w{3})\w*\s+(\d{4})/.exec(b.notes || '');
+    let cov = [b.period];
+    if (r) { cov = []; let [y, mo] = ym(r[1], r[2]).split('-').map(Number); const end = ym(r[3], r[4]); for (let k = 0; k < 240; k++) { const c = y + '-' + String(mo).padStart(2,'0'); cov.push(c); if (c >= end) break; if (++mo > 12) { mo = 1; y++; } } }
+    const inWin = cov.filter(c => c >= first && c <= last && months.includes(c)).length;
+    if (!inWin) return;
+    const k = meterName(mt); who[k] = (who[k] || 0) + amt * inWin / cov.length;
+  });
+  const rows = Object.entries(who).map(([k, v]) => [k, r2(v)]);
+  const bvi = r2(total - rows.reduce((x, r) => x + r[1], 0));
+  rows.push(['Building (BVI)', bvi]);
+  const f = v => peso(v).slice(1), pc = v => total ? (v / total * 100).toFixed(2) + '%' : '';
+  const cols = ['#4E8A68', '#C9A04A', '#1C3F2F', '#A9CDB5', '#8A6F7A'];
+  const bar = rows.map(([k, v], i) => `<span title="${esc(k)} ${pc(v)}" style="width:${Math.max(0, v / total * 100)}%;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>`).join('');
+  return `<h3 style="margin:22px 0 8px">Who pays the water · ${fmtMonth(first)} – ${fmtMonth(last)} (${n} months)</h3>
+    <div class="card tbl"><div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:12px 14px">${bar}</div>
+    <table class="condensed"><tr><th>Paid by</th><th class="num">Total</th><th class="num">Average / month</th><th class="num">Share</th></tr>
+    ${rows.map(([k, v], i) => `<tr${i === rows.length - 1 ? ' style="background:#FBF3E4"' : ''}><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>${i === rows.length - 1 ? '<b>' + esc(k) + '</b>' : esc(k)}</td><td class="num">${f(v)}</td><td class="num">${i === rows.length - 1 ? '<b>' + f(v / n) + '</b>' : f(v / n)}</td><td class="num">${i === rows.length - 1 ? '<b>' + pc(v) + '</b>' : pc(v)}</td></tr>`).join('')}
+    <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${(cum / n).toFixed(1)} cu.m/month · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>${f(total / n)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
+}
 function elHistory(){
   const ps = utilPeriods().filter(p => num(p.meralco_total)).sort((a,b) => b.m.localeCompare(a.m));
   if (!ps.length) { $('el-hist').innerHTML = ''; return; }
   const tq = ps.reduce((x,p) => x + num(p.meralco_kwh), 0), tp = ps.reduce((x,p) => x + num(p.meralco_total), 0);
   const q = v => num(v).toLocaleString('en-PH',{minimumFractionDigits:2});
-  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th>${UTIL === 'Primewater' ? '<th>Bill</th>' : ''}</tr>
+  $('el-hist').innerHTML = pwSplit(ps) + `<h3 style="margin:22px 0 8px">${UTIL} main bill history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Consumption (${UNIT()})</th><th class="num">Amount</th><th class="num">₱ / ${UNIT()}</th>${UTIL === 'Primewater' ? '<th>Bill</th>' : ''}</tr>
     ${ps.map(p => `<tr${UTIL === 'Primewater' ? ` style="cursor:pointer" onclick="pwBill('${p.m}')" title="Edit bill"` : ''}><td>${fmtMonth(p.m)}</td><td class="num">${q(p.meralco_kwh)}</td><td class="num">${peso(num(p.meralco_total)).slice(1)}</td><td class="num">${num(p.meralco_kwh) ? (num(p.meralco_total)/num(p.meralco_kwh)).toFixed(2) : '—'}</td>${UTIL === 'Primewater' ? `<td>${proofThumb(p.bill_url, `pwBill('${p.m}')`)}</td>` : ''}</tr>`).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${q(tq)}</b></td><td class="num"><b>${peso(tp).slice(1)}</b></td><td class="num"><b>${tq ? (tp/tq).toFixed(2) : ''}</b></td>${UTIL === 'Primewater' ? '<td></td>' : ''}</tr></table></div>`;
 }
