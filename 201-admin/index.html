@@ -2486,7 +2486,9 @@ function rBilling(){
   const rows = ts.map(t => {
     const g = grid[t.id] || (grid[t.id] = {});
     const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, $('r-util-thru').value);
-    const kind = k => r2([...u.cur, ...u.past].filter(r => r[2] === k).reduce((x, r) => x + r[1], 0));
+    const cut = monthsBack(P, 2), allU = [...u.cur, ...u.past];   // same rule as the SOA: older than two months back is past due
+    const kind = k => r2(allU.filter(r => r[2] === k && (r[4] || '') >= cut).reduce((x, r) => x + r[1], 0));
+    const pastU = r2(allU.filter(r => (r[4] || '') < cut).reduce((x, r) => x + r[1], 0));
     const sm = soaSummary(t.id, P, $('r-bill-date').value);
     // payments go to this month's rent, then CUSA, then the past due — paid lines show as Paid
     const bucket = { rent: r2(c.rent + c.rent_vat), cusa: c.cusa, open: Math.max(0, sm.opening) };
@@ -2495,7 +2497,7 @@ function rBilling(){
     sm.since.forEach(p => { left = r2(left + pay(num(p.amount), String(p.date).slice(0, 7) >= P ? ['rent', 'cusa', 'open'] : ['open', 'rent', 'cusa'])); });
     left = r2(left + pay(c.ewt, ['rent', 'cusa', 'open']));
     const rentLeft = bucket.rent, cusaLeft = bucket.cusa, openLeft = bucket.open;
-    const pd = r2(openLeft), due = r2(pd + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;   // utility columns already hold their older unpaid months
+    const pd = r2(openLeft + pastU), due = r2(openLeft + rentLeft + cusaLeft + u.pastTotal + u.curTotal + num(c.other_amt) + num(c.penalty) - left); tot += due;
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
     const b = existing.find(x => x.tenant_id === t.id);
     const dirty = b && Math.abs(num(b.total) - c.total) > 0.004;
