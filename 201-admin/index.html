@@ -157,6 +157,8 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .rates{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;padding:14px 18px;margin-bottom:14px}
 .rates .fld{min-width:170px}
 .bill-tbl td{vertical-align:middle}
+.soa-tools{display:flex;gap:10px;align-items:center;flex-wrap:nowrap}
+.soa-tools .inl{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--ink3);white-space:nowrap}
 .bill-tbl .meter{display:flex;gap:4px;align-items:center}
 .bill-tbl .meter .grid-in{width:66px}
 .bill-tbl td,.bill-tbl th{padding:9px 8px}
@@ -277,14 +279,13 @@ table.condensed .muted{font-size:11px}
 
     <section class="pane" id="p-billing">
       <div class="hdr"><div><h1>SOA</h1><p>One statement per tenant: past due, rent, CUSA, Meralco, Primewater and waste hauling. Rent or CUSA covered by PDC shows as PDC.</p></div>
-        <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Generate all SOAs</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
-      <div class="card rates">
-        <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
-        <div class="fld"><label>Due date</label><input type="date" id="r-due-date"></div>
-        <div class="fld"><label>Utilities through</label><input type="month" id="r-util-thru"></div>
-        <input type="hidden" id="r-elec"><input type="hidden" id="r-water">
-        <div class="hint" style="flex:1;min-width:200px">Meralco, Primewater and waste come from their own tabs — only what's still unpaid shows here. Earlier unpaid months go under past due.</div>
-      </div>
+        <div class="tools soa-tools">
+          <label class="inl">Month<input type="month" id="f-bill-period"></label>
+          <label class="inl">Bill date<input type="date" id="r-bill-date"></label>
+          <label class="inl">Due date<input type="date" id="r-due-date"></label>
+          <input type="hidden" id="r-util-thru"><input type="hidden" id="r-elec"><input type="hidden" id="r-water">
+          <button class="btn ghost" id="btn-save-bills" onclick="saveBills()" style="display:none">Generate all SOAs</button><button class="btn" id="btn-send-all" onclick="sendAll()" style="display:none">✉ Send all SOAs</button>
+        </div></div>
       <div class="card tbl" id="bill-wrap"></div>
       <div class="row" style="display:flex;justify-content:space-between;align-items:center;margin:22px 0 8px"><h3 style="margin:0">Separate SOAs</h3><button class="btn ghost" onclick="chargeForm()">+ Separate SOA</button></div>
       <div class="card tbl" id="chg-wrap"></div>
