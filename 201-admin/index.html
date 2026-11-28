@@ -1644,7 +1644,7 @@ function rOverview(){
   const PD = new Map(activeTenants().map(t => [t.id, soaPastDue(t, m)])), pdTenants = activeTenants().filter(t => PD.get(t.id).total > 0), pastDue = r2(pdTenants.reduce((x,t) => x + PD.get(t.id).total, 0));
   const k = [
     ['Monthly income', peso(SUM.tr + SUM.tc), 'Rent + CUSA', ''],
-    ['Actual collection', peso(toColl), `Due this ${mon}`, ''],
+    ['Monthly collection', peso(toColl), `Due this ${mon}`, ''],
     ['Collected', peso(coll), toColl ? `${Math.round(coll / toColl * 100)}% collected` : '', coll && coll >= toColl ? 'good' : ''],
     ['Unpaid', peso(unpaid), 'Bank transfer not yet paid', unpaid ? 'bad' : 'good'],
     ['Past due', peso(pastDue), pastDue ? `${pdTenants.length} tenants` : 'None', pastDue ? 'bad' : 'good'],
