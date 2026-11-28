@@ -1227,6 +1227,18 @@ async function novBatchFix(){
     await save('Settings', { id:'mig_nov_batch', value: new Date().toISOString() }); S.mig_nov_batch = '1';
   } catch(e){ console.error('nov batch fix failed', e); }
 }
+async function coffeeCusaLag(){
+  if (DEMO || S.mig_coffee_cusa_lag) return;
+  try {
+    const t = DB.Tenants.find(x => /coffee story/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) {
+      await save('Tenants', { ...t, cusa_lag: 1 });
+      const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === '2026-11');
+      if (b && num(b.cusa)) await save('Bills', { ...b, cusa: 0, total: r2(num(b.total) - num(b.cusa)), notes: 'Oct CUSA is in the Jul - Oct arrears; Nov CUSA is billed on the Dec 1 SOA' });
+    }
+    await save('Settings', { id:'mig_coffee_cusa_lag', value: new Date().toISOString() }); S.mig_coffee_cusa_lag = '1';
+  } catch(e){ console.error('coffee cusa lag failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1358,6 +1370,7 @@ async function reload(){
     await andreiUtilSameMonth();
     await andreiUtilBack();
     await novBatchFix();
+    await coffeeCusaLag();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
@@ -1427,7 +1440,8 @@ function soaSummary(tid, period, billDate){
   const last = prior[prior.length - 1];
   const pays = paysOf(tid);
   const opening = last ? r2(prior.reduce((s,b)=>s+num(b.total),0) - pays.filter(p => p.date < last.bill_date).reduce((s,p)=>s+num(p.amount),0)) : 0;
-  const since = pays.filter(p => (!last || p.date >= last.bill_date) && p.date <= billDate);
+  const upTo = [billDate || '', today()].sort().pop();   // payments received up to now count, even after the bill date
+  const since = pays.filter(p => (!last || p.date >= last.bill_date) && p.date <= upTo);
   const received = r2(since.reduce((s,p)=>s+num(p.amount),0));
   // payments made before the first bill are credits too
   return { last, opening, since, received, unpaid: r2(opening - received) };
@@ -2745,26 +2759,28 @@ function soaRows(bill){
       const pay = Math.max(0, Math.min(paidBefore, num(b.total))); paidBefore = r2(paidBefore - pay);
       const rem = r2(num(b.total) - pay); if (rem <= 0.004) return;
       let what;
-      if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} (${m[2].replace(/\s*[–-]\s*/g, '-')})` : b.other_label.split(',')[0]; }
+      if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} (${m[2].replace(/\s*[–-]\s*/g, ' - ')})` : b.other_label.split(',')[0]; }
       else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` (${!num(b.rent) ? cusaCover(t, b.period) : MON(b.period)})`;
       if (/^y/i.test(t.cusa_range || '') && num(b.cusa) && !num(b.rent) && !num(b.other_amt)) what = cusaLine(t, b.period); else what = String(what).toUpperCase();
-      items.push([`PAST DUE: ${what.trim()}${pay ? ', BALANCE' : ''}`, rem]);
+      items.push([`PAST DUE: ${what.trim()}${pay ? ', BALANCE' : ''}`, rem, b.period]);
     });
     const listed = r2(items.reduce((x, r) => x + r[1], 0));
     if (Math.abs(listed - num(s.opening)) > 0.01) items.splice(0, items.length, ['PAST DUE', num(s.opening)]);   // fall back to one line if the books don't split cleanly
-    items.forEach(([d, v]) => led.push([d, v, 'PAST DUE', 'past']));
+    items.forEach(([d, v, per]) => { const r = [d, v, 'PAST DUE', 'past']; r.per = per; led.push(r); });
   }
+  if (num(t.cusa_lag) && num(bill.cusa)) led.push([cusaLine(t, bill.period), num(bill.cusa), 'CUSA', 'cur']);   // billed in arrears: last month's CUSA first
   if (num(bill.rent)) led.push([rm === 1 ? `RENT (${mo})` : `RENT – ${String(t.rent_frequency).toUpperCase()} (${rm} MONTHS FROM ${mo})`, num(bill.rent), 'RENT', 'cur']);
   if (num(bill.rent_vat)) led.push([`VAT ${num(set('vat_pct'))}% ON RENT`, num(bill.rent_vat), 'RENT', 'cur']);
   const cusaMo = cusaCover(t, bill.period);
-  if (num(bill.cusa)) led.push([cusaLine(t, bill.period), num(bill.cusa), 'CUSA', 'cur']);
+  if (num(bill.cusa) && !num(t.cusa_lag)) led.push([cusaLine(t, bill.period), num(bill.cusa), 'CUSA', 'cur']);
   if (num(bill.other_amt)) led.push([(bill.other_label || 'OTHER CHARGES').toUpperCase(), num(bill.other_amt), 'OTHER', 'cur']);
   if (num(bill.penalty)) led.push(['PENALTY', num(bill.penalty), 'PENALTY', 'cur']);
   if (num(bill.ewt)) led.push([`LESS: ${num(t.ewt_pct)}% EWT ON RENT (BIR 2307)`, -num(bill.ewt), '', 'cur']);
   const curFirst = led.filter(r => r[3] === 'cur' && r[1] > 0), pastFirst = led.filter(r => r[3] === 'past');
   const apply = (amt, order) => { order.forEach(r => { const pay = Math.min(amt, r[1] - (r.paid || 0)); if (pay > 0) { r.paid = r2((r.paid || 0) + pay); amt = r2(amt - pay); } }); return amt; };
   let left = 0;
-  s.since.forEach(p => { left = r2(left + apply(num(p.amount), String(p.date).slice(0, 7) >= bill.period ? [...curFirst, ...pastFirst] : [...pastFirst, ...curFirst])); });
+  s.since.forEach(p => { const pm = String(p.date).slice(0, 7), mine = pastFirst.filter(r => r.per === pm);   // a payment made in Nov settles the Nov bill first
+    left = r2(left + apply(num(p.amount), pm >= bill.period ? [...curFirst, ...pastFirst] : [...mine, ...pastFirst.filter(r => r.per !== pm), ...curFirst])); });
   left = r2(left + apply(led.filter(r => r[1] < 0).reduce((x, r) => x - r[1], 0), curFirst));   // EWT credit goes to this month's rent
   const rows = [], scope = new Set();
   led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add('PAST DUE'); } });
