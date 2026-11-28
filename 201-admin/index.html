@@ -1157,6 +1157,14 @@ async function akmasArrears(){
   } catch(e){ console.error('akmas arrears failed', e); }
 }
 // AKMAS: CUSA is billed two months behind (Dec SOA → Oct CUSA). Past due = Aug (opening) and Sep (Nov bill); current = Oct
+async function neueraCusaRange(){
+  if (DEMO || S.mig_neuera_cusa_range) return;
+  try {
+    const t = DB.Tenants.find(x => /neuera/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) await save('Tenants', { ...t, cusa_range: 'Yes' });
+    await save('Settings', { id:'mig_neuera_cusa_range', value: new Date().toISOString() }); S.mig_neuera_cusa_range = '1';
+  } catch(e){ console.error('neuera cusa range failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1282,6 +1290,7 @@ async function reload(){
     await coffeeStoryArrears();
     await akmasArrears();
     await akmasLag();
+    await neueraCusaRange();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
@@ -2614,6 +2623,15 @@ function soaData(bill){
 const prevLabel = s => s.last && s.last.notes && /opening balance/i.test(s.last.notes) && s.last.other_label ? ` — ${s.last.other_label}` : '';
 // SOA in Brookland's format: rows = [description, amount]
 const MON = m => fmtMonth(m).replace(/^(\w{3})\w*/, '$1').toUpperCase();
+// CUSA coverage text: "NOV 2026", or for tenants billed by due-day cycle "NOV 24 TO DEC 23" (cycle ends in the billing month)
+const cusaCover = (t, period) => {
+  const p = num(t.cusa_lag) ? monthsBack(period, num(t.cusa_lag)) : period;
+  const dd = num(t.due_day);
+  if (!/^y/i.test(t.cusa_range || '') || !dd || dd === 1) return MON(p);
+  const [y, m] = p.split('-').map(Number), ab = d => d.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+  const a = new Date(y, m - 2, dd), b = new Date(y, m - 1, dd - 1);
+  return `${ab(a)} ${a.getDate()} TO ${ab(b)} ${b.getDate()}`;
+};
 const dmy = d => { if (!d) return ''; const x = new Date(d + 'T00:00:00'); return x.getDate() + ' ' + x.toLocaleString('en-US', { month: 'short' }) + ' ' + x.getFullYear(); };
 function soaRows(bill){
   if (bill.kind === 'charge') { const t = tn(bill.tenant_id) || {}; const d = String(bill.description || 'CHARGE').toUpperCase();
@@ -2631,7 +2649,7 @@ function soaRows(bill){
       const rem = r2(num(b.total) - pay); if (rem <= 0.004) return;
       let what;
       if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} (${m[2].replace(/\s*[–-]\s*/g, '-')})` : b.other_label.split(',')[0]; }
-      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` (${MON(num(t.cusa_lag) && !num(b.rent) ? monthsBack(b.period, num(t.cusa_lag)) : b.period)})`;
+      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` (${!num(b.rent) ? cusaCover(t, b.period) : MON(b.period)})`;
       items.push([`PAST DUE: ${String(what).toUpperCase().trim()}${pay ? ', BALANCE' : ''}`, rem]);
     });
     const listed = r2(items.reduce((x, r) => x + r[1], 0));
@@ -2640,7 +2658,7 @@ function soaRows(bill){
   }
   if (num(bill.rent)) led.push([rm === 1 ? `RENT (${mo})` : `RENT – ${String(t.rent_frequency).toUpperCase()} (${rm} MONTHS FROM ${mo})`, num(bill.rent), 'RENT', 'cur']);
   if (num(bill.rent_vat)) led.push([`VAT ${num(set('vat_pct'))}% ON RENT`, num(bill.rent_vat), 'RENT', 'cur']);
-  const cusaMo = num(t.cusa_lag) ? MON(monthsBack(bill.period, num(t.cusa_lag))) : mo;
+  const cusaMo = cusaCover(t, bill.period);
   if (num(bill.cusa)) led.push([`CUSA (${cusaMo})`, num(bill.cusa), 'CUSA', 'cur']);
   if (num(bill.other_amt)) led.push([(bill.other_label || 'OTHER CHARGES').toUpperCase(), num(bill.other_amt), 'OTHER', 'cur']);
   if (num(bill.penalty)) led.push(['PENALTY', num(bill.penalty), 'PENALTY', 'cur']);
