@@ -1602,7 +1602,7 @@ function rWaste(){
   const pend = []; for (let m = nextMonthOf(rows[0].m); m <= thisMonth(); m = nextMonthOf(m)) pend.unshift(m);
   const f = v => peso(v).slice(1);
   $('wh-wrap').innerHTML = `<table class="condensed el-view"><tr><th>Month</th><th class="num">Hauler bill</th><th class="num">Charged to tenants</th><th class="num">Building (BVI)</th><th>Proof</th></tr>
-    ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td class="num">${chg(m) ? f(chg(m)) : '—'}</td><td colspan="2"></td></tr>`).join('')}
+    ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td colspan="3"></td></tr>`).join('')}
     ${rows.map(r => { const a = amt(r), c = chg(r.m);
       return `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${!a ? '<span class="muted">unknown</span>' : f(a)}</td><td class="num">${c ? f(c) : '—'}</td><td class="num"><b>${!a ? '—' : a - c < 0 ? `<span style="color:var(--green-d)">+${f(c - a)} surplus</span>` : f(a - c)}</b></td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`; }).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${paid.length} months</span></td><td class="num"><b>${f(tot)}</b></td><td class="num"><b>${f(tch)}</b></td><td class="num"><b>${f(bvi)}</b> <span class="muted">${pc(bvi, tot)}</span></td><td></td></tr></table>`;
@@ -1612,7 +1612,8 @@ const WH_PAY = m => DB.Payments.filter(p => String(p.notes || '').includes('Wast
 function whTenants(rows){
   const pe = $('f-wh-month'); if (!pe.value) pe.value = (rows.find(r => num(r.paid_amount || r.amount)) || {}).m || thisMonth();
   const m = pe.value, start = S.wh_start || '2025-10';
-  const ts = m >= start ? activeTenants().filter(t => num(t.waste_fee) > 0).sort(byUnit) : [];
+  const hasBill = DB.Payables.some(x => x.id === 'PB-WH-' + m);
+  const ts = m >= start && hasBill ? activeTenants().filter(t => num(t.waste_fee) > 0).sort(byUnit) : [];
   const bill = DB.Payables.find(x => x.id === 'PB-WH-' + m), billAmt = bill ? num(bill.paid_amount || bill.amount) : 0;
   const pays = WH_PAY(m);
   const coll = ts.reduce((x, t) => x + num(t.waste_fee), 0), got = pays.reduce((x, p) => x + num(p.amount), 0);
@@ -1620,7 +1621,7 @@ function whTenants(rows){
   $('wh-kpis').innerHTML = k('Hauler bill', billAmt ? peso(billAmt) : '—', bill ? '' : 'no bill yet')
     + k('Charged to tenants', peso(coll), coll - got > 0 ? peso(coll - got) + ' unpaid' : coll ? 'all paid' : '', coll && got >= coll ? 'good' : '')
     + k('Building (BVI)', billAmt ? peso(billAmt - coll) : '—', billAmt ? ((billAmt - coll) / billAmt * 100).toFixed(2) + '% of the bill' : '', 'bad');
-  if (!ts.length) { $('wh-ten').innerHTML = `<div class="empty">No tenant hauling charges for ${fmtMonth(m)}.</div>`; return; }
+  if (!ts.length) { $('wh-ten').innerHTML = `<div class="empty">${hasBill ? 'No tenant hauling charges for ' + fmtMonth(m) + '.' : 'No hauler bill yet for ' + fmtMonth(m) + '. Tenant charges show once the bill is in.'}</div>`; return; }
 const pc = v => billAmt ? (v / billAmt * 100).toFixed(2) + '%' : '';
   $('wh-ten').innerHTML = `<table class="condensed el-view"><tr><th>Tenant</th><th class="num">Amount</th><th>Payment</th><th>Proof</th></tr>
     ${ts.map(t => { const p = pays.find(x => x.tenant_id === t.id);
