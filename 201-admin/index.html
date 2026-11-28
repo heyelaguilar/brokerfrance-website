@@ -851,6 +851,20 @@ async function pwJedV2(){
     S.mig_pw_jed_v2_2026_11 = '1';
   } catch(e){ console.error('jed v2 failed', e); }
 }
+// JED v3: JED pays Primewater only from November 2026 on — drop the back charge
+async function pwJedV3(){
+  if (DEMO || S.mig_pw_jed_v3_2026_11) return;
+  try {
+    const t = DB.Tenants.find(x => /\bjed\b|seo vas/i.test([x.tenant_name, x.trade_name].join(' ')));
+    const mt = DB.Meters.find(m => m.utility === 'Primewater' && (t ? m.tenant_id === t.id : /jed/i.test(m.payer || '')));
+    if (mt) {
+      if (!/Nov 2026/.test(mt.notes || '')) await save('Meters', { ...mt, notes: 'Starts Nov 2026' });
+      for (const b of DB.ElecBills.filter(x => x.meter_id === mt.id && x.period < '2026-11' && x.status !== 'Paid')) await remove('ElecBills', b.id);
+    }
+    await save('Settings', { id:'mig_pw_jed_v3_2026_11', value: new Date().toISOString() });
+    S.mig_pw_jed_v3_2026_11 = '1';
+  } catch(e){ console.error('jed v3 failed', e); }
+}
 // Dopeboy water submeter: one reading for Jul 2025 – Oct 2026, charged at the average Primewater rate for those months
 async function seedDopeboyWater(){
   if (DEMO || S.mig_pw_dopeboy_2026_10) return;
@@ -961,6 +975,7 @@ async function reload(){
     await pwDopeFix();
     await pwJed();
     await pwJedV2();
+    await pwJedV3();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1379,6 +1394,8 @@ function elView(per, rate, tenantM, bldgM){
     const det = UTIL === 'Primewater' ? bills.map(b => b.notes).filter(Boolean).join(' · ') : '';
     return g.html = `<tr><td><b>${esc(meterName(g.ms[0]))}</b>${flag}${det ? `<div class="muted" style="font-size:12px">${esc(det)}</div>` : ''}</td><td class="num"><b>${amount ? peso(amount).slice(1) : '—'}</b></td><td style="white-space:nowrap">${st}</td><td style="white-space:nowrap">${pb && pb.paid_date ? fmtDate(pb.paid_date) : ''}</td><td style="white-space:nowrap">${esc((pb && pb.paid_to) || (bills.find(b => b.paid_to) || {}).paid_to || '')}</td><td>${proof}</td></tr>`;
   });
+  // Primewater: hide a meter before its start month (meter notes "Starts Nov 2026")
+  groups.forEach((g, i) => { const m = UTIL === 'Primewater' && /Starts\s+(\w{3})\w*\s+(\d{4})/i.exec(g.ms[0].notes || ''); if (m) { const st = m[2] + '-' + String('janfebmaraprmayjunjulaugsepoctnovdec'.indexOf(m[1].toLowerCase()) / 3 + 1).padStart(2, '0'); if (per < st) rows[i] = ''; } });
   const rowsSorted = groups.map((g, i) => [g.sortKey, i, rows[i]]).sort((a, b) => a[0].localeCompare(b[0]) || a[1] - b[1]).map(x => x[2]).join('');
   const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td colspan="4"></td></tr>`; }).join('');
   $('el-wrap').innerHTML = `<table class="el-view condensed"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>${rowsSorted}
