@@ -945,6 +945,14 @@ async function seedMeralcoHistory(){
     S.mig_el_hist_2026_10 = '1';
   } catch(e){ console.error('meralco history failed', e); }
 }
+async function meralcoNov26Bvi(){
+  if (DEMO || S.mig_el_nov26_bvi) return;
+  try {
+    const ex = DB.ElecPeriods.find(p => p.id === '2026-11') || { id:'2026-11' };
+    await save('ElecPeriods', { ...ex, meralco_total: ex.meralco_total || 69952.18, bvi_share: -6206.50 });
+    await save('Settings', { id:'mig_el_nov26_bvi', value: new Date().toISOString() }); S.mig_el_nov26_bvi = '1';
+  } catch(e){ console.error('meralco nov 2026 bvi failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1073,6 +1081,7 @@ async function reload(){
     await whStartOct2025();
     await whNovIsOct();
     await seedMeralcoHistory();
+    await meralcoNov26Bvi();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1454,7 +1463,7 @@ function elHistoryMeralco(){
   $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">Meralco history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Meralco bill</th><th class="num">Tenants pay</th><th class="num">Building (BVI)</th><th class="num">BVI share</th></tr>
     ${ps.map(p => { const b = num(p.meralco_total), hasV = p.bvi_share !== '' && p.bvi_share != null, v = num(p.bvi_share);
       return `<tr><td>${fmtMonth(p.m)}</td><td class="num">${b ? f(b) : '<span style="color:var(--red)">⚠ check amount</span>'}</td><td class="num">${b && hasV ? f(b - v) : '—'}</td>
-        <td class="num"><b>${hasV ? f(v) : '—'}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
+        <td class="num"><b>${!hasV ? '—' : v < 0 ? `<span style="color:var(--green-d)">−${f(-v)}</span><div class="muted" style="font-size:11px;font-weight:400">surplus</div>` : f(v)}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${ok.length} months</span></td><td class="num"><b>${f(tb)}</b></td><td class="num"><b>${f(tb - tv)}</b></td><td class="num"><b>${f(tv)}</b>${ti ? `<div class="muted" style="font-size:11px">incl. Bedoo ${f(ti)}</div>` : ''}</td><td class="num"><b>${tb ? (tv / tb * 100).toFixed(2) + '%' : ''}</b></td></tr>
     <tr><td class="muted">Average / month</td><td class="num">${ok.length ? f(tb / ok.length) : ''}</td><td class="num">${ok.length ? f((tb - tv) / ok.length) : ''}</td><td class="num"><b>${ok.length ? f(tv / ok.length) : ''}</b></td><td></td></tr></table></div>`;
 }
