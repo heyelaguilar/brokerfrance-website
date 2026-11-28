@@ -2344,14 +2344,20 @@ function defaults(t){ return ({ Tenants:{status:'Active', rent_vat:'No', rent_fr
 const isPdf = u => /\.pdf($|\?)/i.test(u || '');
 function proofThumb(url, attachJs){
   if (url) return isPdf(url)
-    ? `<a href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="pdf-chip">PDF ↗</a>`
+    ? (/res\.cloudinary\.com/.test(url) ? `<img class="thumb" src="${esc(pdfPage(url, 1).replace('w_1400', 'w_120'))}" alt="PDF" title="PDF — click to preview" onclick="event.stopPropagation();openProof('${esc(url)}')" onerror="this.outerHTML='<a href=&quot;#&quot; class=&quot;pdf-chip&quot; onclick=&quot;event.stopPropagation();openProof(\\'${esc(url)}\\');return false&quot;>PDF</a>'">`
+      : `<a href="#" onclick="event.stopPropagation();openProof('${esc(url)}');return false" class="pdf-chip">PDF</a>`)
     : `<img class="thumb" src="${esc(url)}" alt="proof" onclick="event.stopPropagation();openProof('${esc(url)}')">`;
   return attachJs ? `<a href="#" onclick="event.stopPropagation();${attachJs};return false" class="attach">+ attach</a>` : '';
 }
-function openProof(url){
+// PDFs are previewed as page images (Cloudinary renders each page), so they open right here
+const pdfPage = (url, n) => url.replace('/upload/', `/upload/pg_${n},f_jpg,w_1400/`).replace(/\.pdf($|\?)/i, '.jpg$1');
+function openProof(url, page){
   let lb = $('lightbox');
   if (!lb) { lb = document.createElement('div'); lb.id = 'lightbox'; lb.onclick = () => lb.classList.remove('on'); document.body.appendChild(lb); }
-  lb.innerHTML = `<img src="${esc(url)}" alt="proof"><div class="lb-bar"><a href="${esc(url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Open full size ↗</a> · click anywhere to close</div>`;
+  const pdf = isPdf(url) && /res\.cloudinary\.com/.test(url), n = page || 1;
+  const src = pdf ? pdfPage(url, n) : url;
+  lb.innerHTML = `<img src="${esc(src)}" alt="proof" onclick="event.stopPropagation()"${pdf && n > 1 ? ` onerror="openProof('${esc(url)}', ${n - 1});toast('Last page')"` : ''}>
+    <div class="lb-bar" onclick="event.stopPropagation()">${pdf ? `${n > 1 ? `<a href="#" onclick="openProof('${esc(url)}', ${n - 1});return false">‹ Prev</a> · ` : ''}Page ${n} · <a href="#" onclick="openProof('${esc(url)}', ${n + 1});return false">Next ›</a> · ` : ''}<a href="${esc(url)}" target="_blank" rel="noopener">Open original ↗</a> · <a href="#" onclick="$('lightbox').classList.remove('on');return false">Close</a></div>`;
   lb.classList.add('on');
 }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lightbox')?.classList.remove('on'); });
