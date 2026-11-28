@@ -3303,11 +3303,19 @@ async function sendAll(){
 function rPayments(){
   if (!$('f-pay-tenant').options.length) { $('f-pay-tenant').innerHTML = tenantOpts('', 'All tenants'); $('f-pay-month').value = thisMonth(); }
   const ft = $('f-pay-tenant').value, fm = $('f-pay-month').value;
-  const list = DB.Payments.filter(p => (!ft || p.tenant_id === ft) && (!fm || String(p.date).startsWith(fm))).sort((a,b) => String(b.date).localeCompare(a.date));
+  const list0 = DB.Payments.filter(p => (!ft || p.tenant_id === ft) && (!fm || String(p.date).startsWith(fm))).sort((a,b) => String(b.date).localeCompare(a.date));
+  // one row per AR: a Mark paid that covered several items shows as a single payment with the breakdown in Notes
+  const grp = {}, list = [];
+  list0.forEach(p => { const k = String(p.or_no || '').startsWith('AR-') ? p.or_no : null;
+    if (!k) return list.push(p);
+    if (!grp[k]) { grp[k] = { ...p, amount: 0, applies_to: '', _items: [], _ids: [] }; list.push(grp[k]); }
+    grp[k].amount = r2(num(grp[k].amount) + num(p.amount)); grp[k]._ids.push(p.id);
+    grp[k]._items.push(String(p.notes || '').replace(/^.*?SOA:\s*/, '').replace(/^Waste hauling (\d{4}-\d{2})$/i, (x, m) => `WASTE HAULING (${MON(m)})`).replace(/^Past due:\s*/i, 'PAST DUE: ') + ' ' + peso(p.amount)); });
+  list.forEach(p => { if (p._items) p.notes = p._items.join('; '); });
   const total = list.reduce((s,p)=>s+num(p.amount),0);
   const by = {}; list.forEach(p => by[p.method] = (by[p.method]||0) + num(p.amount));
   $('pay-kpis').innerHTML = `<div class="card kpi good"><div class="l">Received${fm?' · '+fmtMonth(fm):''}</div><div class="v">${peso0(total)}</div><div class="s">${list.length} payment(s)</div></div>` + Object.entries(by).slice(0,4).map(([m,v])=>`<div class="card kpi"><div class="l">${esc(m)}</div><div class="v">${peso0(v)}</div></div>`).join('');
-  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>AR / OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="openForm('Payments','${p.id}')"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td onclick="event.stopPropagation()" style="white-space:nowrap"><button class="btn sm ghost" onclick="openAR('${p.or_no && String(p.or_no).startsWith('AR-') ? p.or_no : p.id}')">${p.or_no ? esc(p.or_no) : 'Generate AR'}</button></td><td>${p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '' : proofThumb('', `openForm('Payments','${p.id}')`))}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
+  $('pay-wrap').innerHTML = list.length ? `<table><tr><th>Date</th><th>Tenant</th><th class="num">Amount</th><th>Method</th><th>Reference</th><th>AR / OR no.</th><th>Proof</th><th>Notes</th></tr>${list.map(p=>`<tr class="click" onclick="${p._ids ? `openAR('${p.or_no}')` : `openForm('Payments','${p.id}')`}"><td>${fmtDate(p.date)}</td><td><b>${esc(tName(p.tenant_id))}</b></td><td class="num"><b>${peso(p.amount)}</b>${p.applies_to && p.applies_to !== 'Rent & CUSA' ? `<div class="muted">${esc(p.applies_to)}</div>` : ''}</td><td>${esc(p.method)}${p.bank?`<div class="muted">${esc(p.bank)}</div>`:''}</td><td>${esc(p.reference)}</td><td onclick="event.stopPropagation()" style="white-space:nowrap"><button class="btn sm ghost" onclick="openAR('${p.or_no && String(p.or_no).startsWith('AR-') ? p.or_no : p.id}')">${p.or_no ? esc(p.or_no) : 'Generate AR'}</button></td><td>${p.proof_url ? proofThumb(p.proof_url) : (p.method === 'PDC' ? '' : proofThumb('', `openForm('Payments','${p.id}')`))}</td><td class="muted">${esc(p.notes)}</td></tr>`).join('')}</table>`
     : `<div class="empty"><b>No payments${fm?' in '+fmtMonth(fm):''}</b>Record payments as they come in — cleared PDCs are added here automatically.</div>`;
 }
 function tenantOpts(sel, blank){ return `<option value="">${esc(blank)}</option>` + DB.Tenants.slice().sort((a,b)=>a.tenant_name.localeCompare(b.tenant_name)).map(t=>`<option value="${t.id}" ${t.id===sel?'selected':''}>${esc(tLabel(t))}</option>`).join(''); }
