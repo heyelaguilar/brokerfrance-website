@@ -228,6 +228,7 @@ table.condensed .muted{font-size:11px}
     <button class="nav" data-tab="tenants"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>Tenants</button>
     <button class="nav" data-tab="meralco"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>Meralco<span class="badge" id="b-el" hidden></span></button>
     <button class="nav" data-tab="primewater"><svg viewBox="0 0 24 24"><path d="M12 2.7S5 10 5 14.5a7 7 0 0014 0C19 10 12 2.7 12 2.7z"/></svg>Primewater<span class="badge" id="b-pw" hidden></span></button>
+    <button class="nav" data-tab="waste"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Waste Hauler</button>
     <button class="nav" data-tab="payables"><svg viewBox="0 0 24 24"><path d="M4 2h16v20l-3-2-3 2-2-2-2 2-3-2-3 2z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg>Bills Payable<span class="badge" id="b-pb" hidden></span></button>
     <button class="nav" data-tab="emails"><svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M22 6l-10 7L2 6"/></svg>Email Log</button>
     <button class="nav" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings</button>
@@ -304,6 +305,13 @@ table.condensed .muted{font-size:11px}
       <div class="card rates" id="el-head" style="display:none"></div>
       <div class="card tbl" id="el-wrap"></div>
       <div id="el-hist"></div>
+    </section>
+
+    <section class="pane" id="p-waste">
+      <div class="hdr"><div><h1>Waste Hauler</h1></div>
+        <div class="tools"><button class="btn" onclick="whPay()">+ Add payment</button></div></div>
+      <div class="kpis" id="wh-kpis"></div>
+      <div class="card tbl" id="wh-wrap"></div>
     </section>
 
     <section class="pane" id="p-payables">
@@ -865,6 +873,18 @@ async function pwJedV3(){
     S.mig_pw_jed_v3_2026_11 = '1';
   } catch(e){ console.error('jed v3 failed', e); }
 }
+// Waste hauler payment history (Oct 2025 – Feb 2026)
+async function seedWasteHistory(){
+  if (DEMO || S.mig_wh_hist_2026_02) return;
+  try {
+    const rows = [['2025-10',7050],['2025-11',3350],['2025-12',4250],['2026-01',4300],['2026-02',3050]]
+      .filter(([m]) => !DB.Payables.some(x => x.id === 'PB-WH-' + m))
+      .map(([m, a]) => ({ id: 'PB-WH-' + m, category: 'Waste hauler', payee: 'Waste hauler', billing_period: fmtMonth(m), amount: a, status: 'Paid', paid_amount: a, notes: 'History' }));
+    if (rows.length) await saveMany('Payables', rows);
+    await save('Settings', { id:'mig_wh_hist_2026_02', value: new Date().toISOString() });
+    S.mig_wh_hist_2026_02 = '1';
+  } catch(e){ console.error('waste history failed', e); }
+}
 // Dopeboy water submeter: one reading for Jul 2025 – Oct 2026, charged at the average Primewater rate for those months
 async function seedDopeboyWater(){
   if (DEMO || S.mig_pw_dopeboy_2026_10) return;
@@ -976,6 +996,7 @@ async function reload(){
     await pwJed();
     await pwJedV2();
     await pwJedV3();
+    await seedWasteHistory();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1054,7 +1075,7 @@ function computeBill(t, period, inp){
 }
 
 // ───────────────── RENDER ─────────────────
-function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco,primewater:rMeralco,payables:rPayables})[tab](); }
+function render(){ badges(); ({overview:rOverview,billing:rBilling,payments:rPayments,pdcs:rPdcs,tenants:rTenants,emails:rEmails,settings:rSettings,meralco:rMeralco,primewater:rMeralco,waste:rWaste,payables:rPayables})[tab](); }
 const pdcWindow = () => addDays(today(), num(set('pdc_remind_days')) || 3);
 const pdcsDue = () => DB.PDCs.filter(p => (p.status||'On hand') === 'On hand' && p.check_date && p.check_date <= pdcWindow());
 const unsentBills = () => DB.Bills.filter(b => b.period === thisMonth() && b.status !== 'Sent' && !(tn(b.tenant_id) && soaHold(tn(b.tenant_id))));
@@ -1521,6 +1542,58 @@ const PB_CATS = ['Meralco','Primewater','Waste hauler','Construction / Renovatio
 const PAY_FROM = ['Security Bank (BVI)','GCash (MFRG)','Cash','Check'];
 const pbOverdue = () => DB.Payables.filter(b => b.status !== 'Paid' && b.due_date && b.due_date < today());
 const pbDueSoon = () => DB.Payables.filter(b => b.status !== 'Paid' && b.due_date && b.due_date >= today() && b.due_date <= addDays(today(), 5));
+// ── Waste hauler: monthly payments (stored in Bills Payable, category "Waste hauler") ──
+const whMonth = r => (/^PB-WH-(\d{4}-\d{2})$/.exec(r.id) || [])[1] || String(r.bill_date || r.due_date || r.paid_date || '').slice(0, 7);
+function whRows(){ return DB.Payables.filter(r => r.category === 'Waste hauler').map(r => ({ ...r, m: whMonth(r) })).sort((a, b) => b.m.localeCompare(a.m)); }
+function rWaste(){
+  const rows = whRows(), paid = rows.filter(r => r.status === 'Paid');
+  const amt = r => num(r.paid_amount || r.amount), tot = paid.reduce((x, r) => x + amt(r), 0);
+  const last = paid[0];
+  $('wh-kpis').innerHTML = `<div class="card kpi"><div class="l">Total paid</div><div class="v">${peso(tot)}</div><div class="s">${paid.length} month${paid.length === 1 ? '' : 's'}</div></div>
+    <div class="card kpi"><div class="l">Average / month</div><div class="v">${peso(paid.length ? tot / paid.length : 0)}</div></div>
+    <div class="card kpi"><div class="l">Last payment</div><div class="v">${last ? peso(amt(last)) : '—'}</div><div class="s">${last ? fmtMonth(last.m) : ''}</div></div>`;
+  if (!rows.length) { $('wh-wrap').innerHTML = '<div class="empty">No waste hauler payments yet.<br><br><button class="btn" onclick="whPay()">+ Add payment</button></div>'; return; }
+  $('wh-wrap').innerHTML = `<table class="condensed el-view"><tr><th>Month</th><th class="num">Amount paid</th><th>Paid date</th><th>From</th><th>Proof</th></tr>
+    ${rows.map(r => `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${r.status === 'Paid' ? peso(amt(r)).slice(1) : `<span class="muted">${peso(num(r.amount)).slice(1)} unpaid</span>`}</td><td>${r.paid_date ? fmtDate(r.paid_date) : ''}</td><td>${esc(r.paid_from || '')}</td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="3"></td></tr></table>`;
+}
+function whPay(id){
+  const r = id ? DB.Payables.find(x => x.id === id) || {} : {};
+  const m = id ? whMonth(r) : thisMonth();
+  editing = { wh: id || '' };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = id ? `Waste hauler · ${fmtMonth(m)}` : 'Add waste hauler payment';
+  $('m-body').innerHTML = `<div class="fld"><label>Month</label><input id="wh-m" type="month" value="${esc(m)}"${id ? ' readonly' : ''}></div>
+    <div class="fld"><label>Amount paid (₱)</label><input id="wh-a" type="number" step="any" value="${esc(r.paid_amount || r.amount || '')}"></div>
+    <div class="fld"><label>Paid date</label><input id="wh-d" type="date" value="${esc(r.paid_date || today())}"></div>
+    <div class="fld"><label>Paid from</label><select id="wh-f">${opts(PAY_FROM, r.paid_from || 'Security Bank (BVI)')}</select></div>
+    <div class="fld wide"><label>Reference</label><input id="wh-ref" value="${esc(r.reference || '')}"></div>
+    <div class="fld wide"><label>Proof of payment</label>${proofZone(r.proof_url)}</div>`;
+  wireProofZone();
+  $('m-foot').innerHTML = `<div class="left">${id ? `<button class="btn danger" onclick="whDel('${id}')">Delete</button>` : ''}</div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="whSave()">Save</button>`;
+  $('ovl').classList.add('on');
+}
+async function whSave(){
+  const id = editing.wh, m = $('wh-m').value, a = num($('wh-a').value), btn = $('m-save');
+  const r = id ? DB.Payables.find(x => x.id === id) || {} : {};
+  if (!m) return toast('Pick the month');
+  if (!a) return toast('Enter the amount');
+  if (!id && DB.Payables.some(x => x.id === 'PB-WH-' + m)) return toast(fmtMonth(m) + ' is already recorded — click it to edit');
+  if (!proofPicked && !r.proof_url && !(id && r.status === 'Paid')) return toast('Attach the proof of payment first');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    let proof_url = r.proof_url || '';
+    if (proofPicked) { btn.textContent = 'Uploading proof…'; proof_url = await uploadProof(proofPicked); }
+    await save('Payables', { ...r, id: id || 'PB-WH-' + m, category: 'Waste hauler', payee: r.payee || 'Waste hauler', billing_period: fmtMonth(m), amount: r.amount || a,
+      status: 'Paid', paid_amount: a, paid_date: $('wh-d').value, paid_from: $('wh-f').value, reference: $('wh-ref').value.trim(), proof_url });
+    closeForm(); render(); toast('Waste hauler payment saved');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Save'; toast('Save failed: ' + e.message); }
+}
+async function whDel(id){
+  if (!confirm('Delete this waste hauler payment?')) return;
+  try { await remove('Payables', id); closeForm(); render(); toast('Deleted'); } catch(e){ toast('Delete failed: ' + e.message); }
+}
+
 function rPayables(){
   const mo = $('f-pb-month'); if (!mo.value) mo.value = thisMonth();
   if (!$('f-pb-cat').options.length) $('f-pb-cat').innerHTML = opts(PB_CATS, null, 'All bills');
