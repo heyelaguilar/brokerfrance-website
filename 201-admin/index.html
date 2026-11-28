@@ -1430,7 +1430,7 @@ async function seedPayables(){
 async function reload(){
   try {
     const d = await call({action:'load'});
-    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PastDue'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
+    DB = d.data; ['Meters','ElecBills','ElecPeriods','Payables','WasteLog','Charges','Disbursements','PastDue','MONTHLY INCOME','MONTHLY COLLECTION'].forEach(k => DB[k] ||= []); S = Object.fromEntries(DB.Settings.map(r => [r.id, r.value]));
     await syncSummary();
     await fixSeoRent();
     await fixBedooCusa();
@@ -1772,15 +1772,31 @@ function rCollectibles(m){
     const done = (!pSt || pSt === 'Paid') && (!bSt || bSt === 'Paid');
     coll.push(`<tr class="click" onclick="openTenant('${t.id}')">${nm}<td style="white-space:nowrap">${esc(dueLabel(t))}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(pdc + bt)}</b></td></tr>`);
   });
+  // Your MONTHLY INCOME / MONTHLY COLLECTION tabs in the sheet win when they have rows
+  const shRows = tab => (DB[tab] || []).filter(r => { const n = String(r['Business name'] || '').trim(); return n && !/^total$/i.test(n); });
+  const tByName = n => activeTenants().find(t => [t.tenant_name, t.trade_name].some(x => x && String(x).trim().toLowerCase() === String(n).trim().toLowerCase()));
+  const nmCell = n => { const t = tByName(n); return `<td title="${esc(n)}"><div class="name">${esc(n)}</div></td>${t ? '' : ''}`; };
+  const rowAttr = n => { const t = tByName(n); return t ? `class="click" onclick="openTenant('${t.id}')"` : ''; };
+  const miRows = shRows('MONTHLY INCOME'), mcRows = shRows('MONTHLY COLLECTION');
+  if (miRows.length) {
+    tr = 0; tc = 0; income.length = 0;
+    miRows.forEach(r => { const rent = num(r.Rent), cusa = num(r.CUSA), tot = num(r.Total) || rent + cusa; tr += rent; tc += cusa;
+      income.push(`<tr ${rowAttr(r['Business name'])}>${nmCell(r['Business name'])}<td class="num">${amt(rent) || '-'}</td><td class="num">${amt(cusa) || '-'}</td><td class="num">${amt(tot)}</td></tr>`); });
+  }
+  if (mcRows.length) {
+    tp = 0; tb = 0; coll.length = 0;
+    mcRows.forEach(r => { const pdc = num(r.PDC), bt = num(r['Bank transfer']), sub = num(r.Subtotal) || pdc + bt; tp += pdc; tb += bt;
+      coll.push(`<tr ${rowAttr(r['Business name'])}>${nmCell(r['Business name'])}<td>${esc(r.Due || '')}</td><td class="num">${amt(pdc)}</td><td class="num">${amt(bt)}</td><td class="num"><b>${amt(sub)}</b></td></tr>`); });
+  }
   SUM = { tr, tc, tp, tb, n: all.length,
     nP: all.filter(t => isCheck(t.rent_payment || t.payment_mode) && rentMonths(t) === 1).length,
     nB: all.filter(t => { const c = cusaOf(t), p = soaParts(t, c); return (p.includes('Rent') && rentMonths(t) === 1) || p.includes('CUSA'); }).length };
-  $('rc-note').textContent = all.length ? `${all.length} tenants` : '';
+  $('rc-note').textContent = `${miRows.length || all.length} tenants`;
   $('mc-title').innerHTML = `Monthly collection <span class="muted">${fmtMonth(m)}</span>`;
-  $('rc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
+  $('rc-tbl').innerHTML = (all.length || miRows.length) ? `<tr><th>Business name</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Total</th></tr>${income.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(tr)}</b></td><td class="num"><b>${amt(tc)}</b></td><td class="num"><b>${amt(tr + tc)}</b></td></tr>`
     : `<tr><td><div class="empty"><b>No tenants yet</b>Add tenants in the Tenants tab.</div></td></tr>`;
-  $('mc-tbl').innerHTML = all.length ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
+  $('mc-tbl').innerHTML = (all.length || mcRows.length) ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
   // Past due: unpaid SOA balances from before this month, plus what's still unpaid this month
   const pdRows = all.map(t => {

@@ -17,6 +17,8 @@ const SCHEMA = {
   ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','needs_reading','paid_date','paid_amount','method','paid_to','reference','proof_url','notes','updated'],
   Disbursements: ['id','date','description','category','vendor','amount','paid_by','receipt_url','status','reimbursed_date','reimbursed_ref','reimbursed_proof','notes','updated'],
   PastDue: ['tenant','description','amount','status','notes','tenant_id','id','updated'],
+  'MONTHLY INCOME': ['Business name','Rent','CUSA','Total'],
+  'MONTHLY COLLECTION': ['Business name','Due','PDC','Bank transfer','Subtotal'],
   Charges: ['id','tenant_id','description','amount','bill_date','due_date','status','paid_date','paid_amount','method','paid_to','reference','proof_url','sent_at','notes','updated'],
   WasteLog: ['id','month','tenant_id','bags','rate','amount','notes','updated'],
   ElecPeriods: ['id','billing_period','reading_period','billing_date','due_date','meralco_kwh','rate','meralco_total','common_amount','bvi_share','bvi_incl','bvi_incl_label','breakdown','bill_url','notes','updated'],
@@ -82,19 +84,19 @@ async function ensureTabs(api) {
     const res = await api(':batchUpdate', 'POST', { requests: missing.map(title => ({ addSheet: { properties: { title, gridProperties: { frozenRowCount: 1 } } } })) });
     res.replies.forEach((rep, i) => { existing[missing[i]] = rep.addSheet.properties.sheetId; });
   }
-  const hdr = await api(`/values:batchGet?${TABS.map(t => `ranges=${encodeURIComponent(t + '!1:1')}`).join('&')}`);
+  const hdr = await api(`/values:batchGet?${TABS.map(t => `ranges=${encodeURIComponent(`'${t}'!1:1`)}`).join('&')}`);
   const data = [];
   hdr.valueRanges.forEach((vr, i) => {
     const have = (vr.values && vr.values[0]) || [];
     const want = [...have, ...SCHEMA[TABS[i]].filter(c => !have.includes(c))];
-    if (want.length !== have.length) data.push({ range: `${TABS[i]}!A1`, values: [want] });
+    if (want.length !== have.length) data.push({ range: `'${TABS[i]}'!A1`, values: [want] });
   });
   if (data.length) await api('/values:batchUpdate', 'POST', { valueInputOption: 'RAW', data });
   return existing;
 }
 
 async function loadAll(api) {
-  const res = await api(`/values:batchGet?${TABS.map(t => `ranges=${encodeURIComponent(t)}`).join('&')}`);
+  const res = await api(`/values:batchGet?${TABS.map(t => `ranges=${encodeURIComponent(`'${t}'`)}`).join('&')}`);
   const out = {};
   res.valueRanges.forEach((vr, i) => {
     const rows = vr.values || [];
