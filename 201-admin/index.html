@@ -914,6 +914,23 @@ async function whStartOct2025(){
     await save('Settings', { id:'mig_wh_start_2025_10', value: new Date().toISOString() }); S.mig_wh_start_2025_10 = '1';
   } catch(e){ console.error('wh start failed', e); }
 }
+// the ₱6,180 recorded under November 2026 is the October bill: move its payment details to October and drop the duplicate
+async function whNovIsOct(){
+  if (DEMO || S.mig_wh_nov_is_oct_2026) return;
+  try {
+    const amt = r => num(r.paid_amount || r.amount);
+    const dups = DB.Payables.filter(r => r.category === 'Waste hauler' && whMonth(r) === '2026-11' && Math.abs(amt(r) - 6180) < 0.01);
+    if (dups.length) {
+      const oct = DB.Payables.find(r => r.id === 'PB-WH-2026-10') || { id:'PB-WH-2026-10', category:'Waste hauler', payee:'Waste hauler', billing_period: fmtMonth('2026-10'), amount: 6180, status:'Paid', paid_amount: 6180 };
+      const d = dups.find(r => r.proof_url || r.paid_date) || dups[0];
+      await save('Payables', { ...oct, paid_date: oct.paid_date || d.paid_date || '', paid_from: oct.paid_from || d.paid_from || '', reference: oct.reference || d.reference || '',
+        proof_url: oct.proof_url || d.proof_url || '', bill_url: oct.bill_url || d.bill_url || '' });
+      for (const r of dups) if (r.id !== 'PB-WH-2026-10') await remove('Payables', r.id);
+    }
+    await save('Settings', { id:'mig_wh_nov_is_oct_2026', value: new Date().toISOString() });
+    S.mig_wh_nov_is_oct_2026 = '1';
+  } catch(e){ console.error('wh nov→oct failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1040,6 +1057,7 @@ async function reload(){
     await seedWasteAprMay();
     await wasteFees();
     await whStartOct2025();
+    await whNovIsOct();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
