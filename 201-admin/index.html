@@ -1659,7 +1659,7 @@ function rOverview(){
   const actv = DB.Tenants.filter(t => (t.status||'Active') === 'Active').length, notice = DB.Tenants.filter(t => t.status === 'Notice to Vacate').length;
   const mon = fmtMonth(m).split(' ')[0];
   const toColl = SUM.tp + SUM.tb, unpaid = ST.btAmt['Unpaid'] || 0;   // PDCs on hand aren't unpaid — the checks are already with us
-  const PD = new Map(activeTenants().map(t => [t.id, soaPastDue(t, m)])), pdTenants = activeTenants().filter(t => PD.get(t.id).total > 0), pastDue = r2(pdTenants.reduce((x,t) => x + PD.get(t.id).total, 0));
+  const PD = new Map(activeTenants().map(t => [t.id, soaPastDue(t, m)])), pdTenants = pdSheetOn() ? pdSheetList() : activeTenants().filter(t => PD.get(t.id).total > 0), pastDue = pdSheetOn() ? r2(pdSheetList().reduce((x, r) => x + r.pd, 0)) : r2(pdTenants.reduce((x,t) => x + PD.get(t.id).total, 0));
   const k = [
     ['Monthly income', peso(SUM.tr + SUM.tc), 'Rent + CUSA', ''],
     ['Monthly collection', peso(toColl), `Due this ${mon}`, ''],
@@ -1800,16 +1800,15 @@ function rCollectibles(m){
   $('mc-tbl').innerHTML = (all.length || mcRows.length) ? `<tr><th>Business name</th><th>Due</th><th class="num">PDC</th><th class="num">Bank transfer</th><th class="num">Subtotal</th></tr>${coll.join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b></td><td></td><td class="num"><b>${amt(tp)}</b></td><td class="num"><b>${amt(tb)}</b></td><td class="num"><b style="font-size:15px">${amt(tp + tb)}</b></td></tr>` : '';
   // Past due: unpaid SOA balances from before this month, plus what's still unpaid this month
-  const pdRows = all.map(t => {
+  const pdRows = pdSheetOn() ? pdSheetList().map(r => ({ ...r, now: 0 })) : all.map(t => {
       const x = soaPastDue(t, m); if (!(x.total > 0)) return null;
-      const open = x.items.map(r => r[0].replace(/^PAST DUE:?\s*/i, '') + ' ' + amt(r[1])).join('; ');
-      return { t, pd: x.total, open, now: ST.btLeft[t.id] || 0 };
+      return { t, name: t.tenant_name, pd: x.total, rem: x.items.map(r => r[0].replace(/^PAST DUE:?\s*/i, '')).filter(Boolean).join('; '), now: ST.btLeft[t.id] || 0 };
     }).filter(Boolean);
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').innerHTML = `Past due <span class="muted">as of ${fmtMonth(m)} SOA</span>`;
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th><th>Remarks</th></tr>` + pdRows.map(r => {
-      const rem = soaPastDue(r.t, m).items.map(x => x[0].replace(/^PAST DUE:?\s*/i, '')).filter(Boolean).join('; ');
-      return `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td><td><span class="pd-rem" title="${esc(rem)}">${esc(rem)}</span></td></tr>`; }).join('')
+      const rem = r.rem;
+      return `<tr ${r.t ? `class="click" onclick="openTenant('${r.t.id}')"` : ''}><td><div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td><td><span class="pd-rem" title="${esc(rem)}">${esc(rem)}</span></td></tr>`; }).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td><td></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
@@ -2910,6 +2909,11 @@ function soaRows(bill, noSheetPD){
 // Your PAST DUE tab (Business name | Due | REMARKS): one line per tenant, blank Due = no past due
 const pdTab = () => (DB['PAST DUE'] || []).map(r => pdNorm(r)).filter(r => { const n = String(r.business_name || r.tenant || '').trim(); return n && !/^total$/i.test(n); });
 const pdSheetOn = () => pdTab().length > 0;
+const pdSheetList = () => pdTab().filter(r => num(r.due ?? r.amount) > 0).map(r => {
+  const name = String(r.business_name || r.tenant).trim();
+  const t = DB.Tenants.find(x => [x.tenant_name, x.trade_name].some(y => y && String(y).trim().toLowerCase() === name.toLowerCase()));
+  return { name, t, pd: num(r.due ?? r.amount), rem: String(r.remarks || r.description || '').trim() };
+});
 const pdNorm = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [String(k).trim().toLowerCase().replace(/\s+/g, '_'), v]));
 const pdMatch = (r, t) => {   // match by tenant_id, or by the tenant / business name typed in the sheet
   if (r.tenant_id && r.tenant_id === t.id) return true;
