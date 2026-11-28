@@ -2985,7 +2985,7 @@ function soaHTML(bill){
       <div style="font-weight:700;text-decoration:underline">CHECK PAYMENTS</div>
       <div style="margin:5px 0 12px">Please issue a check payable to <b>BROOKLAND VENTURES, INC.</b></div>
       <div style="font-weight:700;text-decoration:underline">DIRECT DEPOSIT</div>
-      <div style="margin-top:5px">Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b></div></td></tr>
+      ${bill.kind === 'past' ? `<div style="display:flex;justify-content:space-between;gap:12px;margin-top:5px"><div>Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b></div><div>Bank Name: <b>GCASH</b><br>Account Name: <b>MAY FRANCIA R. GONZALES</b><br>Account No.: <b>09778290053</b></div></div>` : `<div style="margin-top:5px">Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b></div>`}</td></tr>
   </table></div>`;
 }
 // SOA for anyone listed in PAST DUE DETAILS (e.g. moved-out Dopeboy, ZSThree): Business name | Description | Amount | Billing date | Due date | Scope
@@ -3114,6 +3114,8 @@ async function soaPDF(bill){
   ul('DIRECT DEPOSIT', L + 3, y + 21);
   [['Bank Name: ', 'Security Bank'], ['Account Name: ', 'BROOKLAND VENTURES, INC.'], ['Current Account No.: ', '0000054207660']].forEach(([k, v], i) => {
     doc.setFont('helvetica', 'normal'); doc.setFontSize(FS); const kw = doc.getTextWidth(k); T(k, L + 3, y + 26.5 + i * 4.6); T(v, L + 3 + kw, y + 26.5 + i * 4.6, { b: 1 }); });
+  if (bill.kind === 'past') [['Bank Name: ', 'GCASH'], ['Account Name: ', 'MAY FRANCIA R. GONZALES'], ['Account No.: ', '09778290053']].forEach(([k, v], i) => {   // moved-out tenants: GCash too
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(FS); const kw = doc.getTextWidth(k); T(k, L + W * 0.52, y + 26.5 + i * 4.6); T(v, L + W * 0.52 + kw, y + 26.5 + i * 4.6, { b: 1 }); });
   return { doc, filename: soaName(bill) + '.pdf', amountDue: total };
 }
 async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(billish(id)); doc.save(filename); } catch(e){ toast(e.message); } }
