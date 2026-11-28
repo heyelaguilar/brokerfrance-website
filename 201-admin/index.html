@@ -1106,6 +1106,16 @@ async function v52WasteSep(){
     await save('Settings', { id:'mig_v52_waste_sep', value: new Date().toISOString() }); S.mig_v52_waste_sep = '1';
   } catch(e){ console.error('v52 waste sep failed', e); }
 }
+async function v52MeralcoPart(){
+  if (DEMO || S.mig_v52_mer_part) return;
+  try {
+    const t = DB.Tenants.find(x => /\bv52\b|vault 52/i.test([x.tenant_name, x.trade_name].join(' ')));
+    const mt = t && DB.Meters.find(m => m.utility !== 'Primewater' && m.tenant_id === t.id);
+    const b = mt && DB.ElecBills.find(x => x.meter_id === mt.id && x.period === '2026-11');
+    if (b && b.status !== 'Paid' && !num(b.paid_amount)) await save('ElecBills', { ...b, status: 'Partial', paid_amount: 8000, paid_date: '2026-11-24', notes: '₱8,000 paid Nov 24, 2026 — attach proof' });
+    await save('Settings', { id:'mig_v52_mer_part', value: new Date().toISOString() }); S.mig_v52_mer_part = '1';
+  } catch(e){ console.error('v52 meralco part failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1237,6 +1247,7 @@ async function reload(){
     await pw4FIsSqueeze();
     await soaMeralcoAndrei();
     await v52WasteSep();
+    await v52MeralcoPart();
     await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
@@ -1328,6 +1339,10 @@ function soaUtil(t, m, thru, withMeralco){
       const mon = fmtMonth(b.period).replace(/^(\w{3})\w*/, '$1').toUpperCase();
       const short = `${name.toUpperCase()}${meterLabel(mt) ? ' – ' + meterLabel(mt).toUpperCase() : ''} (${mon})${use ? ` · ${kwh(num(b.curr) - num(b.prev))} ${unit} × ${peso(num(b.rate))}` : ''}`;
       (b.period === upto ? cur : past).push([lbl, a, name, short]);
+      if (num(b.paid_amount) && b.status !== 'Paid') {   // part already paid → show it as a less line
+        const pd = num(b.paid_amount), on = b.paid_date ? dmy(b.paid_date).toUpperCase() : '';
+        (b.period === upto ? cur : past).push([`Less: paid ${name} — ${fmtMonth(b.period)}${on ? ' on ' + on : ''}`, -pd, name, `LESS: PAID ${name.toUpperCase()} (${mon})${on ? ' · ' + on : ''}`]);
+      }
     });
   });
   const extra = (() => { try { return JSON.parse(S.wh_extra_unpaid || '[]'); } catch(e){ return []; } })().filter(k => k.startsWith(t.id + ':')).map(k => k.split(':')[1]).filter(mm => mm < from);
@@ -1889,7 +1904,7 @@ function elUpdateAll(){
     if (u) u.textContent = c.usage == null ? '' : c.usage.toLocaleString('en-PH',{minimumFractionDigits:1});
     if (a) a.textContent = c.amount ? peso(c.amount).slice(1) : '';
     if (mt.type === 'Building') bldg += c.amount;
-    else { tot += c.amount; nT++; if (c.b && c.b.status === 'Paid') { paid += num(c.b.paid_amount) || c.amount; nPaid++; } }
+    else { tot += c.amount; nT++; if (c.b && c.b.status === 'Paid') { paid += num(c.b.paid_amount) || c.amount; nPaid++; } else if (c.b && num(c.b.paid_amount)) paid += num(c.b.paid_amount); }
   });
   const bill = num($('el-total').value), common = bill ? r2(bill - tot - bldg) : num($('el-common').value);   // building pays whatever the tenants don't
   $('el-tot').textContent = peso(tot).slice(1);
