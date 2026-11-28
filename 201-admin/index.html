@@ -1508,25 +1508,45 @@ function pwSplit(ps){
 // Meralco: bill, what tenants pay, what the building (BVI) shoulders
 const elOpen = new Set();
 function elToggleMonth(m){ elOpen.has(m) ? elOpen.delete(m) : elOpen.add(m); elHistoryMeralco(); }
+function elBillFile(m){
+  const P = DB.ElecPeriods.find(p => p.id === m) || { id: m };
+  editing = { elbill: m };
+  $('modal').classList.remove('wide'); $('m-body').className = 'body';
+  $('m-title').textContent = `Meralco bill · ${fmtMonth(m)}`;
+  $('m-body').innerHTML = `<div class="fld wide"><label>Bill (PDF or photo)</label>${proofZone(P.bill_url)}</div>`;
+  wireProofZone();
+  $('m-foot').innerHTML = `<div class="left"></div><button class="btn ghost" onclick="closeForm()">Cancel</button><button class="btn" id="m-save" onclick="elBillFileSave()">Save</button>`;
+  $('ovl').classList.add('on');
+}
+async function elBillFileSave(){
+  const m = editing.elbill, btn = $('m-save');
+  if (!proofPicked) return toast('Attach the bill first');
+  btn.disabled = true; btn.textContent = 'Uploading…';
+  try {
+    const bill_url = await uploadProof(proofPicked);
+    await save('ElecPeriods', { ...(DB.ElecPeriods.find(p => p.id === m) || { id: m }), bill_url });
+    closeForm(); render(); toast('Bill saved');
+  } catch(e){ btn.disabled = false; btn.textContent = 'Save'; toast('Upload failed: ' + e.message); }
+}
 function elHistoryMeralco(){
   const ps = utilPeriods().filter(p => num(p.meralco_total) || num(p.bvi_share)).sort((a,b) => b.m.localeCompare(a.m));
   if (!ps.length) { $('el-hist').innerHTML = ''; return; }
   const f = v => peso(v).slice(1), ok = ps.filter(p => num(p.meralco_total) && p.bvi_share !== '' && p.bvi_share != null);
   const wk = ok.filter(p => num(p.meralco_kwh)), nk = wk.length, tk = wk.reduce((x,p) => x + num(p.meralco_kwh), 0), tbk = wk.reduce((x,p) => x + num(p.meralco_total), 0);
   const tb = ok.reduce((x,p) => x + num(p.meralco_total), 0), tv = ok.reduce((x,p) => x + num(p.bvi_share), 0), ti = ok.reduce((x,p) => x + num(p.bvi_incl), 0);
-  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">Meralco history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Actual kWh</th><th class="num">Rate</th><th class="num">Meralco bill</th><th class="num">Tenants pay</th><th class="num">Building (BVI)</th><th class="num">BVI share</th></tr>
+  $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">Meralco history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Actual kWh</th><th class="num">Rate</th><th class="num">Meralco bill</th><th class="num">Tenants pay</th><th class="num">Building (BVI)</th><th class="num">BVI share</th><th>Bill</th></tr>
     ${ps.map(p => { const b = num(p.meralco_total), hasV = p.bvi_share !== '' && p.bvi_share != null, v = num(p.bvi_share);
       let bd = []; try { bd = JSON.parse(p.breakdown || '[]'); } catch(e){}
       const open = elOpen.has(p.m);
-      const detail = bd.length && open ? `<tr><td colspan="7" style="background:#FAFBFA;padding:6px 14px 12px 28px"><table class="condensed" style="width:100%"><tr><th>Tenant / meter</th><th class="num">kWh used</th><th class="num">Amount</th><th class="num">Share</th></tr>
+      const detail = bd.length && open ? `<tr><td colspan="8" style="background:#FAFBFA;padding:6px 14px 12px 28px"><table class="condensed" style="width:100%"><tr><th>Tenant / meter</th><th class="num">kWh used</th><th class="num">Amount</th><th class="num">Share</th></tr>
         ${bd.map(([n, k, a, g]) => { const bvi = /^201 Brookland$/i.test(n), bed = g === 'bvi' || (/^bedoo$/i.test(n) && num(p.bvi_incl) && !bd.some(r => r[3]));
           return `<tr${bvi ? ' style="background:#FBF3E4"' : ''}><td>${bvi ? '<b>201 Brookland (common / building)</b>' : esc(n)}${bed ? ' <span class="muted" style="font-size:11px">· shouldered by BVI</span>' : ''}${num(a) < 0 ? (bvi ? ' <span style="color:var(--green-d);font-size:11px">surplus</span>' : ' <span style="color:var(--red);font-size:11px">⚠ negative reading</span>') : ''}</td><td class="num">${k === '' ? '' : num(k).toLocaleString('en-PH',{maximumFractionDigits:2})}</td><td class="num">${num(a) ? f(num(a)) : '—'}</td><td class="num">${b ? (num(a) / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
         <tr style="background:var(--green-l)"><td><b>Meralco bill</b></td><td></td><td class="num"><b>${f(b)}</b></td><td class="num"><b>100%</b></td></tr>
         ${(() => { const d = r2(bd.reduce((x, r) => x + num(r[2]), 0) - b); return Math.abs(d) > 1 ? `<tr><td colspan="4" style="color:var(--red);font-size:12px">⚠ The lines add up to ${f(b + d)} — ${f(Math.abs(d))} ${d > 0 ? 'more' : 'less'} than the bill. Check the sheet.</td></tr>` : ''; })()}</table></td></tr>` : '';
       return `<tr${bd.length ? ` style="cursor:pointer" onclick="elToggleMonth('${p.m}')" title="Show breakdown"` : ''}><td>${bd.length ? `<span class="muted" style="display:inline-block;width:14px">${open ? '▾' : '▸'}</span>` : '<span style="display:inline-block;width:14px"></span>'}${fmtMonth(p.m)}</td><td class="num">${num(p.meralco_kwh) ? num(p.meralco_kwh).toLocaleString('en-PH') : '—'}</td><td class="num">${num(p.rate) ? num(p.rate).toFixed(2) : '—'}</td><td class="num">${b ? f(b) : '<span style="color:var(--red)">⚠ check amount</span>'}</td><td class="num">${b && hasV ? f(b - v) : '—'}</td>
-        <td class="num"><b>${!hasV ? '—' : v < 0 ? `<span style="color:var(--green-d)">−${f(-v)}</span><div class="muted" style="font-size:11px;font-weight:400">surplus</div>` : f(v)}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>` + detail; }).join('')}
-    <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${ok.length} months</span></td><td class="num"><b>${tk.toLocaleString('en-PH')}</b></td><td class="num"><b>${tk ? (tbk / tk).toFixed(2) : ''}</b></td><td class="num"><b>${f(tb)}</b></td><td class="num"><b>${f(tb - tv)}</b></td><td class="num"><b>${f(tv)}</b>${ti ? `<div class="muted" style="font-size:11px">incl. Bedoo ${f(ti)}</div>` : ''}</td><td class="num"><b>${tb ? (tv / tb * 100).toFixed(2) + '%' : ''}</b></td></tr>
-    <tr><td class="muted">Average / month</td><td class="num">${nk ? Math.round(tk / nk).toLocaleString('en-PH') : ''}</td><td></td><td class="num">${ok.length ? f(tb / ok.length) : ''}</td><td class="num">${ok.length ? f((tb - tv) / ok.length) : ''}</td><td class="num"><b>${ok.length ? f(tv / ok.length) : ''}</b></td><td></td></tr></table></div>`;
+        <td class="num"><b>${!hasV ? '—' : v < 0 ? `<span style="color:var(--green-d)">−${f(-v)}</span><div class="muted" style="font-size:11px;font-weight:400">surplus</div>` : f(v)}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td><td onclick="event.stopPropagation()">${p.bill_url ? proofThumb(p.bill_url) + ` <a href="#" class="muted" style="font-size:11px" onclick="elBillFile('${p.m}');return false">change</a>` : proofThumb('', `elBillFile('${p.m}')`)}</td></tr>` + detail; }).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${ok.length} months</span></td><td class="num"><b>${tk.toLocaleString('en-PH')}</b></td><td class="num"><b>${tk ? (tbk / tk).toFixed(2) : ''}</b></td><td class="num"><b>${f(tb)}</b></td><td class="num"><b>${f(tb - tv)}</b></td><td class="num"><b>${f(tv)}</b>${ti ? `<div class="muted" style="font-size:11px">incl. Bedoo ${f(ti)}</div>` : ''}</td><td class="num"><b>${tb ? (tv / tb * 100).toFixed(2) + '%' : ''}</b></td><td></td></tr>
+    <tr><td class="muted">Average / month</td><td class="num">${nk ? Math.round(tk / nk).toLocaleString('en-PH') : ''}</td><td></td><td class="num">${ok.length ? f(tb / ok.length) : ''}</td><td class="num">${ok.length ? f((tb - tv) / ok.length) : ''}</td><td class="num"><b>${ok.length ? f(tv / ok.length) : ''}</b></td><td></td><td></td></tr></table></div>`;
 }
 function elHistory(){
   if (UTIL === 'Meralco') return elHistoryMeralco();
