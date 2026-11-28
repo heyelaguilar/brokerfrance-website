@@ -1770,9 +1770,9 @@ function elView(per, rate, tenantM, bldgM){
   const bl = bldgM.map(mt => { const c = elCalc(mt, per, rate); return `<tr><td>${esc(meterName(mt))} <span class="muted">${esc(mt.unit)} · ${kwh(c.usage)}</span></td><td class="num">${c.amount ? peso(c.amount).slice(1) : '—'}</td><td colspan="4"></td></tr>`; }).join('');
   $('el-wrap').innerHTML = `<table class="el-view condensed"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>${rowsSorted}
     <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b id="el-tot">—</b></td><td colspan="4"></td></tr>
-    <tr><td colspan="6" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
+    ${UTIL === 'Primewater' ? '' : `<tr><td colspan="6" class="muted" style="padding-top:18px"><b>Building (BVI)</b></td></tr>${bl}
     <tr><td>201 Brookland Bldg. <span class="muted">common areas</span></td><td class="num" id="el-common-v">—</td><td colspan="4"></td></tr>
-    <tr style="background:#FFF8E1"><td><b>BVI ${UTIL} total due</b></td><td class="num"><b id="el-bvi">—</b></td><td colspan="4"></td></tr></table>`;
+    <tr style="background:#FFF8E1"><td><b>BVI ${UTIL} total due</b></td><td class="num"><b id="el-bvi">—</b></td><td colspan="4"></td></tr>`}</table>`;
 }
 function elUpdateAll(){
   const per = $('f-el-period').value, rate = $('el-rate').value, ms = activeMeters();
@@ -1787,10 +1787,12 @@ function elUpdateAll(){
   });
   const common = num($('el-common').value);
   $('el-tot').textContent = peso(tot).slice(1);
-  $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
-  $('el-bvi').textContent = peso(bldg + common).slice(1);
+  if ($('el-common-v')) $('el-common-v').textContent = common ? peso(common).slice(1) : '—';
+  if ($('el-bvi')) $('el-bvi').textContent = peso(bldg + common).slice(1);
   const unpaid = Math.max(0, tot - paid);
-  $('el-kpis').innerHTML = [['Total amount due', peso(num($('el-total').value)), `${UTIL} bill`, ''], ['Collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI', peso(bldg + common), 'building share', '']]
+  // Primewater: the building pays what's left of the bill (tenant charges spread over the months they cover)
+  const pwB = UTIL === 'Primewater' ? pwBviMonth(per) : null;
+  $('el-kpis').innerHTML = [['Total amount due', peso(num($('el-total').value)), `${UTIL} bill`, ''], ['Collectible', peso(tot), 'from tenants', ''], ['Paid', peso(paid), tot ? `${Math.round(paid / tot * 100)}% paid` : '', paid && !unpaid ? 'good' : ''], ['Unpaid', peso(unpaid), $('el-dd').value ? 'due ' + fmtDate($('el-dd').value) : '', unpaid ? 'bad' : 'good'], ['BVI', UTIL === 'Primewater' ? (pwB == null ? '—' : peso(pwB)) : peso(bldg + common), UTIL === 'Primewater' && pwB == null ? 'no bill yet' : 'building share', '']]
     .map(([l,v,s,c]) => `<div class="card kpi ${c}"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${esc(s)}</div></div>`).join('');
 }
 async function saveElec(){
