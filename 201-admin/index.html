@@ -262,7 +262,9 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 #app td:not(.soa-doc *) :is(.muted,small):not(.soa-doc *){padding-left:8px}
 #app td .name,#app td .cellname{display:inline-block!important;max-width:280px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;vertical-align:bottom}
 #app td .cellname .muted{padding-left:8px}
-#app .grid2,#app .grid2.half,#app .grid2.even,#app .grid2.even2{grid-template-columns:1fr!important}
+#app .grid2 td .name{max-width:140px!important}
+#app .grid2 td,#app .grid2 th{padding:6px 7px!important}
+#app .grid2 td .muted{max-width:200px!important}
 #app td:not(.soa-doc *) br{display:none}
 #app .bill-tbl td:first-child{max-width:none!important}
 </style>
