@@ -1322,7 +1322,7 @@ function rOverview(){
 // ── Collectibles breakdown for a month: billed amounts, plus fixed charges projected for tenants not yet billed ──
 function rCollectibles(m){
   const ts = activeTenants();
-  const keys = [['rent','Rent'],['rent_vat','VAT on rent'],['cusa','CUSA'],['water_amt','Water'],['elec_amt','Electricity / Meralco'],['waste','Waste hauling'],['other_amt','Other charges'],['penalty','Penalties'],['ewt','Less: EWT (BIR 2307)']];
+  const keys = [['rent','Rent'],['rent_vat','VAT on rent'],['cusa','CUSA'],['water_amt','Primewater'],['elec_amt','Electricity / Meralco'],['waste','Waste hauling'],['other_amt','Other charges'],['penalty','Penalties'],['ewt','Less: EWT (BIR 2307)']];
   const sum = Object.fromEntries(keys.map(([k]) => [k, 0]));
   let unbilled = [];
   ts.forEach(t => {
@@ -2416,7 +2416,7 @@ function rTenants(){
     .sort(byUnit);
   $('tn-wrap').innerHTML = list.length ? `<table><tr><th>Tenant</th><th>Unit</th><th class="num">Rent</th><th>Charges</th><th>SOA email</th><th>Lease end</th><th class="num">Balance</th><th>Status</th></tr>${list.map(t => {
     const bal = balanceOf(t.id), d = daysUntil(t.lease_end);
-    const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Water', 'Meralco'].filter(Boolean).join(' · ');
+    const ch = [vatOn()&&t.rent_vat==='Yes'?'VAT':'', num(t.ewt_pct)?`EWT ${t.ewt_pct}%`:'', (t.cusa_mode||'Per sqm')!=='None'?'CUSA':'', 'Primewater', 'Meralco'].filter(Boolean).join(' · ');
     return `<tr class="click" onclick="openTenant('${t.id}')"><td><b>${esc(t.tenant_name)}</b><div class="muted">${esc(t.trade_name)}</div></td><td>${esc(t.floor)}<div class="muted">${esc(t.unit)}${t.area_sqm?' · '+t.area_sqm+' sqm':''}</div></td><td class="num">${t.monthly_rent?peso(t.monthly_rent):'—'}</td><td class="muted">${ch}</td><td>${t.email?esc(t.email):'<span class="pill p-red">missing</span>'}</td><td>${fmtDate(t.lease_end)}${d!=null&&d<=90&&t.status!=='Moved Out'?`<div class="muted" style="color:var(--amber)">${d<0?'expired':d+' days left'}</div>`:''}</td><td class="num">${bal>0?`<b ${overdueOf(t.id)?'style="color:var(--red)"':''}>${peso(bal)}</b>`:bal<0?`<span class="muted">${peso(-bal)} credit</span>`:'—'}</td><td>${pill(t.status||'Active')}</td></tr>`;}).join('')}</table>`
     : `<div class="empty"><b>${DB.Tenants.length?'No match':'No tenants yet'}</b>${DB.Tenants.length?'':'Add each tenant with their rent, CUSA, utilities and SOA email.'}</div>`;
 }
