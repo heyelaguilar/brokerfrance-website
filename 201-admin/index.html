@@ -1613,12 +1613,16 @@ function whTenants(rows){
     + k('Collectible', peso(coll), 'from tenants') + k('Collected', peso(got), coll ? Math.round(got / coll * 100) + '% collected' : '', got && got >= coll ? 'good' : '')
     + k('Unpaid', peso(Math.max(0, coll - got)), '', coll - got > 0 ? 'bad' : '') + k('BVI', billAmt ? peso(billAmt - coll) : '—', billAmt ? (billAmt - coll) / billAmt * 100 > 0 ? ((billAmt - coll) / billAmt * 100).toFixed(2) + '% of the bill' : '' : '');
   if (!ts.length) { $('wh-ten').innerHTML = `<div class="empty">No tenant hauling charges for ${fmtMonth(m)}.</div>`; return; }
-  $('wh-ten').innerHTML = `<table class="condensed el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>
+const pc = v => billAmt ? (v / billAmt * 100).toFixed(2) + '%' : '';
+  $('wh-ten').innerHTML = `<table class="condensed el-view"><tr><th>Tenant</th><th class="num">Amount due</th><th class="num">Share</th><th>Payment</th><th>Payment date</th><th>Paid to</th><th>Proof</th></tr>
     ${ts.map(t => { const p = pays.find(x => x.tenant_id === t.id);
-      return `<tr><td><b>${esc(t.trade_name || t.tenant_name)}</b></td><td class="num"><b>${peso(num(t.waste_fee)).slice(1)}</b></td>
+      return `<tr><td><b>${esc(t.trade_name || t.tenant_name)}</b></td><td class="num"><b>${peso(num(t.waste_fee)).slice(1)}</b></td><td class="num">${pc(num(t.waste_fee))}</td>
         <td>${p ? `<a href="#" class="paid" style="text-decoration:none" onclick="whTPay('${t.id}');return false">Paid</a>` : `<button class="btn sm" onclick="whTPay('${t.id}')">Mark paid</button>`}</td>
         <td>${p ? fmtDate(p.date) : ''}</td><td>${esc(p ? p.bank || '' : '')}</td><td>${p ? proofThumb(p.proof_url, `whTPay('${t.id}')`) : ''}</td></tr>`; }).join('')}
-    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b>${peso(coll).slice(1)}</b></td><td colspan="4"></td></tr></table>`;
+    <tr style="background:var(--green-l)"><td><b>Total collectible</b></td><td class="num"><b>${peso(coll).slice(1)}</b></td><td class="num"><b>${pc(coll)}</b></td><td colspan="4"></td></tr>
+    ${billAmt ? `<tr style="background:#FBF3E4"><td><b>Building (BVI)</b></td><td class="num"><b>${peso(billAmt - coll).slice(1)}</b></td><td class="num"><b>${pc(billAmt - coll)}</b></td><td colspan="4"></td></tr>
+    <tr><td><b>Hauler bill</b></td><td class="num"><b>${peso(billAmt).slice(1)}</b></td><td class="num"><b>100%</b></td><td colspan="4"></td></tr>`
+    : `<tr><td colspan="7" class="muted">No hauler bill yet for ${fmtMonth(m)} — the building's share shows once the bill is in.</td></tr>`}</table>`;
 }
 function whTPay(tid){
   const m = $('f-wh-month').value, t = tn(tid), p = WH_PAY(m).find(x => x.tenant_id === tid) || {};
