@@ -961,6 +961,23 @@ async function meralcoNov25(){
     await save('Settings', { id:'mig_el_nov25_bill', value: new Date().toISOString() }); S.mig_el_nov25_bill = '1';
   } catch(e){ console.error('meralco nov 2025 failed', e); }
 }
+// Meralco per-tenant breakdown from the monthly sheets: [name, kWh, amount]; '201 Brookland' = building/common
+const EL_BREAKDOWN = {
+  '2025-10': [['Coffee Story','',12635.77],['Coffee Story Kitchen','',3151.07],['Dental Clinic','',3262.10],['Bedoo','',2481.84],['The 4th','',4238.93],['201 Brookland','',9492.21]],
+  '2025-11': [['Coffee Story',854.9,12883.34],['Coffee Story Kitchen',193.2,2911.52],['Dental Clinic',183.5,2765.35],['Bedoo',151.5,2283.11],['V52 Cafe',527.77,7953.49],['The 4th',319.8,4819.39],['201 Brookland','',8212.30]],
+  '2025-12': [['Coffee Story',1015.2,14933.59],['Coffee Story Kitchen',212,3118.52],['Dental Clinic',219.6,3230.32],['Bedoo',192,2824.32],['V52 Cafe',565,8311.15],['The 4th',494,7266.74],['ZSThree',47.3,695.78],['201 Brookland','',944.93]],
+  '2026-01': [['Coffee Story',683.8,10014.04],['Coffee Story Kitchen',463.5,6787.82],['Toothluscent',95.9,1404.43],['Bedoo',154,2255.28],['V52 Cafe',436,6385.09],['ZSThree',13.6,199.17],['Mickey Burzillian',48,702.95],['Juice',0,0],['Andyhaws Grill',6.7,98.12],['The 4th',45.4,664.87],['The 4th Light',129,1889.17],['201 Brookland','',2901.11]],
+  '2026-02': [['Coffee Story',888.2,13126.05],['Coffee Story Kitchen',-79,-1167.48],['Toothluscent',187.2,2766.49],['Bedoo',168,2482.75],['V52 Cafe',563.57,8328.58],['ZSThree',36.7,542.36],['Mickey Burzillian',96.2,1421.67],['Juice',34.9,515.76],['Andyhaws Grill',6.7,99.01],['The 4th',50.6,747.78],['The 4th Light',0,0],['201 Brookland','',11969.35]],
+  '2026-03': [['Coffee Story',934.7,14387.31],['Coffee Story Kitchen',235.1,3618.76],['Toothluscent',199.9,3076.95],['Bedoo',153.4,2361.20],['V52 Cafe',571.64,8798.93],['ZSThree',22.4,344.79],['Mickey Burzillian',123.6,1902.50],['Juice',167.8,2582.85],['Andyhaws Grill',6.4,98.51],['The 4th',192.6,2964.58],['The 4th Light',0,0],['201 Brookland','',5194.33]],
+};
+async function seedMeralcoBreakdown(){
+  if (DEMO || S.mig_el_breakdown_v1) return;
+  try {
+    const rows = Object.entries(EL_BREAKDOWN).map(([m, b]) => ({ ...(DB.ElecPeriods.find(p => p.id === m) || { id: m }), breakdown: JSON.stringify(b) }));
+    await saveMany('ElecPeriods', rows);
+    await save('Settings', { id:'mig_el_breakdown_v1', value: new Date().toISOString() }); S.mig_el_breakdown_v1 = '1';
+  } catch(e){ console.error('meralco breakdown failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1091,6 +1108,7 @@ async function reload(){
     await seedMeralcoHistory();
     await meralcoNov26Bvi();
     await meralcoNov25();
+    await seedMeralcoBreakdown();
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
@@ -1464,6 +1482,8 @@ function pwSplit(ps){
     <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${cum.toFixed(1)} cu.m · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
 }
 // Meralco: bill, what tenants pay, what the building (BVI) shoulders
+const elOpen = new Set();
+function elToggleMonth(m){ elOpen.has(m) ? elOpen.delete(m) : elOpen.add(m); elHistoryMeralco(); }
 function elHistoryMeralco(){
   const ps = utilPeriods().filter(p => num(p.meralco_total) || num(p.bvi_share)).sort((a,b) => b.m.localeCompare(a.m));
   if (!ps.length) { $('el-hist').innerHTML = ''; return; }
@@ -1471,8 +1491,14 @@ function elHistoryMeralco(){
   const tb = ok.reduce((x,p) => x + num(p.meralco_total), 0), tv = ok.reduce((x,p) => x + num(p.bvi_share), 0), ti = ok.reduce((x,p) => x + num(p.bvi_incl), 0);
   $('el-hist').innerHTML = `<h3 style="margin:22px 0 8px">Meralco history</h3><div class="card tbl"><table class="condensed"><tr><th>Month</th><th class="num">Meralco bill</th><th class="num">Tenants pay</th><th class="num">Building (BVI)</th><th class="num">BVI share</th></tr>
     ${ps.map(p => { const b = num(p.meralco_total), hasV = p.bvi_share !== '' && p.bvi_share != null, v = num(p.bvi_share);
-      return `<tr><td>${fmtMonth(p.m)}</td><td class="num">${b ? f(b) : '<span style="color:var(--red)">⚠ check amount</span>'}</td><td class="num">${b && hasV ? f(b - v) : '—'}</td>
-        <td class="num"><b>${!hasV ? '—' : v < 0 ? `<span style="color:var(--green-d)">−${f(-v)}</span><div class="muted" style="font-size:11px;font-weight:400">surplus</div>` : f(v)}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
+      let bd = []; try { bd = JSON.parse(p.breakdown || '[]'); } catch(e){}
+      const open = elOpen.has(p.m);
+      const detail = bd.length && open ? `<tr><td colspan="5" style="background:#FAFBFA;padding:6px 14px 12px 28px"><table class="condensed" style="width:100%"><tr><th>Tenant / meter</th><th class="num">kWh used</th><th class="num">Amount</th><th class="num">Share</th></tr>
+        ${bd.map(([n, k, a]) => { const bvi = /^201 Brookland$/i.test(n), bed = /^bedoo$/i.test(n) && num(p.bvi_incl);
+          return `<tr${bvi ? ' style="background:#FBF3E4"' : ''}><td>${bvi ? '<b>201 Brookland (common / building)</b>' : esc(n)}${bed ? ' <span class="muted" style="font-size:11px">· shouldered by BVI</span>' : ''}${num(a) < 0 ? ' <span style="color:var(--red);font-size:11px">⚠ negative reading</span>' : ''}</td><td class="num">${k === '' ? '' : num(k).toLocaleString('en-PH',{maximumFractionDigits:2})}</td><td class="num">${num(a) ? f(num(a)) : '—'}</td><td class="num">${b ? (num(a) / b * 100).toFixed(2) + '%' : ''}</td></tr>`; }).join('')}
+        <tr style="background:var(--green-l)"><td><b>Meralco bill</b></td><td></td><td class="num"><b>${f(bd.reduce((x, r) => x + num(r[2]), 0))}</b></td><td class="num"><b>100%</b></td></tr></table></td></tr>` : '';
+      return `<tr${bd.length ? ` style="cursor:pointer" onclick="elToggleMonth('${p.m}')" title="Show breakdown"` : ''}><td>${bd.length ? `<span class="muted" style="display:inline-block;width:14px">${open ? '▾' : '▸'}</span>` : '<span style="display:inline-block;width:14px"></span>'}${fmtMonth(p.m)}</td><td class="num">${b ? f(b) : '<span style="color:var(--red)">⚠ check amount</span>'}</td><td class="num">${b && hasV ? f(b - v) : '—'}</td>
+        <td class="num"><b>${!hasV ? '—' : v < 0 ? `<span style="color:var(--green-d)">−${f(-v)}</span><div class="muted" style="font-size:11px;font-weight:400">surplus</div>` : f(v)}</b>${num(p.bvi_incl) ? `<div class="muted" style="font-size:11px">incl. ${esc(p.bvi_incl_label || 'Bedoo')} ${f(num(p.bvi_incl))}</div>` : ''}</td><td class="num">${b && hasV ? (v / b * 100).toFixed(2) + '%' : ''}</td></tr>` + detail; }).join('')}
     <tr style="background:var(--green-l)"><td><b>Total</b> <span class="muted">${ok.length} months</span></td><td class="num"><b>${f(tb)}</b></td><td class="num"><b>${f(tb - tv)}</b></td><td class="num"><b>${f(tv)}</b>${ti ? `<div class="muted" style="font-size:11px">incl. Bedoo ${f(ti)}</div>` : ''}</td><td class="num"><b>${tb ? (tv / tb * 100).toFixed(2) + '%' : ''}</b></td></tr>
     <tr><td class="muted">Average / month</td><td class="num">${ok.length ? f(tb / ok.length) : ''}</td><td class="num">${ok.length ? f((tb - tv) / ok.length) : ''}</td><td class="num"><b>${ok.length ? f(tv / ok.length) : ''}</b></td><td></td></tr></table></div>`;
 }
