@@ -2621,9 +2621,9 @@ function soaRows(bill){
       const pay = Math.max(0, Math.min(paidBefore, num(b.total))); paidBefore = r2(paidBefore - pay);
       const rem = r2(num(b.total) - pay); if (rem <= 0.004) return;
       let what;
-      if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} ${m[2].replace(/\s*[–-]\s*/g, '-')}` : b.other_label.split(',')[0]; }
-      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` ${MON(num(t.cusa_lag) && !num(b.rent) ? monthsBack(b.period, num(t.cusa_lag)) : b.period)}`;
-      items.push([`PAST DUE (${String(what).toUpperCase().trim()})${pay ? ' – BALANCE' : ''}`, rem]);
+      if (/opening balance/i.test(b.notes || '') && b.other_label) { const m = /^(.*?)\s*(?:\d+\s*sqm\s*)?\(([^)]*)\)/i.exec(b.other_label); what = m ? `${m[1].trim()} (${m[2].replace(/\s*[–-]\s*/g, '-')})` : b.other_label.split(',')[0]; }
+      else what = [num(b.rent) ? 'RENT' : '', num(b.cusa) ? 'CUSA' : '', num(b.other_amt) ? (b.other_label || 'OTHER') : ''].filter(Boolean).join(' & ') + ` (${MON(num(t.cusa_lag) && !num(b.rent) ? monthsBack(b.period, num(t.cusa_lag)) : b.period)})`;
+      items.push([`PAST DUE: ${String(what).toUpperCase().trim()}${pay ? ', BALANCE' : ''}`, rem]);
     });
     const listed = r2(items.reduce((x, r) => x + r[1], 0));
     if (Math.abs(listed - num(s.opening)) > 0.01) items.splice(0, items.length, ['PAST DUE', num(s.opening)]);   // fall back to one line if the books don't split cleanly
