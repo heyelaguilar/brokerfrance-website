@@ -1603,7 +1603,9 @@ const noCusa = t => t.cusa_payment === 'No CUSA' || t.cusa_mode === 'None';
 const soaHold = t => t.soa_status === 'Hold';
 // SOA list: tenants paying by bank transfer only (anyone on PDC is left out)
 // tenants due on the 1st (Squeeze, Andrei's, Coffee Story…) go out with next month's batch, so this month's list skips them
-const soaList = () => { const a = activeTenants(); return [...a.filter(t => num(t.due_day) !== 1), ...a.filter(t => num(t.due_day) === 1)]; };
+const floorRank = f => { const m = /(\d+)/.exec(String(f || '')); return /ground/i.test(f || '') ? 1 : m ? +m[1] : 99; };
+const unitRank = t => { const m = /(\d+)/.exec(String(t.unit || '')); return m ? +m[1] : floorRank(t.floor) * 100 + 99; };
+const soaList = () => activeTenants().slice().sort((a, b) => unitRank(a) - unitRank(b) || floorRank(a.floor) - floorRank(b.floor) || String(a.tenant_name).localeCompare(b.tenant_name));   // by floor / unit
 const perOf = (t, P) => num(t.due_day) === 1 ? nextMonthOf(P) : P;   // in the Nov batch, tenants due on the 1st get their Dec SOA (due Dec 1)   // every tenant; rent or CUSA covered by PDC is not billed on the SOA
 const SOA_UTIL_FROM = () => S.soa_util_from || '2026-10';
 // unpaid utilities for tenant t up to month m, split into this month and earlier
@@ -2772,7 +2774,7 @@ function rBilling(){
   let divided = false;
   const rows = ts.map(t => {
     const g = grid[t.id] || (grid[t.id] = {}), P0 = P, Pt = perOf(t, P0);
-    const divider = num(t.due_day) === 1 && !divided ? (divided = true, `<tr class="due1-div"><td colspan="10">Due on the 1st · ${fmtMonth(Pt)} SOA, due ${fmtDate(dayOf(Pt, 1))}</td></tr>`) : '';
+    const divider = '';
     { const P = Pt;
     const c = computeBill(t, P, inputsFor(t.id)), u = soaUtil(t, P, utilThruDefault(P, t));
     const cut = pastCutOf(P, t), allU = [...u.cur, ...u.past];   // same rule as the SOA: older than two months back is past due
