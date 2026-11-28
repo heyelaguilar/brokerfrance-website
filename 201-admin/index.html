@@ -605,7 +605,7 @@ const SUMMARY_2026_11 = [
   ['enerp','2nd Floor','Enerpo Technical Services Co.','PDC','1',20,13910.00,0,'No CUSA','Monthly','Send'],
   ['akmas','2nd Floor','AKMAS Modular Kitchen & Cabinet Solutions Modular Cabinet Trading','PDC','31',150,69550.00,7500,'Bank transfer','Monthly','Send'],
   ['seo vas','2nd Floor','Philippine SEO VAS OPC','Check','',120,33333.33,9600,'Bank transfer','Bi-annual','Send'],
-  ['storage room','3rd Floor','Relly Fajardo','Bank transfer','',13,5000.00,0,'No CUSA','Monthly','Send'],
+  ['storage room','3rd Floor','Relly Fajardo','Bank transfer','1',13,5000.00,0,'No CUSA','Monthly','Send'],
   ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
   ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4800,'Bank transfer','Monthly','Send'],
   ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,0,'No CUSA','Annual','Hold'],
@@ -1287,6 +1287,14 @@ async function coffeeCusaLag(){
     await save('Settings', { id:'mig_coffee_cusa_lag', value: new Date().toISOString() }); S.mig_coffee_cusa_lag = '1';
   } catch(e){ console.error('coffee cusa lag failed', e); }
 }
+async function rellyDue1(){
+  if (DEMO || S.mig_relly_due1) return;
+  try {
+    const t = DB.Tenants.find(x => /relly/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t && num(t.due_day) !== 1) await save('Tenants', { ...t, due_day: 1 });
+    await save('Settings', { id:'mig_relly_due1', value: new Date().toISOString() }); S.mig_relly_due1 = '1';
+  } catch(e){ console.error('relly due day failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1419,6 +1427,7 @@ async function reload(){
     await andreiUtilBack();
     await novBatchFix();
     await coffeeCusaLag();
+    await rellyDue1();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
