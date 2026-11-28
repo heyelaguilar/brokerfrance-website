@@ -2601,7 +2601,7 @@ function openSOA(billId){
 }
 function printSOA(id){
   const w = window.open('', '_blank'); if (!w) return toast('Allow pop-ups to print');
-  w.document.write(`<html><head><title>SOA</title><style>@page{size:A4;margin:16mm}body{margin:0}</style></head><body>${soaHTML(billish(id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
+  w.document.write(`<html><head><title>${soaFileName(id)}</title><style>@page{size:A4;margin:0}body{margin:0}.soa-doc{max-width:none!important;padding:22mm 25mm!important}</style></head><body>${soaHTML(billish(id))}<script>onload=()=>print()<\/script></body></html>`); w.document.close();
 }
 // SOA as an image (JPG download or copy to clipboard), drawn from the same layout
 let h2cP;
@@ -2609,8 +2609,9 @@ function loadH2C(){ return h2cP ||= new Promise((res, rej) => { const sc = docum
 async function soaCanvas(id){
   const h2c = await loadH2C(), b = billish(id);
   const box = document.createElement('div');
-  box.style.cssText = 'position:fixed;left:-10000px;top:0;width:848px;padding:40px 0;background:#fff';
+  box.style.cssText = 'position:fixed;left:-10000px;top:0;width:794px;min-height:1123px;padding:0;background:#fff';   // A4 at 96 dpi (210 × 297 mm)
   box.innerHTML = soaHTML(b); document.body.appendChild(box);
+  const doc0 = box.querySelector('.soa-doc'); if (doc0) { doc0.style.maxWidth = 'none'; doc0.style.padding = '60px 94px'; }   // 25 mm side margins
   await Promise.all([...box.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
   try { return await h2c(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }); } finally { box.remove(); }
 }
