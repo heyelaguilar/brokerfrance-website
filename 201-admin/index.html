@@ -2291,7 +2291,7 @@ function soaHTML(bill){
   <table style="width:100%;border-collapse:collapse">
     <tr><td rowspan="2" style="${c};background:${g};font-size:20px;font-weight:800;width:50%">STATEMENT OF ACCOUNT</td><td style="${c};width:25%">BILLING DATE</td><td style="${c};text-align:right">${dmy(bill.bill_date)}</td></tr>
     <tr><td style="${c}">DUE DATE</td><td style="${c};text-align:right">${dmy(bill.due_date)}</td></tr>
-    <tr><td colspan="3" style="${c};padding:6px">CLIENT NAME<div style="font-size:19px;font-weight:700;color:#444;margin:10px 0 4px">${esc(t.tenant_name)}</div></td></tr>
+    <tr><td colspan="3" style="${c};padding:6px">CLIENT NAME<div style="font-size:19px;font-weight:700;color:#444;margin:10px 0 4px">${esc(t.trade_name || t.tenant_name)}</div></td></tr>
     <tr><td colspan="3" style="${c};padding:6px">SCOPE<div style="font-size:19px;font-weight:700;color:#444;margin:10px 0 4px">${esc(scope || '—')}</div></td></tr>
     <tr><td colspan="3" style="${c};background:${g};text-align:center;font-weight:700">DETAILS</td></tr>
     <tr><td colspan="2" style="${c};text-align:center;font-weight:700">DESCRIPTION</td><td style="${c};text-align:center;font-weight:700">AMOUNT</td></tr>
@@ -2315,7 +2315,7 @@ function openSOA(billId){
   const b = billish(billId), t = tn(b.tenant_id);
   editing = null;
   $('modal').classList.add('wide');
-  $('m-title').textContent = b.kind === 'charge' ? `SOA · ${t?.tenant_name} · ${b.description}` : `SOA · ${t?.tenant_name} · ${fmtMonth(b.period)}`;
+  $('m-title').textContent = b.kind === 'charge' ? `SOA · ${t?.trade_name || t?.tenant_name} · ${b.description}` : `SOA · ${t?.trade_name || t?.tenant_name} · ${fmtMonth(b.period)}`;
   $('m-body').className = 'body one';
   $('m-body').innerHTML = `<div class="soa-wrap"><div class="soa">${soaHTML(b)}</div></div><div class="muted">To: <b>${esc(t?.email || 'no email on file')}</b>${t?.cc_email?' · CC: '+esc(t.cc_email):''}${set('soa_cc')?' · CC: '+esc(set('soa_cc')):''}</div>`;
   $('m-foot').innerHTML = `<div class="left"><button class="btn ghost" onclick="downloadSOA('${b.id}')">⬇ PDF</button><button class="btn ghost" onclick="soaJPG('${b.id}', this)">⬇ JPG</button><button class="btn ghost" onclick="soaCopy('${b.id}', this)">Copy image</button><button class="btn ghost" onclick="printSOA('${b.id}')">Print</button></div><button class="btn ghost" onclick="closeForm()">Close</button><button class="btn" onclick="sendSOA('${b.id}',this)" ${t?.email?'':'disabled'}>✉ Email to tenant</button>`;
@@ -2377,7 +2377,7 @@ async function soaPDF(bill){
   box(L, y, C1 - L, 14, 1); T('STATEMENT OF ACCOUNT', L + 2, y + 9, { b: 1, s: 15 });
   box(C1, y, C2 - C1, 7); T('BILLING DATE', C1 + 2, y + 5); box(C2, y, R - C2, 7); T(dmy(bill.bill_date), R - 2, y + 5, { a: 'right' });
   box(C1, y + 7, C2 - C1, 7); T('DUE DATE', C1 + 2, y + 12); box(C2, y + 7, R - C2, 7); T(dmy(bill.due_date), R - 2, y + 12, { a: 'right' });
-  y += 14; box(L, y, W, 20); T('CLIENT NAME', L + 2, y + 5); T(t.tenant_name, L + 2, y + 14, { b: 1, s: 14, c: [68,68,68] });
+  y += 14; box(L, y, W, 20); T('CLIENT NAME', L + 2, y + 5); T(t.trade_name || t.tenant_name, L + 2, y + 14, { b: 1, s: 14, c: [68,68,68] });
   y += 20; box(L, y, W, 20); T('SCOPE', L + 2, y + 5); T(scope || '-', L + 2, y + 14, { b: 1, s: 14, c: [68,68,68] });
   y += 20; box(L, y, W, 7, 1); T('DETAILS', L + W / 2, y + 5, { b: 1, a: 'center' });
   y += 7; box(L, y, C2 - L, 7); box(C2, y, R - C2, 7); T('DESCRIPTION', (L + C2) / 2, y + 5, { b: 1, a: 'center' }); T('AMOUNT', (C2 + R) / 2, y + 5, { b: 1, a: 'center' });
