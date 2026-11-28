@@ -1588,16 +1588,21 @@ function rWaste(){
   const tot = paid.reduce((x, r) => x + amt(r), 0);
   const last = paid[0];
   whTenants(rows);
+  const chg = m => m >= (S.wh_start || '2026-10') ? activeTenants().reduce((x, t) => x + num(t.waste_fee), 0) : 0;
+  const known = rows.filter(r => amt(r) > 0), tch = known.reduce((x, r) => x + Math.min(chg(r.m), amt(r)), 0), bvi = tot - tch;
+  const pc = (v, of) => of ? (v / of * 100).toFixed(2) + '%' : '';
   $('wh-kpis2').innerHTML = `<div class="card kpi"><div class="l">Total paid</div><div class="v">${peso(tot)}</div><div class="s">${paid.length} month${paid.length === 1 ? '' : 's'}${rows.length > paid.length ? ` · ${rows.length - paid.length} unknown` : ''}</div></div>
-    <div class="card kpi"><div class="l">Average / month</div><div class="v">${peso(paid.length ? tot / paid.length : 0)}</div></div>
-    <div class="card kpi"><div class="l">Last payment</div><div class="v">${last ? peso(amt(last)) : '—'}</div><div class="s">${last ? fmtMonth(last.m) : ''}</div></div>`;
+    <div class="card kpi"><div class="l">Charged to tenants</div><div class="v">${peso(tch)}</div><div class="s">${pc(tch, tot)}</div></div>
+    <div class="card kpi bad"><div class="l">Building (BVI)</div><div class="v">${peso(bvi)}</div><div class="s">${pc(bvi, tot)} · ${peso(paid.length ? bvi / paid.length : 0)} / month</div></div>`;
   if (!rows.length) { $('wh-wrap').innerHTML = '<div class="empty">No waste hauler payments yet.<br><br><button class="btn" onclick="whPay()">+ Add payment</button></div>'; return; }
   // months after the latest record up to this month: no bill yet
   const pend = []; for (let m = nextMonthOf(rows[0].m); m <= thisMonth(); m = nextMonthOf(m)) pend.unshift(m);
-  $('wh-wrap').innerHTML = `<table class="condensed el-view"><tr><th>Month</th><th class="num">Amount paid</th><th>Paid date</th><th>From</th><th>Proof</th></tr>
-    ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td colspan="3"></td></tr>`).join('')}
-    ${rows.map(r => `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${r.status === 'Paid' && !amt(r) ? '<span class="muted">unknown</span>' : r.status === 'Paid' ? peso(amt(r)).slice(1) : `<span class="muted">${peso(num(r.amount)).slice(1)} unpaid</span>`}</td><td>${r.paid_date ? fmtDate(r.paid_date) : ''}</td><td>${esc(r.paid_from || '')}</td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`).join('')}
-    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${peso(tot).slice(1)}</b></td><td colspan="3"></td></tr></table>`;
+  const f = v => peso(v).slice(1);
+  $('wh-wrap').innerHTML = `<table class="condensed el-view"><tr><th>Month</th><th class="num">Hauler bill</th><th class="num">Charged to tenants</th><th class="num">Building (BVI)</th><th class="num">BVI share</th><th>Paid date</th><th>From</th><th>Proof</th></tr>
+    ${pend.map(m => `<tr style="cursor:pointer" onclick="whPay('', '${m}')"><td>${fmtMonth(m)}</td><td class="num"><span class="muted">no bill yet</span></td><td class="num">${chg(m) ? f(chg(m)) : '—'}</td><td colspan="5"></td></tr>`).join('')}
+    ${rows.map(r => { const a = amt(r), c = a ? Math.min(chg(r.m), a) : chg(r.m);
+      return `<tr style="cursor:pointer" onclick="whPay('${r.id}')"><td>${fmtMonth(r.m)}</td><td class="num">${!a ? '<span class="muted">unknown</span>' : f(a)}</td><td class="num">${c ? f(c) : '—'}</td><td class="num"><b>${a ? f(a - c) : '—'}</b></td><td class="num">${a ? pc(a - c, a) : ''}</td><td>${r.paid_date ? fmtDate(r.paid_date) : ''}</td><td>${esc(r.paid_from || '')}</td><td onclick="event.stopPropagation()">${proofThumb(r.proof_url, `whPay('${r.id}')`)}</td></tr>`; }).join('')}
+    <tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${f(tot)}</b></td><td class="num"><b>${f(tch)}</b></td><td class="num"><b>${f(bvi)}</b></td><td class="num"><b>${pc(bvi, tot)}</b></td><td colspan="3"></td></tr></table>`;
 }
 // tenants charged for hauling (Tenants.waste_fee), from the month in Settings wh_start
 const WH_PAY = m => DB.Payments.filter(p => String(p.notes || '').includes('Waste hauling ' + m));
