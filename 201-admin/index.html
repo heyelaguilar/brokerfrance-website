@@ -2336,7 +2336,10 @@ async function soaCanvas(id){
   await Promise.all([...box.querySelectorAll('img')].map(i => i.complete ? 0 : new Promise(r => { i.onload = i.onerror = r; })));
   try { return await h2c(box, { scale: 2, backgroundColor: '#ffffff', useCORS: true }); } finally { box.remove(); }
 }
-const soaFileName = id => { const b = billish(id), t = tn(b.tenant_id) || {}; return `SOA ${(t.trade_name || t.tenant_name || '').replace(/[^\w ]/g, '')} ${b.kind === 'charge' ? b.description.replace(/[^\w ()]/g, '') : fmtMonth(b.period)}`.trim(); };
+// file name: SOA - Business name - Month Year (separate SOAs add the description)
+const soaName = b => { const t = tn(b.tenant_id) || {}, clean = x => String(x || '').replace(/[\\/:*?"<>|]/g, '-').replace(/\s+/g, ' ').trim();
+  return ['SOA', clean(t.trade_name || t.tenant_name), b.kind === 'charge' ? clean(b.description) : '', fmtMonth(b.period)].filter(Boolean).join(' - '); };
+const soaFileName = id => soaName(billish(id));
 async function soaJPG(id, btn){
   const l = btn.textContent; btn.disabled = true; btn.textContent = 'Saving…';
   try { const c = await soaCanvas(id); const a = document.createElement('a'); a.href = c.toDataURL('image/jpeg', 0.95); a.download = soaFileName(id) + '.jpg'; a.click(); }
@@ -2401,7 +2404,7 @@ async function soaPDF(bill){
   T('Please issue a check payable to BROOKLAND VENTURES, INC.', L + 2, y + 12, { b: 1 });
   T('DIRECT DEPOSIT', L + 2, y + 22, { b: 1 }); doc.line(L + 2, y + 23, L + 31, y + 23);
   [['Bank Name:', 'Security Bank'], ['Account Name:', 'BROOKLAND VENTURES, INC.'], ['Current Account No.:', '0000054207660']].forEach(([k, v], i) => { T(k, L + 2, y + 29 + i * 5.5); T(v, L + 55, y + 29 + i * 5.5, { b: 1 }); });
-  return { doc, filename: `${soaNo}.pdf`, amountDue: total };
+  return { doc, filename: soaName(bill) + '.pdf', amountDue: total };
 }
 async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(billish(id)); doc.save(filename); } catch(e){ toast(e.message); } }
 const fill = (tpl, b, amt) => String(tpl).replace(/\{month\}/g, fmtMonth(b.period)).replace(/\{tenant\}/g, tName(b.tenant_id)).replace(/\{amount\}/g, peso(amt)).replace(/\{due\}/g, fmtDate(b.due_date));
