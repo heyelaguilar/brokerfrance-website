@@ -2441,7 +2441,7 @@ function rBilling(){
     const any = existing[0];
     $('r-bill-date').value = any?.bill_date || (P >= thisMonth() ? today() : dayOf(P, set('bill_day')));
     $('r-due-date').value = any?.due_date || (() => { const d = dayOf(P, set('due_day')); return d < $('r-bill-date').value ? addDays($('r-bill-date').value, 3) : d; })();
-    $('r-util-thru').value = any?.util_thru || utilThruDefault(P);
+    $('r-util-thru').value = [any?.util_thru || '', utilThruDefault(P)].sort().pop();   // never behind the default (older saved SOAs used Oct)
     grid = {};
     ts.forEach(t => { grid[t.id] = {}; });
   }
@@ -2539,7 +2539,7 @@ function soaData(bill){
   if (num(bill.other_amt)) lines.push([bill.other_label || 'Other charges', bill.other_amt]);
   if (num(bill.penalty)) lines.push([`Penalty ${num(set('penalty_pct'))}% on unpaid balance`, bill.penalty]);
   if (num(bill.ewt)) lines.push([`Less: ${num(t.ewt_pct)}% EWT on rent (submit BIR Form 2307)`, -num(bill.ewt)]);
-  const u = t.id ? soaUtil(t, bill.period, bill.util_thru) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
+  const u = t.id ? soaUtil(t, bill.period, [bill.util_thru || '', utilThruDefault(bill.period)].sort().pop()) : { cur: [], past: [], curTotal: 0, pastTotal: 0 };
   u.cur.forEach(([l, v]) => lines.push([l, v]));
   const curTotal = r2(num(bill.total) - legacyUtil + u.curTotal);
   const amountDue = r2(s.unpaid + curTotal + u.pastTotal);
