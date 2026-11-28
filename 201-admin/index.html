@@ -281,6 +281,20 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 .modal .body{padding:14px 16px;gap:10px}
 .modal footer{padding:10px 16px}
 .fld label{font-size:12px;font-weight:600;color:#3C4043}
+
+/* ── Uniform: one font family, one size, one line per row (SOA document excluded) ── */
+#app table:not(.soa-doc *),#app table :not(.soa-doc):not(.soa-doc *){font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;line-height:1.4!important;letter-spacing:0!important}
+#app table :is(th,b,strong):not(.soa-doc *){font-weight:700!important}
+#app table th:not(.soa-doc *){text-transform:none!important}
+#app td:not(.soa-doc *),#app th:not(.soa-doc *){white-space:nowrap!important;vertical-align:middle!important}
+#app td:not(.soa-doc *) :is(div,small,b,span,.muted):not(.row-actions):not(.name):not(.cellname):not(.muted):not(.soa-doc *){display:inline!important;margin:0!important;white-space:nowrap!important}
+#app td .muted{display:inline-block!important;max-width:460px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap!important;vertical-align:bottom;margin:0!important}
+#app td:not(.soa-doc *) :is(.muted,small):not(.soa-doc *){padding-left:8px}
+#app td .name,#app td .cellname{display:inline-block!important;max-width:280px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;vertical-align:bottom}
+#app td .cellname .muted{padding-left:8px}
+#app .grid2,#app .grid2.half,#app .grid2.even,#app .grid2.even2{grid-template-columns:1fr!important}
+#app td:not(.soa-doc *) br{display:none}
+#app .bill-tbl td:first-child{max-width:none!important}
 </style>
 </head>
 <body>
@@ -1769,7 +1783,7 @@ function rCollectibles(m){
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').textContent = `Past due · as of ${fmtMonth(m)} SOA`;
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Past due</th></tr>` + pdRows.map(r =>
-      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" style="max-width:200px" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:210px;white-space:normal">${esc(r.open)}</div>` : ''}</td><td class="num"><b>${amt(r.pd)}</b></td></tr>`).join('')
+      `<tr class="click" onclick="openTenant('${r.t.id}')"><td><div class="name" title="${esc(r.t.tenant_name)}">${esc(r.t.tenant_name)}</div>${r.open ? `<div class="muted" style="max-width:640px" title="${esc(r.open)}">${esc(r.open)}</div>` : ''}</td><td class="num"><b>${amt(r.pd)}</b></td></tr>`).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b style="font-size:15px">${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
@@ -2692,7 +2706,7 @@ function rBilling(){
     const pv = (full, rem) => !full ? '<span class="muted">—</span>' : rem > 0.004 ? peso(rem).slice(1) : '<span style="color:var(--green-d);font-weight:700">Paid</span>';
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
     return divider + `<tr>
-      <td title="${esc(t.tenant_name || t.trade_name)}"><b>${esc(t.tenant_name || t.trade_name)}</b><div class="muted">${esc([t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.floor, t.unit].filter(Boolean).join(' · '))}</div></td>
+      <td title="${esc([t.tenant_name || t.trade_name, t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.floor, t.unit].filter(Boolean).join(' · '))}"><span class="cellname"><b>${esc(t.tenant_name || t.trade_name)}</b><span class="muted">${esc([t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.unit].filter(Boolean).join(' · '))}</span></span></td>
       <td class="num">${pd ? `<b style="color:var(--red)">${peso(pd).slice(1)}</b>` : '<span class="muted">—</span>'}</td>
       <td class="num">${!c.rent && t.rent_payment === 'PDC' ? '<span class="muted">PDC</span>' : pv(c.rent + c.rent_vat, rentLeft)}</td>
       <td class="num">${!c.cusa && (t.cusa_payment === 'PDC' || t.cusa_payment === 'Combined with rent') ? '<span class="muted">PDC</span>' : pv(c.cusa, cusaLeft)}</td>
