@@ -267,7 +267,7 @@ table.condensed .muted{font-size:11px}
 
     <section class="pane" id="p-billing">
       <div class="hdr"><div><h1>SOA</h1><p>One statement per tenant: past due, rent, CUSA, Meralco, water and waste hauling. Tenants on PDC are not listed.</p></div>
-        <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Save bills</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
+        <div class="tools"><input type="month" id="f-bill-period"><button class="btn ghost" id="btn-save-bills" onclick="saveBills()">Generate all SOAs</button><button class="btn" id="btn-send-all" onclick="sendAll()">✉ Send all SOAs</button></div></div>
       <div class="card rates">
         <div class="fld"><label>Bill date</label><input type="date" id="r-bill-date"></div>
         <div class="fld"><label>Due date</label><input type="date" id="r-due-date"></div>
@@ -2091,7 +2091,7 @@ function rBilling(){
       <td class="num">${paid ? `<span style="color:var(--green-d)">−${peso(paid).slice(1)}</span><small>${sm.since.map(p => fmtDate(p.date)).join(', ')}</small>` : '<span class="muted">—</span>'}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
       <td>${soaHold(t) ? '<span class="pill p-amber">On hold</span><br>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="muted">not saved</span>'}</td>
-      <td><div class="row-actions">${b ? `<button class="btn ghost sm" onclick="openSOA('${b.id}')">View</button><button class="btn sm" onclick="sendSOA('${b.id}',this)" ${dirty ? 'disabled title="Save first"' : ''}>✉ Send</button>` : ''}</div></td></tr>`;
+      <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button>${b && b.status === 'Sent' ? '' : ''}</div></td></tr>`;
   }).join('');
   $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Water</th><th class="num">Waste</th><th class="num">Paid</th><th class="num">Total due</th><th>Status</th><th></th></tr>${rows}
     <tr><td colspan="8" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)}</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
@@ -2110,10 +2110,18 @@ function inputsFor(tid){
   const g = grid[tid] || {};
   return { ...g, bill_date: $('r-bill-date').value, elec_rate_month: $('r-elec').value, water_rate_month: $('r-water').value };
 }
-async function saveBills(silent){
+async function generateSOA(tid, btn){
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+  const ok = await saveBills(true, tid);
+  if (btn) { btn.disabled = false; btn.textContent = 'Generate SOA'; }
+  if (!ok) return;
+  const b = DB.Bills.find(x => x.tenant_id === tid && x.period === $('f-bill-period').value);
+  if (b) openSOA(b.id);
+}
+async function saveBills(silent, only){
   const P = $('f-bill-period').value, bd = $('r-bill-date').value, dd = $('r-due-date').value;
   if (!bd || !dd) return toast('Set the bill date and due date');
-  const rows = soaList().map(t => {
+  const rows = soaList().filter(t => !only || t.id === only).map(t => {
     const c = computeBill(t, P, inputsFor(t.id)), g = grid[t.id] || {};
     const b = DB.Bills.find(x => x.tenant_id === t.id && x.period === P);
     let tDue = num(t.due_day) ? dayOf(P, t.due_day) : dd;
@@ -2127,9 +2135,9 @@ async function saveBills(silent){
     return row;
   });
   const btn = $('btn-save-bills'); btn.disabled = true; btn.textContent = 'Saving…';
-  try { await saveMany('Bills', rows); if (!silent) toast(`${rows.length} bill(s) saved for ${fmtMonth(P)}`); rBilling(); badges(); return true; }
+  try { await saveMany('Bills', rows); if (!silent) toast(`${rows.length} SOA(s) generated for ${fmtMonth(P)}`); rBilling(); badges(); return true; }
   catch(e){ toast('Save failed: ' + e.message); return false; }
-  finally { btn.disabled = false; btn.textContent = 'Save bills'; }
+  finally { btn.disabled = false; btn.textContent = 'Generate all SOAs'; }
 }
 
 // ── SOA ──
