@@ -160,8 +160,16 @@ td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:now
 .bill-tbl .meter{display:flex;gap:4px;align-items:center}
 .bill-tbl .meter .grid-in{width:66px}
 .bill-tbl td,.bill-tbl th{padding:9px 8px}
-.bill-tbl td:first-child{min-width:150px}
-.bill-tbl td,.bill-tbl th{padding:9px 6px}
+.bill-tbl td:first-child{min-width:150px;max-width:280px}
+.bill-tbl td,.bill-tbl th{padding:10px 8px}
+.bill-tbl th{white-space:nowrap}
+.bill-tbl td:first-child b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bill-tbl td:first-child .muted{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bill-tbl td.num{white-space:nowrap}
+.bill-tbl tr:not(:first-child):hover td{background:#FAFBFC}
+.bill-tbl .row-actions .btn{white-space:nowrap}
+.bill-tbl td.st{white-space:nowrap}
+.bill-tbl td.st .pill+.pill{margin-left:4px}
 .bill-tbl small{display:block;color:var(--ink4);font-size:11px;margin-top:2px;text-align:right}
 .soa-wrap{background:#E9EDF1;padding:18px;border-radius:10px;max-height:62vh;overflow:auto}
 .soa{background:#fff;max-width:680px;margin:0 auto;padding:30px 34px;font-size:13px;color:#111;box-shadow:var(--sh)}
@@ -2574,7 +2582,7 @@ function rBilling(){
     const b = existing.find(x => x.tenant_id === t.id);
     const dirty = b && Math.abs(num(b.total) - c.total) > 0.004;
     return `<tr>
-      <td><b>${esc(t.tenant_name || t.trade_name)}</b><div class="muted">${esc([t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.floor, t.unit].filter(Boolean).join(' · '))}</div></td>
+      <td title="${esc(t.tenant_name || t.trade_name)}"><b>${esc(t.tenant_name || t.trade_name)}</b><div class="muted">${esc([t.trade_name && t.trade_name !== t.tenant_name ? t.trade_name : '', t.floor, t.unit].filter(Boolean).join(' · '))}</div></td>
       <td class="num">${pd ? `<b style="color:var(--red)">${peso(pd).slice(1)}</b>` : '<span class="muted">—</span>'}</td>
       <td class="num">${!c.rent && t.rent_payment === 'PDC' ? '<span class="muted">PDC</span>' : pv(c.rent + c.rent_vat, rentLeft)}</td>
       <td class="num">${!c.cusa && (t.cusa_payment === 'PDC' || t.cusa_payment === 'Combined with rent') ? '<span class="muted">PDC</span>' : pv(c.cusa, cusaLeft)}</td>
@@ -2582,7 +2590,7 @@ function rBilling(){
       <td class="num">${f(kind('Primewater'))}</td>
       <td class="num">${f(kind('Waste'))}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
-      <td>${soaHold(t) ? '<span class="pill p-amber">On hold</span><br>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="muted">not saved</span>'}</td>
+      <td class="st">${soaHold(t) ? '<span class="pill p-amber">On hold</span>' : ''}${b ? pill(dirty ? 'Unsaved changes' : b.status === 'Sent' ? 'Sent' : 'Draft') + (b.sent_at ? `<div class="muted">${fmtDate(b.sent_at)}</div>` : '') : '<span class="pill">Not generated</span>'}</td>
       <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button>${b && b.status === 'Sent' ? '' : ''}</div></td></tr>`;
   }).join('');
   $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste</th><th class="num">Total due</th><th>Status</th><th></th></tr>${rows}
