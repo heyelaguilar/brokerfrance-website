@@ -1707,9 +1707,9 @@ function rOverview(){
 
 // ── Collectibles breakdown for a month: billed amounts, plus fixed charges projected for tenants not yet billed ──
 async function pdViewSOA(tid, btn){   // the tenant's SOA for this month's batch, same as Generate SOA on the SOA tab
-  document.querySelector('.nav[data-tab=billing]').click();
-  await new Promise(r => setTimeout(r, 50));
-  await generateSOA(tid, null);
+  if (!$('r-bill-date').value || !$('r-due-date').value) rBilling();   // fills the SOA page dates in the background; stays on Overview
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+  try { await generateSOA(tid, null); } finally { if (btn) { btn.disabled = false; btn.textContent = 'View SOA'; } }
 }
 function pdToggle(i){ const d = $('pdd-' + i), on = d.style.display === 'none'; d.style.display = on ? '' : 'none'; $('pdc-' + i).textContent = on ? '▾' : '▸'; }
 function rCollectibles(m){
@@ -1816,7 +1816,7 @@ function rCollectibles(m){
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th></tr>` + pdRows.map((r, i) => {
       const items = String(r.rem || '').split(/\s*;\s*/).filter(Boolean);
       return `<tr class="click" onclick="pdToggle(${i})"><td><span class="pd-caret" id="pdc-${i}">▸</span> <div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td></tr>`
-        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button><button class="btn sm ghost" onclick="event.stopPropagation();openTenant('${r.t.id}')">Open tenant</button></div>` : ''}</div></td></tr>`; }).join('')
+        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button></div>` : ''}</div></td></tr>`; }).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
