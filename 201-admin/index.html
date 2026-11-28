@@ -1116,6 +1116,21 @@ async function v52MeralcoPart(){
     await save('Settings', { id:'mig_v52_mer_part', value: new Date().toISOString() }); S.mig_v52_mer_part = '1';
   } catch(e){ console.error('v52 meralco part failed', e); }
 }
+// V52 Nov Meralco was marked Paid at the temporary ₱8,000 — the actual is ₱17,150.90, so the ₱8,000 (with its proof) is a part payment
+async function v52MeralcoFixPaid(){
+  if (DEMO || S.mig_v52_mer_fix_paid) return;
+  try {
+    const t = DB.Tenants.find(x => /\bv52\b|vault 52/i.test([x.tenant_name, x.trade_name].join(' ')));
+    const mt = t && DB.Meters.find(m => m.utility !== 'Primewater' && m.tenant_id === t.id);
+    const b = mt && DB.ElecBills.find(x => x.meter_id === mt.id && x.period === '2026-11');
+    if (b && num(b.amount) < 17150) {
+      await save('ElecBills', { ...b, prev: 7373.5, curr: 8400.5, rate: 16.70, amount_override: '', amount: 17150.90, needs_reading: '',
+        status: 'Partial', paid_amount: num(b.paid_amount) || 8000, paid_date: b.paid_date || '2026-11-24', notes: '₱8,000 paid Nov 24, 2026 · balance ₱9,150.90' });
+      if (mt.notes && /Fixed ₱8,000/.test(mt.notes)) await save('Meters', { ...mt, notes: '' });
+    }
+    await save('Settings', { id:'mig_v52_mer_fix_paid', value: new Date().toISOString() }); S.mig_v52_mer_fix_paid = '1';
+  } catch(e){ console.error('v52 meralco fix failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1248,6 +1263,7 @@ async function reload(){
     await soaMeralcoAndrei();
     await v52WasteSep();
     await v52MeralcoPart();
+    await v52MeralcoFixPaid();
     await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
