@@ -1020,6 +1020,34 @@ async function squeezeFridge2(){
     await save('Settings', { id:'mig_sq_fridge2', value: new Date().toISOString() }); S.mig_sq_fridge2 = '1';
   } catch(e){ console.error('fridge 2/2 failed', e); }
 }
+// fixed monthly utility charges: meter notes "Fixed ₱500 per month · Starts Nov 2026" → a bill each month from the start (created when missing)
+async function autoFixedBills(){
+  if (DEMO) return;
+  const MO = 'janfebmaraprmayjunjulaugsepoctnovdec', rows = [];
+  DB.Meters.filter(mt => mt.active !== 'No').forEach(mt => {
+    const f = /Fixed\s*₱?\s*([\d,]+(?:\.\d+)?)\s*per\s*month/i.exec(mt.notes || ''), st = /Starts\s+(\w{3})\w*\s+(\d{4})/i.exec(mt.notes || '');
+    if (!f || !st) return;
+    const amt = num(f[1].replace(/,/g, '')), start = st[2] + '-' + String(MO.indexOf(st[1].toLowerCase()) / 3 + 1).padStart(2, '0');
+    for (let m = start; m <= thisMonth(); m = nextMonthOf(m)) {
+      if (DB.ElecBills.some(b => b.meter_id === mt.id && b.period === m)) continue;
+      rows.push({ id: `EB-FX-${mt.id}-${m}`, period: m, meter_id: mt.id, prev: '', curr: '', rate: '', amount_override: amt, amount: amt, status: 'Unpaid', notes: `Fixed ₱${amt.toLocaleString('en-PH')} per month` });
+    }
+  });
+  if (rows.length) { try { await saveMany('ElecBills', rows); } catch(e){ console.error('fixed bills failed', e); } }
+}
+async function pwFixedJed4F(){
+  if (DEMO || S.mig_pw_fixed_jed_4f) return;
+  try {
+    const t = DB.Tenants.find(x => /\bjed\b|seo vas/i.test([x.tenant_name, x.trade_name].join(' ')));
+    const jm = DB.Meters.find(m => m.utility === 'Primewater' && t && m.tenant_id === t.id);
+    if (!DB.ElecPeriods.some(p => p.id === 'PW-2026-11')) await save('ElecPeriods', { id: 'PW-2026-11', notes: 'Primewater Nov 2026 — bill not in yet' });
+    if (jm) await save('Meters', { ...jm, notes: 'Fixed ₱500 per month · Starts Nov 2026' });
+    else if (t) await save('Meters', { utility:'Primewater', payer:'', unit: t.unit || '204', label:'', tenant_id: t.id, type:'Tenant', sort:3, active:'Yes', notes:'Fixed ₱500 per month · Starts Nov 2026' });
+    const fm = DB.Meters.find(m => m.utility === 'Primewater' && /^4th/i.test(m.payer || ''));
+    if (fm) await save('Meters', { ...fm, notes: 'Fixed ₱600 per month · Starts Dec 2026' });   // Sep 2025 – Nov 2026 already billed as one ₱9,000 line
+    await save('Settings', { id:'mig_pw_fixed_jed_4f', value: new Date().toISOString() }); S.mig_pw_fixed_jed_4f = '1';
+  } catch(e){ console.error('jed/4F fixed failed', e); }
+}
 async function seedWasteAprMay(){
   if (DEMO || S.mig_wh_aprmay_2026) return;
   try {
@@ -1145,6 +1173,8 @@ async function reload(){
     await seedWasteHistory2();
     await seedWasteAprMay();
     await squeezeFridge2();
+    await pwFixedJed4F();
+    await autoFixedBills();
     await wasteFees();
     await whStartOct2025();
     await whNovIsOct();
@@ -2100,8 +2130,8 @@ async function pbUnpay(id){
 
 // ── Primewater bill: upload the bill photo → read it (OCR in the browser) → amount, consumption, ₱/cu.m ──
 function pwBill(m){
-  const last = utilPeriods().map(p => p.m).sort().pop();
-  m = m || (last ? nextMonthOf(last) : thisMonth());
+  const ps = utilPeriods().sort((a, b) => a.m.localeCompare(b.m)), open = ps.find(p => !num(p.meralco_total)), last = ps.map(p => p.m).pop();
+  m = m || (open ? open.m : last ? nextMonthOf(last) : thisMonth());
   const P = DB.ElecPeriods.find(p => p.id === 'PW-' + m) || {};
   editing = { pw: m };
   $('modal').classList.remove('wide'); $('m-body').className = 'body';
