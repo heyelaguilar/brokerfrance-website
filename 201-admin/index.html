@@ -608,7 +608,7 @@ const SUMMARY_2026_11 = [
   ['storage room','3rd Floor','Relly Fajardo','Bank transfer','1',13,5000.00,0,'No CUSA','Monthly','Send'],
   ['ashcol','3rd Floor','Ashcol Airconditioning Corporation','PDC','8',38,20000.00,2000,'Combined with rent','Monthly','Send'],
   ['neuera','3rd Floor','NeuEra Collective Inc.','PDC','24',60,28728.00,4800,'Bank transfer','Monthly','Send'],
-  ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,0,'No CUSA','Annual','Hold'],
+  ['bedoo','4th Floor','Bedoo Telectronic System Inc.','Bank transfer','',6,7078.05,480,'Bank transfer','Annual','Hold'],
   ["andrei",'4th Floor',"Andrei's Billiards",'Bank transfer','1',50,8000.00,2000,'Bank transfer','Monthly','Send'],
   ['squeeze','4th Floor','Squeeze Spot','Bank transfer','1',60,20200.00,4800,'Bank transfer','Monthly','Send'],
 ];
@@ -1295,6 +1295,14 @@ async function rellyDue1(){
     await save('Settings', { id:'mig_relly_due1', value: new Date().toISOString() }); S.mig_relly_due1 = '1';
   } catch(e){ console.error('relly due day failed', e); }
 }
+async function bedooCusa(){
+  if (DEMO || S.mig_bedoo_cusa) return;
+  try {
+    const t = DB.Tenants.find(x => /bedoo/i.test([x.tenant_name, x.trade_name].join(' ')));
+    if (t) await save('Tenants', { ...t, cusa_mode: 'Per sqm', cusa_value: 80, cusa_payment: 'Bank transfer' });
+    await save('Settings', { id:'mig_bedoo_cusa', value: new Date().toISOString() }); S.mig_bedoo_cusa = '1';
+  } catch(e){ console.error('bedoo cusa failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1428,6 +1436,7 @@ async function reload(){
     await novBatchFix();
     await coffeeCusaLag();
     await rellyDue1();
+    await bedooCusa();
     await addOpening('mig_andrei_balance_2026_11', 'andrei', 'Unpaid balance (before November 2026)', 2800, 'previous unpaid balance');
     await seedMeralco();
     await seedPayables();
