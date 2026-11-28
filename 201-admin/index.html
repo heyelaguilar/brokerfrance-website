@@ -1316,7 +1316,9 @@ function elCalc(mt, per, rate){
 }
 // Who shoulders the water bill: tenant charges spread over the months they cover (notes "Sep 2025 – Nov 2026"), rest is the building's
 function pwSplit(ps){
-  if (UTIL !== 'Primewater' || !ps.length) return '';
+  if (UTIL !== 'Primewater') return '';
+  const sel = $('f-el-period').value || utilPeriods().map(p => p.m).sort().pop(); ps = ps.filter(p => p.m === sel);
+  if (!ps.length) return '';
   const MO = 'janfebmaraprmayjunjulaugsepoctnovdec';
   const ym = (mon, y) => y + '-' + String(MO.indexOf(mon.slice(0,3).toLowerCase()) / 3 + 1).padStart(2, '0');
   const months = ps.map(p => p.m).sort(), first = months[0], last = months[months.length - 1], n = months.length;
@@ -1338,11 +1340,11 @@ function pwSplit(ps){
   const f = v => peso(v).slice(1), pc = v => total ? (v / total * 100).toFixed(2) + '%' : '';
   const cols = ['#4E8A68', '#C9A04A', '#1C3F2F', '#A9CDB5', '#8A6F7A'];
   const bar = rows.map(([k, v], i) => `<span title="${esc(k)} ${pc(v)}" style="width:${Math.max(0, v / total * 100)}%;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>`).join('');
-  return `<h3 style="margin:22px 0 8px">Who pays the water · ${fmtMonth(first)} – ${fmtMonth(last)} (${n} months)</h3>
+  return `<h3 style="margin:22px 0 8px">Who pays the water · ${fmtMonth(first)}</h3>
     <div class="card tbl"><div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin:12px 14px">${bar}</div>
-    <table class="condensed"><tr><th>Paid by</th><th class="num">Total</th><th class="num">Average / month</th><th class="num">Share</th></tr>
-    ${rows.map(([k, v], i) => `<tr${i === rows.length - 1 ? ' style="background:#FBF3E4"' : ''}><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>${i === rows.length - 1 ? '<b>' + esc(k) + '</b>' : esc(k)}</td><td class="num">${f(v)}</td><td class="num">${i === rows.length - 1 ? '<b>' + f(v / n) + '</b>' : f(v / n)}</td><td class="num">${i === rows.length - 1 ? '<b>' + pc(v) + '</b>' : pc(v)}</td></tr>`).join('')}
-    <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${(cum / n).toFixed(1)} cu.m/month · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>${f(total / n)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
+    <table class="condensed"><tr><th>Paid by</th><th class="num">Amount</th><th class="num">Share</th></tr>
+    ${rows.map(([k, v], i) => `<tr${i === rows.length - 1 ? ' style="background:#FBF3E4"' : ''}><td><span style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;background:${i === rows.length - 1 ? '#B5533C' : cols[i % cols.length]}"></span>${i === rows.length - 1 ? '<b>' + esc(k) + '</b>' : esc(k)}</td><td class="num">${i === rows.length - 1 ? '<b>' + f(v) + '</b>' : f(v)}</td><td class="num">${i === rows.length - 1 ? '<b>' + pc(v) + '</b>' : pc(v)}</td></tr>`).join('')}
+    <tr style="background:var(--green-l)"><td><b>Primewater bill</b> <span class="muted">${cum.toFixed(1)} cu.m · ₱${(cum ? total / cum : 0).toFixed(2)}/cu.m</span></td><td class="num"><b>${f(total)}</b></td><td class="num"><b>100%</b></td></tr></table></div>`;
 }
 function elHistory(){
   const ps = utilPeriods().filter(p => num(p.meralco_total)).sort((a,b) => b.m.localeCompare(a.m));
