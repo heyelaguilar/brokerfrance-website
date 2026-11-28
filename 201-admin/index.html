@@ -2789,7 +2789,7 @@ function rBilling(){
       <td class="num">${f(kind('Waste'))}</td>
       <td class="num"><b id="tot-${t.id}">${due > 0 ? peso(due) : due < 0 ? `<span style="color:var(--green-d)">${peso(-due)} credit</span>` : '<span style="color:var(--green-d)">Paid</span>'}</b></td>
       <td class="st">${b && b.sent_at ? `<button class="btn sm sent-btn on" title="Click to undo" onclick="soaToggleSent('${t.id}', this)">✓ Sent ${fmtDate(b.sent_at)}</button>` : `<button class="btn sm ghost sent-btn" onclick="soaToggleSent('${t.id}', this)">Not sent</button>`}</td>
-      <td><div class="row-actions"><button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button></div></td></tr>`; }
+      <td><div class="row-actions">${due > 0.004 ? `<button class="btn sm ghost" onclick="soaRowPay('${t.id}', this)">✓ Mark paid</button>` : ''}<button class="btn sm" onclick="generateSOA('${t.id}', this)">Generate SOA</button></div></td></tr>`; }
   }).join('');
   $('bill-wrap').innerHTML = `<table class="bill-tbl"><tr><th>Tenant</th><th class="num">Past due</th><th class="num">Rent</th><th class="num">CUSA</th><th class="num">Meralco</th><th class="num">Primewater</th><th class="num">Waste</th><th class="num">Total due</th><th>Sent out?</th><th></th></tr>${rows}
     <tr><td colspan="7" style="text-align:right;font-weight:800">Total due · ${fmtMonth(P)} batch</td><td class="num"><b id="bill-sum">${peso(tot)}</b></td><td colspan="2"></td></tr></table>`;
@@ -2819,6 +2819,14 @@ async function soaToggleSent(tid, btn){
     rBilling(); badges();
   } catch(e){ toast('Save failed: ' + e.message); }
   finally { btn.disabled = false; }
+}
+async function soaRowPay(tid, btn){   // Mark paid straight from the SOA table: same form as on the SOA
+  if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+  try {
+    if (!await saveBills(true, tid)) return;
+    const b = DB.Bills.find(x => x.tenant_id === tid && x.period === perOf(tn(tid), $('f-bill-period').value));
+    if (b) soaPayForm(b.id, true);
+  } finally { if (btn) { btn.disabled = false; btn.textContent = '✓ Mark paid'; } }
 }
 async function generateSOA(tid, btn){
   if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
@@ -3034,12 +3042,12 @@ function openSOA(billId){
 
 // Mark paid from the SOA: tick what was paid, attach proof, and each item is recorded where it belongs
 let soaPayCtx = null;
-function soaPayForm(id){
+function soaPayForm(id, fromTable){
   const b = billish(id), R = soaRows(b), items = R.rows.map((r, i) => { let a = r[1];
     if (r.pay?.type === 'elec') { const e = DB.ElecBills.find(y => y.id === r.pay.id); a = r2(a - num(e?.paid_amount)); }   // Meralco already part-paid: only the balance is left
     return { i, d: r[0], a, pay: r.pay }; }).filter(x => x.a > 0 && x.pay);
   if (!items.length) return toast('Nothing left to mark paid on this SOA');
-  soaPayCtx = { id, items, tid: b.tenant_id };
+  soaPayCtx = { id, items, tid: b.tenant_id, fromTable };
   $('modal').classList.remove('wide'); $('m-body').className = 'body';
   $('m-title').textContent = `Mark paid · ${R.t?.tenant_name || ''}`;
   $('m-body').innerHTML = `<div class="fld wide"><label>Which items were paid?</label><div class="pay-items">${items.map(x => `<label class="pay-it"><input type="checkbox" class="sp-ck" data-i="${x.i}" checked onchange="soaPaySum()"><span>${esc(x.d)}</span><b>${peso(x.a)}</b></label>`).join('')}</div></div>
@@ -3050,7 +3058,7 @@ function soaPayForm(id){
     <div class="fld wide"><label>Reference / check no.</label><input id="sp-ref"></div>
     <div class="fld wide"><label>Proof of payment</label>${proofZone('')}</div>`;
   wireProofZone(); soaPaySum();
-  $('m-foot').innerHTML = `<div class="left"></div><button class="btn ghost" onclick="openSOA('${id.replace(/'/g, "\\'")}')">Back</button><button class="btn" id="m-save" onclick="soaPaySave()">Mark paid (with proof)</button>`;
+  $('m-foot').innerHTML = `<div class="left"></div>${fromTable ? `<button class="btn ghost" onclick="closeForm()">Cancel</button>` : `<button class="btn ghost" onclick="openSOA('${id.replace(/'/g, "\\'")}')">Back</button>`}<button class="btn" id="m-save" onclick="soaPaySave()">Mark paid (with proof)</button>`;
   $('ovl').classList.add('on');
 }
 function soaPaySum(){ const sel = [...document.querySelectorAll('.sp-ck:checked')].map(c => soaPayCtx.items.find(x => x.i === +c.dataset.i)); $('sp-total').value = peso(r2(sel.reduce((x, y) => x + y.a, 0))); return sel; }
@@ -3070,7 +3078,7 @@ async function soaPaySave(){
     for (const x of sel.filter(x => x.pay.type === 'pd')) await save('Payments', { ...base, amount: x.a, applies_to: 'PD:' + x.pay.desc, notes: 'Past due: ' + x.pay.desc });
     for (const x of sel.filter(x => x.pay.type === 'charge')) { const c = DB.Charges.find(y => y.id === x.pay.id); if (c) await save('Charges', { ...c, status: 'Paid', paid_date: date, paid_amount: x.a, method, paid_to: to, reference, proof_url }); }
     toast(`Marked paid: ${sel.length} item${sel.length > 1 ? 's' : ''}`); render();
-    if (billish(id) && soaRows(billish(id)).rows.some(r => r[1] > 0)) openSOA(id); else closeForm();
+    if (!soaPayCtx.fromTable && billish(id) && soaRows(billish(id)).rows.some(r => r[1] > 0)) openSOA(id); else closeForm();
   } catch(e){ btn.disabled = false; btn.textContent = 'Mark paid (with proof)'; toast('Save failed: ' + e.message); }
 }
 function printSOA(id){
