@@ -1806,10 +1806,11 @@ function rCollectibles(m){
     }).filter(Boolean);
   const pdTot = pdRows.reduce((x,r) => x + r.pd, 0), nowTot = pdRows.reduce((x,r) => x + r.now, 0);
   $('pd-title').innerHTML = `Past due <span class="muted">as of ${fmtMonth(m)} SOA</span>`;
-  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th><th>Remarks</th></tr>` + pdRows.map(r => {
-      const rem = r.rem;
-      return `<tr ${r.t ? `class="click" onclick="openTenant('${r.t.id}')"` : ''}><td><div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td><td><span class="pd-rem" title="${esc(rem)}">${esc(rem)}</span></td></tr>`; }).join('')
-      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td><td></td></tr>`
+  $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th></tr>` + pdRows.map((r, i) => {
+      const items = String(r.rem || '').split(/\s*;\s*/).filter(Boolean);
+      return `<tr class="click" onclick="pdToggle(${i})"><td><span class="pd-caret" id="pdc-${i}">▸</span> <div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td></tr>`
+        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}${r.t ? `<div><a href="#" onclick="event.preventDefault();event.stopPropagation();openTenant('${r.t.id}')">Open tenant</a></div>` : ''}</div></td></tr>`; }).join('')
+      + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
   // Payments received this month for rent & CUSA
