@@ -2568,11 +2568,10 @@ function soaHTML(bill){
   return `<div class="soa-doc" style="font-family:Helvetica,Arial,sans-serif;color:#111;font-size:13px;line-height:1.4;max-width:760px;margin:0 auto;padding:40px 56px;background:#fff">
   <img src="${SOA_ASSET('brookland-logo.png')}" alt="Brookland Ventures Incorporated" style="height:56px;margin:0 0 22px 6px">
   <table style="width:100%;border-collapse:collapse">
-    <tr><td rowspan="2" colspan="2" style="${c};${sh};font-weight:700;width:55%;vertical-align:middle">STATEMENT OF ACCOUNT</td><td style="${c};width:18%">BILLING DATE</td><td style="${c};font-weight:700">${D(bill.bill_date)}</td></tr>
-    <tr><td style="${c}">&nbsp;</td><td style="${c}">&nbsp;</td></tr>
-    <tr><td rowspan="2" colspan="2" style="${c}">CLIENT<br><b>${esc(t.tenant_name || t.trade_name)}</b></td><td style="${c}">DUE DATE:</td><td style="${c};font-weight:700">${D(bill.due_date)}</td></tr>
-    <tr><td style="${c}">&nbsp;</td><td style="${c}">&nbsp;</td></tr>
-    <tr><td colspan="4" style="${c}">SCOPE<br><b>${esc(scope || '—')}</b></td></tr>
+    <tr><td rowspan="2" colspan="2" style="${c};${sh};font-weight:700;width:57%;vertical-align:middle">STATEMENT OF ACCOUNT</td><td colspan="2" style="${c};padding:9px"><span>BILLING DATE</span><span style="float:right">${dmy(bill.bill_date)}</span></td></tr>
+    <tr><td colspan="2" style="${c};padding:9px"><span>DUE DATE</span><span style="float:right;font-weight:700">${dmy(bill.due_date)}</span></td></tr>
+    <tr><td colspan="4" style="${c};padding:8px 9px"><div style="color:#6e6e6e">CLIENT NAME</div><b>${esc(t.tenant_name || t.trade_name)}</b></td></tr>
+    <tr><td colspan="4" style="${c};padding:8px 9px"><div style="color:#6e6e6e">SCOPE</div><b>${esc(scope || '—')}</b></td></tr>
     <tr><td colspan="4" style="${c};${sh};text-align:center;font-weight:700">DETAILS</td></tr>
     <tr><td colspan="3" style="${c};text-align:center;font-weight:700">DESCRIPTION</td><td style="${c};text-align:center;font-weight:700">AMOUNT</td></tr>
     ${rows.map(([d, v]) => `<tr><td colspan="3" style="${c}">${esc(d)}</td><td style="${c};text-align:right;white-space:nowrap">${money(v)}</td></tr>`).join('')}
@@ -2659,17 +2658,17 @@ async function soaPDF(bill){
   const D = d => dmy(d).toUpperCase();
   try { const lg = await imgData('brookland-logo.png'); doc.addImage(lg.url, 'PNG', L + 2, 18, 58, 58 * lg.h / lg.w); } catch(e){}
   let y = 40;
-  // title + dates
-  cell(L, y, CA, RH * 2, 1); T('STATEMENT OF ACCOUNT', L + 3, mid(y, RH * 2), { b: 1 });
-  cell(CA, y, CB, RH); T('BILLING DATE', CA + 3, mid(y, RH)); cell(CB, y, R, RH); T(D(bill.bill_date), CB + 3, mid(y, RH), { b: 1 });
-  cell(CA, y + RH, CB, RH); cell(CB, y + RH, R, RH);
-  y += RH * 2;
-  cell(L, y, CA, RH * 2); T('CLIENT', L + 3, mid(y, RH)); T(t.tenant_name || t.trade_name || '', L + 3, mid(y + RH, RH), { b: 1 });
-  cell(CA, y, CB, RH); T('DUE DATE:', CA + 3, mid(y, RH)); cell(CB, y, R, RH); T(D(bill.due_date), CB + 3, mid(y, RH), { b: 1 });
-  cell(CA, y + RH, CB, RH); cell(CB, y + RH, R, RH);
-  y += RH * 2;
-  cell(L, y, R, RH * 2); T('SCOPE', L + 3, mid(y, RH)); T(scope || '-', L + 3, mid(y + RH, RH), { b: 1 });
-  y += RH * 2;
+  // top: title | billing & due date, then client name and scope across
+  const TOP = 9, grey = [110, 110, 110];
+  const Tg = (str, x, yy) => { doc.setFont('helvetica', 'normal'); doc.setFontSize(FS); doc.setTextColor(...grey); doc.text(clean(str), x, yy); };
+  cell(L, y, MID + 12, TOP * 2, 1); T('STATEMENT OF ACCOUNT', L + 3, mid(y, TOP * 2), { b: 1 });
+  cell(MID + 12, y, R, TOP); T('BILLING DATE', MID + 15, mid(y, TOP)); T(dmy(bill.bill_date), R - 3, mid(y, TOP), { a: 'right' });
+  cell(MID + 12, y + TOP, R, TOP); T('DUE DATE', MID + 15, mid(y + TOP, TOP)); T(dmy(bill.due_date), R - 3, mid(y + TOP, TOP), { a: 'right', b: 1 });
+  y += TOP * 2;
+  cell(L, y, R, 14); Tg('CLIENT NAME', L + 3, y + 5.5); T(t.tenant_name || t.trade_name || '', L + 3, y + 11, { b: 1 });
+  y += 14;
+  cell(L, y, R, 14); Tg('SCOPE', L + 3, y + 5.5); T(scope || '-', L + 3, y + 11, { b: 1 });
+  y += 14;
   cell(L, y, R, RH, 1); T('DETAILS', L + W / 2, mid(y, RH), { b: 1, a: 'center' });
   y += RH;
   cell(L, y, C2, RH); cell(C2, y, R, RH); T('DESCRIPTION', (L + C2) / 2, mid(y, RH), { b: 1, a: 'center' }); T('AMOUNT', (C2 + R) / 2, mid(y, RH), { b: 1, a: 'center' });
