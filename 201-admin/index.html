@@ -1342,6 +1342,17 @@ async function seedPastDetails(){
     await save('Settings', { id:'mig_past_details', value: new Date().toISOString() }); S.mig_past_details = '1';
   } catch(e){ console.error('past details seed failed', e); }
 }
+async function seedPastGeri(){
+  if (DEMO || S.mig_past_geri || pdDetails('Squeeze Spot (Geri)').length) return;
+  try {
+    const G = 'Squeeze Spot (Geri)';
+    await saveMany('PAST DUE DETAILS', [
+      { 'Business name': G, Description: 'PAST DUE', Amount: 20657.79, 'Billing date': '2026-10-26', 'Due date': 'PAY IMMEDIATELY', Scope: 'PAST DUE, WASTE, PRIMEWATER and MERALCO' },
+      { 'Business name': G, Description: 'MERALCO OCT 25, 2026', Amount: 2426.60, 'Billing date': '', 'Due date': '', Scope: '' },
+    ]);
+    await save('Settings', { id:'mig_past_geri', value: new Date().toISOString() }); S.mig_past_geri = '1';
+  } catch(e){ console.error('geri seed failed', e); }
+}
 async function akmasLag(){
   if (DEMO || S.mig_akmas_lag) return;
   try {
@@ -1513,6 +1524,7 @@ async function reload(){
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
     await seedPastDetails();
+    await seedPastGeri();
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
