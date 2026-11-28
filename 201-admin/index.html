@@ -2194,13 +2194,14 @@ function soaRows(bill){
   const order = [...led.filter(r => r[3] === 'cur' && r[1] > 0), ...led.filter(r => r[3] === 'past')];
   order.forEach(r => { const pay = Math.min(left, r[1]); r.paid = pay; left = r2(left - pay); });
   const rows = [], scope = new Set();
-  led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add(r[2]); } });
-  u.past.forEach(r => { rows.push([`PAST DUE – ${r[3]}`, r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
+  led.filter(r => r[3] === 'past').forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); scope.add('PAST DUE'); } });
+  u.past.forEach(r => { rows.push([`PAST DUE – ${r[3]}`, r[1]]); scope.add('PAST DUE'); });
   led.filter(r => r[3] === 'cur' && r[1] > 0).forEach(r => { const rem = r2(r[1] - (r.paid || 0)); if (rem > 0.004) { rows.push([r.paid ? r[0] + ' – BALANCE' : r[0], rem]); if (r[2]) scope.add(r[2]); } });
   u.cur.forEach(r => { rows.push([r[3], r[1]]); scope.add(r[2] === 'Waste' ? 'WASTE HAULING' : r[2].toUpperCase()); });
   if (left > 0.004) rows.push(['LESS: ADVANCE PAYMENT / CREDIT', -left]);
   const total = r2(rows.reduce((x, r) => x + r[1], 0));
-  return { ...D, rows, scope: [...scope].join(', '), total };
+  const sc = [...scope], scopeTxt = sc.length > 1 ? sc.slice(0, -1).join(', ') + ' & ' + sc[sc.length - 1] : sc.join('');
+  return { ...D, rows, scope: scopeTxt, total };
 }
 const SOA_ASSET = f => `${location.origin}/201-admin/assets/${f}`;
 function soaHTML(bill){
