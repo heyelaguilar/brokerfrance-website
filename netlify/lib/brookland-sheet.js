@@ -16,7 +16,7 @@ const SCHEMA = {
   Meters:      ['id','utility','unit','label','tenant_id','payer','type','sort','active','notes','updated'],
   ElecBills:   ['id','period','meter_id','prev','curr','rate','amount_override','amount','status','needs_reading','paid_date','paid_amount','method','paid_to','reference','proof_url','notes','updated'],
   Disbursements: ['id','date','description','category','vendor','amount','paid_by','receipt_url','status','reimbursed_date','reimbursed_ref','reimbursed_proof','notes','updated'],
-  PastDue: ['id','tenant_id','tenant','description','amount','status','notes','updated'],
+  PastDue: ['tenant','description','amount','status','notes','tenant_id','id','updated'],
   Charges: ['id','tenant_id','description','amount','bill_date','due_date','status','paid_date','paid_amount','method','paid_to','reference','proof_url','sent_at','notes','updated'],
   WasteLog: ['id','month','tenant_id','bags','rate','amount','notes','updated'],
   ElecPeriods: ['id','billing_period','reading_period','billing_date','due_date','meralco_kwh','rate','meralco_total','common_amount','bvi_share','bvi_incl','bvi_incl_label','breakdown','bill_url','notes','updated'],

@@ -1490,7 +1490,6 @@ async function reload(){
     await flagV52Reading();
     await meralcoPaidToOnly();
     await addOpening('mig_relly_arrears_2026_11', 'relly', 'Rent (Aug – Oct 2026), ₱5,000 × 3', 15000, 'rent arrears, 3 months (November is on the November bill)');
-    await seedPastDueTab();   // last: needs every fix above in place
     $('setup-banner').innerHTML = DEMO ? `<div class="banner"><b>Demo mode</b> — sample data only. Nothing is saved and no email is actually sent. Remove <code>?demo</code> from the URL for the live dashboard.</div>`
       : '';
     $('boot').style.display='none'; render();
@@ -2892,7 +2891,13 @@ function soaRows(bill, noSheetPD){
 // Past due exactly as the tenant's SOA for batch month m shows it (rent, CUSA, other, Meralco, Primewater, waste)
 // Past due comes from the PastDue tab of the sheet once it has rows (edit there; Paid rows drop off the SOA)
 const pdSheetOn = () => (DB.PastDue || []).length > 0;
-const pdSheetRows = tid => (DB.PastDue || []).filter(r => r.tenant_id === tid && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount));
+const pdNorm = r => Object.fromEntries(Object.entries(r).map(([k, v]) => [String(k).trim().toLowerCase().replace(/\s+/g, '_'), v]));
+const pdMatch = (r, t) => {   // match by tenant_id, or by the tenant / business name typed in the sheet
+  if (r.tenant_id && r.tenant_id === t.id) return true;
+  const n = String(r.tenant || r.business_name || r.tenant_name || '').trim().toLowerCase(); if (!n) return false;
+  return [t.tenant_name, t.trade_name].some(x => x && String(x).trim().toLowerCase() === n);
+};
+const pdSheetRows = tid => { const t = tn(tid) || { id: tid }; return (DB.PastDue || []).map(pdNorm).filter(r => pdMatch(r, t) && !/^paid$/i.test(String(r.status || '').trim()) && num(r.amount)); };
 const pdSheetTotal = tid => r2(pdSheetRows(tid).reduce((x, r) => x + num(r.amount), 0));
 function soaPastDue(t, m, raw){
   const P = due1(t) ? nextMonthOf(m) : m;
