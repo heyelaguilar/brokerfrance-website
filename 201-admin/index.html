@@ -2548,32 +2548,35 @@ function soaRows(bill){
 }
 const SOA_ASSET = f => `${location.origin}/201-admin/assets/${f}`;
 function soaHTML(bill){
-  const { t, rows, scope, total } = soaRows(bill);
-  const B = 'border:1px solid #333', c = `${B};padding:4px 6px`, g = '#efefef';
+  const { t, rows, scope, total, soaNo } = soaRows(bill);
+  const ln = '#a0a6ac', bandC = '#eceeed', brand = '#1C3F2F', soft = '#6e757d';
+  const c = `border:1px solid ${ln};padding:7px 10px`;
   const money = v => (v < 0 ? '−' : '') + peso(Math.abs(v));
-  const filler = Math.max(0, 11 - rows.length);
-  return `<div style="font-family:Arial,Helvetica,sans-serif;color:#111;font-size:13px;line-height:1.35;max-width:880px">
-  <img src="${SOA_ASSET('brookland-logo.png')}" alt="Brookland Ventures Incorporated" style="height:70px;margin:0 0 18px 10px">
+  const D = d => dmy(d).toUpperCase();
+  const filler = Math.max(0, 6 - rows.length);
+  const acct = (bank, name, no) => `<table style="border-collapse:collapse;font-size:12px"><tr><td style="color:${soft};padding:2px 14px 2px 0">Bank</td><td style="font-weight:700">${bank}</td></tr><tr><td style="color:${soft};padding:2px 14px 2px 0">Account name</td><td style="font-weight:700">${name}</td></tr><tr><td style="color:${soft};padding:2px 14px 2px 0">Account no.</td><td style="font-weight:700">${no}</td></tr></table>`;
+  return `<div style="font-family:Helvetica,Arial,sans-serif;color:#212529;font-size:13px;line-height:1.4;max-width:760px;margin:0 auto;padding:8px 6px">
+  <table style="width:100%;border-collapse:collapse;border-bottom:2px solid ${brand};margin-bottom:16px"><tr>
+    <td style="padding:0 0 12px"><img src="${SOA_ASSET('brookland-logo.png')}" alt="Brookland Ventures Incorporated" style="height:58px"></td>
+    <td style="padding:0 0 12px;text-align:right;vertical-align:top"><div style="font-size:20px;font-weight:800;color:${brand}">STATEMENT OF ACCOUNT</div><div style="color:${soft};font-size:11px;margin-top:4px">${esc(soaNo)}</div></td></tr></table>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr>
+    <td style="${c};width:66%;vertical-align:top"><div style="color:${soft};font-size:11px">CLIENT</div><div style="font-size:16px;font-weight:700;margin:2px 0 8px">${esc(t.tenant_name || t.trade_name)}</div><div style="color:${soft};font-size:11px">SCOPE</div><div style="font-weight:700">${esc(scope || '—')}</div></td>
+    <td style="${c};vertical-align:top"><div style="color:${soft};font-size:11px">BILLING DATE</div><div style="font-weight:700;text-align:right;margin-bottom:8px">${D(bill.bill_date)}</div><div style="color:${soft};font-size:11px">DUE DATE</div><div style="font-weight:700;text-align:right;color:#B5533C">${D(bill.due_date)}</div></td></tr></table>
   <table style="width:100%;border-collapse:collapse">
-    <tr><td rowspan="2" style="${c};background:${g};font-size:20px;font-weight:800;width:50%">STATEMENT OF ACCOUNT</td><td style="${c};width:25%">BILLING DATE</td><td style="${c};text-align:right">${dmy(bill.bill_date)}</td></tr>
-    <tr><td style="${c}">DUE DATE</td><td style="${c};text-align:right">${dmy(bill.due_date)}</td></tr>
-    <tr><td colspan="3" style="${c};padding:6px">CLIENT NAME<div style="font-size:19px;font-weight:700;color:#444;margin:10px 0 4px">${esc(t.tenant_name || t.trade_name)}</div></td></tr>
-    <tr><td colspan="3" style="${c};padding:6px">SCOPE<div style="font-size:19px;font-weight:700;color:#444;margin:10px 0 4px">${esc(scope || '—')}</div></td></tr>
-    <tr><td colspan="3" style="${c};background:${g};text-align:center;font-weight:700">DETAILS</td></tr>
-    <tr><td colspan="2" style="${c};text-align:center;font-weight:700">DESCRIPTION</td><td style="${c};text-align:center;font-weight:700">AMOUNT</td></tr>
-    ${rows.map(([d, v]) => `<tr><td colspan="2" style="${c}">${esc(d)}</td><td style="${c};text-align:right;white-space:nowrap">${money(v)}</td></tr>`).join('')}
-    ${`<tr><td colspan="2" style="${c}">&nbsp;</td><td style="${c}">&nbsp;</td></tr>`.repeat(filler)}
-    <tr><td colspan="2" style="${c};background:${g};text-align:right;font-weight:700">TOTAL</td><td style="${c};text-align:right;font-weight:700;white-space:nowrap">${money(total)}</td></tr>
-    <tr><td style="${c};vertical-align:top;height:140px">PREPARED BY:<div style="height:70px;margin:8px 0"><img src="${SOA_ASSET('sig-prepared.png')}" alt="" style="height:70px"></div><b>${esc(set('soa_prepared_by') || 'ELLA AGUILAR')}</b></td>
-      <td colspan="2" style="${c};vertical-align:top">CERTIFIED BY:<div style="height:70px;margin:8px 0"><img src="${SOA_ASSET('sig-certified.png')}" alt="" style="height:70px"></div><b>${esc(set('soa_certified_by') || 'FRANCE GONZALES')}</b></td></tr>
-    <tr><td colspan="3" style="${c};background:${g};text-align:center;font-weight:700">PAYMENT INSTRUCTIONS</td></tr>
-    <tr><td colspan="3" style="${c};padding:6px">
-      <div style="font-weight:700;text-decoration:underline">CHECK PAYMENTS</div>
-      <div style="font-weight:700;margin:6px 0 18px">Please issue a check payable to BROOKLAND VENTURES, INC.</div>
-      <div style="font-weight:700;text-decoration:underline">DIRECT DEPOSIT</div>
-      <table style="border-collapse:collapse;margin-top:4px"><tr><td style="padding:2px 40px 2px 0">Bank Name:</td><td style="font-weight:700">Security Bank</td></tr>
-      <tr><td style="padding:2px 40px 2px 0">Account Name:</td><td style="font-weight:700">BROOKLAND VENTURES, INC.</td></tr>
-      <tr><td style="padding:2px 40px 2px 0">Current Account No.:</td><td style="font-weight:700">0000054207660</td></tr></table></td></tr>
+    <tr><td style="${c};background:${bandC};font-weight:700;font-size:11px">DESCRIPTION</td><td style="${c};background:${bandC};font-weight:700;font-size:11px;text-align:right;width:28%">AMOUNT</td></tr>
+    ${rows.map(([d, v]) => `<tr><td style="${c}">${esc(d)}</td><td style="${c};text-align:right;white-space:nowrap;${v < 0 ? 'color:#1c7846' : ''}">${money(v)}</td></tr>`).join('')}
+    ${`<tr><td style="${c}">&nbsp;</td><td style="${c}">&nbsp;</td></tr>`.repeat(filler)}
+    <tr><td style="${c};background:${bandC};text-align:right;font-weight:800">GRAND TOTAL</td><td style="${c};background:${bandC};text-align:right;font-weight:800;font-size:15px;color:${brand};white-space:nowrap">${money(total)}</td></tr>
+  </table>
+  <table style="width:100%;border-collapse:collapse;margin:22px 0 18px"><tr>
+    <td style="width:50%;vertical-align:top"><div style="color:${soft};font-size:11px">PREPARED BY:</div><img src="${SOA_ASSET('sig-prepared.png')}" alt="" style="height:52px;margin:4px 0 0"><div style="border-top:1px solid ${ln};width:230px;padding-top:4px;font-weight:700">${esc(set('soa_prepared_by') || 'ELLA AGUILAR')}</div></td>
+    <td style="vertical-align:top"><div style="color:${soft};font-size:11px">CERTIFIED CORRECT:</div><img src="${SOA_ASSET('sig-certified.png')}" alt="" style="height:52px;margin:4px 0 0"><div style="border-top:1px solid ${ln};width:230px;padding-top:4px;font-weight:700">${esc(set('soa_certified_by') || 'FRANCE GONZALES')}</div></td></tr></table>
+  <table style="width:100%;border-collapse:collapse">
+    <tr><td colspan="2" style="${c};background:${bandC};text-align:center;font-weight:700;font-size:11px">PAYMENT INSTRUCTIONS</td></tr>
+    <tr><td colspan="2" style="border:1px solid ${ln};border-bottom:0;padding:10px 10px 4px"><div style="color:${brand};font-weight:700;font-size:11px">CHECK PAYMENTS</div>Please issue a check payable to <b>BROOKLAND VENTURES, INC.</b></td></tr>
+    <tr><td colspan="2" style="border:1px solid ${ln};border-top:0;border-bottom:0;padding:8px 10px 2px"><div style="color:${brand};font-weight:700;font-size:11px">DIRECT DEPOSIT</div></td></tr>
+    <tr><td style="border:1px solid ${ln};border-top:0;border-right:0;padding:2px 10px 10px;vertical-align:top">${acct('Security Bank', 'BROOKLAND VENTURES, INC.', '0000054207660')}</td>
+        <td style="border:1px solid ${ln};border-top:0;border-left:0;padding:2px 10px 10px;vertical-align:top">${acct('GCash', 'MAY FRANCIA R. GONZALES', '09778290053')}</td></tr>
   </table></div>`;
 }
 const billish = id => byId('Bills', id) || chargeBill(id);
@@ -2635,41 +2638,65 @@ async function imgData(f){
 async function soaPDF(bill){
   const jsPDF = await loadJsPDF();
   const { t, rows, scope, total, soaNo } = soaRows(bill);
-  const doc = new jsPDF({ unit:'mm', format:'a4', compress:true });
-  const L = 15, R = 195, W = R - L, C1 = L + W * 0.5, C2 = L + W * 0.75;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  const L = 20, R = 190, W = R - L, C2 = L + W * 0.72, MID = L + W / 2;   // 20 mm margins
+  const ink = [33, 37, 41], soft = [110, 117, 125], line = [160, 166, 172], band = [236, 239, 237], brand = [28, 63, 47];
   const clean = x => String(x).replace(/₱/g, 'PHP ').replace(/→/g, 'to').replace(/[−–—]/g, '-').replace(/×/g, 'x');
-  const T = (str, x, y, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize(o.s || 10); doc.setTextColor(...(o.c || [17,17,17])); doc.text(clean(str), x, y, o.a ? { align: o.a } : undefined); };
-  const box = (x, y, w, h, fill) => { doc.setDrawColor(51,51,51); doc.setLineWidth(0.25); if (fill) { doc.setFillColor(239,239,239); doc.rect(x, y, w, h, 'FD'); } else doc.rect(x, y, w, h); };
-  const money = v => (v < 0 ? '-' : '') + php(Math.abs(v));
-  try { const lg = await imgData('brookland-logo.png'); doc.addImage(lg.url, 'PNG', L + 2, 10, 70, 70 * lg.h / lg.w); } catch(e){}
-  let y = 30;
-  box(L, y, C1 - L, 14, 1); T('STATEMENT OF ACCOUNT', L + 2, y + 9, { b: 1, s: 15 });
-  box(C1, y, C2 - C1, 7); T('BILLING DATE', C1 + 2, y + 5); box(C2, y, R - C2, 7); T(dmy(bill.bill_date), R - 2, y + 5, { a: 'right' });
-  box(C1, y + 7, C2 - C1, 7); T('DUE DATE', C1 + 2, y + 12); box(C2, y + 7, R - C2, 7); T(dmy(bill.due_date), R - 2, y + 12, { a: 'right' });
-  y += 14; box(L, y, W, 20); T('CLIENT NAME', L + 2, y + 5); T(t.tenant_name || t.trade_name, L + 2, y + 14, { b: 1, s: 14, c: [68,68,68] });
-  y += 20; box(L, y, W, 20); T('SCOPE', L + 2, y + 5); T(scope || '-', L + 2, y + 14, { b: 1, s: 14, c: [68,68,68] });
-  y += 20; box(L, y, W, 7, 1); T('DETAILS', L + W / 2, y + 5, { b: 1, a: 'center' });
-  y += 7; box(L, y, C2 - L, 7); box(C2, y, R - C2, 7); T('DESCRIPTION', (L + C2) / 2, y + 5, { b: 1, a: 'center' }); T('AMOUNT', (C2 + R) / 2, y + 5, { b: 1, a: 'center' });
-  y += 7;
-  const n = Math.max(rows.length, 11);
+  const T = (str, x, y, o = {}) => { doc.setFont('helvetica', o.b ? 'bold' : 'normal'); doc.setFontSize(o.s || 9.5); doc.setTextColor(...(o.c || ink)); doc.text(clean(str), x, y, o.a ? { align: o.a } : undefined); };
+  const rect = (x, y, w, h, fill) => { doc.setDrawColor(...line); doc.setLineWidth(0.2); if (fill) { doc.setFillColor(...fill); doc.rect(x, y, w, h, 'FD'); } else doc.rect(x, y, w, h); };
+  const hline = (x1, x2, y) => { doc.setDrawColor(...line); doc.setLineWidth(0.2); doc.line(x1, y, x2, y); };
+  const money = v => (v < 0 ? '- ' : '') + 'PHP ' + Math.abs(v).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const D = d => dmy(d).toUpperCase();
+  // header: logo left, document title right
+  try { const lg = await imgData('brookland-logo.png'); doc.addImage(lg.url, 'PNG', L, 16, 62, 62 * lg.h / lg.w); } catch(e){}
+  T('STATEMENT OF ACCOUNT', R, 23, { b: 1, s: 15, c: brand, a: 'right' });
+  T(soaNo, R, 29, { s: 8.5, c: soft, a: 'right' });
+  doc.setDrawColor(...brand); doc.setLineWidth(0.6); doc.line(L, 38, R, 38);
+  // client / dates block
+  let y = 44;
+  rect(L, y, W, 26);
+  doc.line(C2 - 22, y, C2 - 22, y + 26);
+  T('CLIENT', L + 4, y + 6, { s: 8, c: soft }); T(t.tenant_name || t.trade_name || '', L + 4, y + 12.5, { b: 1, s: 11.5 });
+  T('SCOPE', L + 4, y + 19, { s: 8, c: soft });
+  const sc = doc.splitTextToSize(clean(scope || '-'), C2 - 22 - L - 8); doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...ink); doc.text(sc[0], L + 4, y + 23.5);
+  T('BILLING DATE', C2 - 18, y + 6, { s: 8, c: soft }); T(D(bill.bill_date), R - 4, y + 11.5, { b: 1, s: 10, a: 'right' });
+  hline(C2 - 22, R, y + 13);
+  T('DUE DATE', C2 - 18, y + 19, { s: 8, c: soft }); T(D(bill.due_date), R - 4, y + 24, { b: 1, s: 10, a: 'right', c: [181, 83, 60] });
+  // details
+  y += 32;
+  rect(L, y, W, 8, band); T('DESCRIPTION', L + 4, y + 5.4, { b: 1, s: 8.5 }); T('AMOUNT', R - 4, y + 5.4, { b: 1, s: 8.5, a: 'right' });
+  doc.line(C2, y, C2, y + 8);
+  y += 8;
+  const n = Math.max(rows.length, 6);
   for (let i = 0; i < n; i++) {
-    const r = rows[i], lines = r ? doc.splitTextToSize(clean(r[0]), C2 - L - 4) : [''], h = Math.max(7, lines.length * 4.4 + 2.6);
-    box(L, y, C2 - L, h); box(C2, y, R - C2, h);
-    if (r) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(17,17,17); doc.text(lines, L + 2, y + 5); T(money(r[1]), R - 2, y + 5, { a: 'right' }); }
+    const r = rows[i], lines = r ? doc.splitTextToSize(clean(r[0]), C2 - L - 8) : [''], h = Math.max(7.5, lines.length * 4.3 + 3.2);
+    rect(L, y, C2 - L, h); rect(C2, y, R - C2, h);
+    if (r) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(...ink); doc.text(lines, L + 4, y + 5); T(money(r[1]), R - 4, y + 5, { a: 'right', c: r[1] < 0 ? [28, 120, 70] : ink }); }
     y += h;
   }
-  box(L, y, C2 - L, 7, 1); T('TOTAL', C2 - 2, y + 5, { b: 1, a: 'right' }); box(C2, y, R - C2, 7); T(money(total), R - 2, y + 5, { b: 1, a: 'right' });
-  y += 7; box(L, y, C1 - L, 34); box(C1, y, R - C1, 34);
-  T('PREPARED BY:', L + 2, y + 5); T('CERTIFIED BY:', C1 + 2, y + 5);
-  try { const a = await imgData('sig-prepared.png'); doc.addImage(a.url, 'PNG', L + 2, y + 7, 18 * a.w / a.h, 18); } catch(e){}
-  try { const b2 = await imgData('sig-certified.png'); doc.addImage(b2.url, 'PNG', C1 + 2, y + 7, 18 * b2.w / b2.h, 18); } catch(e){}
-  T(set('soa_prepared_by') || 'ELLA AGUILAR', L + 2, y + 30, { b: 1, s: 11 }); T(set('soa_certified_by') || 'FRANCE GONZALES', C1 + 2, y + 30, { b: 1, s: 11 });
-  y += 34; box(L, y, W, 7, 1); T('PAYMENT INSTRUCTIONS', L + W / 2, y + 5, { b: 1, a: 'center' });
-  y += 7; box(L, y, W, 44);
-  T('CHECK PAYMENTS', L + 2, y + 6, { b: 1 }); doc.line(L + 2, y + 7, L + 33, y + 7);
-  T('Please issue a check payable to BROOKLAND VENTURES, INC.', L + 2, y + 12, { b: 1 });
-  T('DIRECT DEPOSIT', L + 2, y + 22, { b: 1 }); doc.line(L + 2, y + 23, L + 31, y + 23);
-  [['Bank Name:', 'Security Bank'], ['Account Name:', 'BROOKLAND VENTURES, INC.'], ['Current Account No.:', '0000054207660']].forEach(([k, v], i) => { T(k, L + 2, y + 29 + i * 5.5); T(v, L + 55, y + 29 + i * 5.5, { b: 1 }); });
+  rect(L, y, C2 - L, 10, band); rect(C2, y, R - C2, 10, band);
+  T('GRAND TOTAL', C2 - 4, y + 6.6, { b: 1, s: 10.5, a: 'right' }); T(money(total), R - 4, y + 6.6, { b: 1, s: 11.5, a: 'right', c: brand });
+  // signatures
+  y += 16;
+  T('PREPARED BY:', L, y, { s: 8, c: soft }); T('CERTIFIED CORRECT:', MID + 5, y, { s: 8, c: soft });
+  try { const a = await imgData('sig-prepared.png'); doc.addImage(a.url, 'PNG', L, y + 2, 16 * a.w / a.h, 16); } catch(e){}
+  try { const b2 = await imgData('sig-certified.png'); doc.addImage(b2.url, 'PNG', MID + 5, y + 2, 16 * b2.w / b2.h, 16); } catch(e){}
+  hline(L, L + 65, y + 19); hline(MID + 5, MID + 70, y + 19);
+  T(set('soa_prepared_by') || 'ELLA AGUILAR', L, y + 24, { b: 1, s: 10 }); T(set('soa_certified_by') || 'FRANCE GONZALES', MID + 5, y + 24, { b: 1, s: 10 });
+  // payment instructions
+  y += 33;
+  rect(L, y, W, 8, band); T('PAYMENT INSTRUCTIONS', L + W / 2, y + 5.4, { b: 1, s: 8.5, a: 'center' });
+  rect(L, y + 8, W, 38);
+  y += 15;
+  T('CHECK PAYMENTS', L + 4, y, { b: 1, s: 8.5, c: brand });
+  T('Please issue a check payable to ', L + 4, y + 5.5, { s: 9.5 }); T('BROOKLAND VENTURES, INC.', L + 4 + doc.getTextWidth('Please issue a check payable to '), y + 5.5, { b: 1, s: 9.5 });
+  y += 13;
+  T('DIRECT DEPOSIT', L + 4, y, { b: 1, s: 8.5, c: brand });
+  const acct = (x, rowsA) => rowsA.forEach(([k, v], i) => { T(k, x, y + 5.5 + i * 5, { s: 8.5, c: soft }); T(v, x + 29, y + 5.5 + i * 5, { b: 1, s: 9.5 }); });
+  acct(L + 4, [['Bank', 'Security Bank'], ['Account name', 'BROOKLAND VENTURES, INC.'], ['Account no.', '0000054207660']]);
+  acct(MID + 5, [['Bank', 'GCash'], ['Account name', 'MAY FRANCIA R. GONZALES'], ['Account no.', '09778290053']]);
+  // footer
+  hline(L, R, 282); T('Brookland Ventures, Inc. · 201 Brookland Building', L, 286.5, { s: 7.5, c: soft }); T('Page 1 of 1', R, 286.5, { s: 7.5, c: soft, a: 'right' });
   return { doc, filename: soaName(bill) + '.pdf', amountDue: total };
 }
 async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(billish(id)); doc.save(filename); } catch(e){ toast(e.message); } }
