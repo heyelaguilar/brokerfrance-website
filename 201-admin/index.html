@@ -261,7 +261,8 @@ tr[style*="green-l"] td,tr[style*="background:var(--green-l)"] td{background:#F1
 #app #pd-tbl .pd-lines>div{display:flex!important;justify-content:space-between;gap:24px;color:var(--ink3)}
 #app #pd-tbl .pd-lines span{display:inline!important}
 #app #pd-tbl .pd-rem{display:inline-block!important;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom;color:var(--ink3)}
-#app #pd-tbl .pd-act{display:flex!important;gap:6px;margin-top:6px}
+#app #pd-tbl .pd-wrap{display:flex!important;justify-content:space-between;align-items:center;gap:12px}
+#app #pd-tbl .pd-act{display:flex!important;gap:6px;flex-shrink:0}
 #app #pd-tbl .pd-act .btn{display:inline-flex!important}
 /* ── Uniform: one font family, one size, one line per row (SOA document excluded) ── */
 #app table:not(.soa-doc *),#app table :not(.soa-doc):not(.soa-doc *){font-family:Arial,Helvetica,sans-serif!important;font-size:13px!important;line-height:1.4!important;letter-spacing:0!important}
@@ -1816,7 +1817,7 @@ function rCollectibles(m){
   $('pd-tbl').innerHTML = pdRows.length ? `<tr><th>Business name</th><th class="num">Due</th></tr>` + pdRows.map((r, i) => {
       const items = String(r.rem || '').split(/\s*;\s*/).filter(Boolean);
       return `<tr class="click" onclick="pdToggle(${i})"><td><span class="pd-caret" id="pdc-${i}">▸</span> <div class="name" title="${esc(r.name)}">${esc(r.name)}</div></td><td class="num"><b>${amt(r.pd)}</b></td></tr>`
-        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button></div>` : ''}</div></td></tr>`; }).join('')
+        + `<tr class="pd-det" id="pdd-${i}" style="display:none"><td colspan="2"><div class="pd-wrap"><div class="pd-lines">${items.length ? items.map(x => `<div><span>${esc(x)}</span></div>`).join('') : '<div><span>No details in the sheet</span></div>'}</div>${r.t && activeTenants().some(x => x.id === r.t.id) ? `<div class="pd-act"><button class="btn sm" onclick="event.stopPropagation();pdViewSOA('${r.t.id}', this)">View SOA</button></div>` : ''}</div></td></tr>`; }).join('')
       + `<tr style="background:var(--green-l)"><td><b>Total</b></td><td class="num"><b>${amt(pdTot)}</b></td></tr>`
     : `<tr><td><div class="empty">No past due balances.</div></td></tr>`;
 
