@@ -2572,8 +2572,7 @@ function soaHTML(bill){
     <tr><td colspan="2" style="${c};${sh};font-weight:700;text-align:center">PAYMENT INSTRUCTIONS</td></tr>
     <tr><td colspan="2" style="border:${bd};border-bottom:0;padding:10px 10px 4px"><div style="font-weight:700;text-decoration:underline">CHECK PAYMENTS</div><div style="margin-top:4px">Please issue a check payable to <b>BROOKLAND VENTURES, INC.</b></div></td></tr>
     <tr><td colspan="2" style="border-left:${bd};border-right:${bd};padding:8px 10px 2px"><div style="font-weight:700;text-decoration:underline">DIRECT DEPOSIT</div></td></tr>
-    <tr><td colspan="2" style="border:${bd};border-top:0;padding:2px 10px 10px">Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b>
-      <div style="margin-top:8px">Bank Name: <b>GCash</b><br>Account Name: <b>MAY FRANCIA R. GONZALES</b><br>Account No.: <b>09778290053</b></div></td></tr>
+    <tr><td colspan="2" style="border:${bd};border-top:0;padding:2px 10px 10px">Bank Name: <b>Security Bank</b><br>Account Name: <b>BROOKLAND VENTURES, INC.</b><br>Current Account No.: <b>0000054207660</b></td></tr>
   </table>
   </div>`;
 }
@@ -2670,7 +2669,7 @@ async function soaPDF(bill){
   // payment instructions (boxed, as in the template)
   y += 30;
   box(L, y, W, 8, 1); T('PAYMENT INSTRUCTIONS', L + W / 2, y + 5.4, { b: 1, a: 'center' });
-  box(L, y + 8, W, 59);
+  box(L, y + 8, W, 42);
   const ul = (str, x, yy) => { T(str, x, yy, { b: 1 }); doc.setDrawColor(20, 20, 20); doc.setLineWidth(0.2); doc.line(x, yy + 0.8, x + doc.getTextWidth(str), yy + 0.8); };
   y += 15;
   ul('CHECK PAYMENTS', L + 4, y);
@@ -2679,8 +2678,7 @@ async function soaPDF(bill){
   ul('DIRECT DEPOSIT', L + 4, y);
   const acct = (x, lines) => lines.forEach(([k, v], i) => { doc.setFont('helvetica', 'normal'); const kw = doc.getTextWidth(k + ' '); T(k, x, y + 6 + i * 5); T(v, x + kw, y + 6 + i * 5, { b: 1 }); });
   acct(L + 4, [['Bank Name:', 'Security Bank'], ['Account Name:', 'BROOKLAND VENTURES, INC.'], ['Current Account No.:', '0000054207660']]);
-  y += 17;
-  acct(L + 4, [['Bank Name:', 'GCash'], ['Account Name:', 'MAY FRANCIA R. GONZALES'], ['Account No.:', '09778290053']]);
+
   return { doc, filename: soaName(bill) + '.pdf', amountDue: total };
 }
 async function downloadSOA(id){ try { const { doc, filename } = await soaPDF(billish(id)); doc.save(filename); } catch(e){ toast(e.message); } }
